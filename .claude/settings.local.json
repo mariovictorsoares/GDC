@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir:*)",
+      "ReadFile(path:*)",
+      "WriteFile(path:*)",
+      "CreateDirectory(path:*)",
+      "DeleteFile(path:*)",
+      "ListDirectory(path:*)",
+      "ExecuteCommand(cmd:*)",
+      "Bash(npm run build:*)",
+      "Bash(ls -la \"C:\\\\Users\\\\mario\\\\Desktop\\\\estoque-cd\\\\public\"\" 2>/dev/null || dir \"C:UsersmarioDesktopestoque-cdpublic \")"
+    ]
+  }
+}

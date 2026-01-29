@@ -1,0 +1,24 @@
+{
+  "name": "estoque-cd",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare"
+  },
+  "dependencies": {
+    "@nuxt/ui": "^2.18.0",
+    "@supabase/supabase-js": "^2.45.0",
+    "nuxt": "^3.14.0",
+    "vue": "^3.5.0",
+    "vue-router": "^4.4.0"
+  },
+  "devDependencies": {
+    "@nuxtjs/supabase": "^1.4.0",
+    "typescript": "^5.6.0"
+  }
+}
