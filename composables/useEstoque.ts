@@ -1,4 +1,6 @@
 import type {
+  Grupo,
+  Subgrupo,
   Categoria,
   Unidade,
   Destino,
@@ -17,6 +19,113 @@ export const useEstoque = () => {
   const client = useSupabaseClient()
 
   // ==========================================
+  // GRUPOS
+  // ==========================================
+
+  const getGrupos = async () => {
+    const { data, error } = await client
+      .from('grupos')
+      .select('*')
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+    return data as Grupo[]
+  }
+
+  const createGrupo = async (grupo: Partial<Grupo>) => {
+    const { data, error } = await client
+      .from('grupos')
+      .insert(grupo)
+      .select()
+      .single()
+
+    if (error) throw error
+    return data as Grupo
+  }
+
+  const updateGrupo = async (id: string, grupo: Partial<Grupo>) => {
+    const { data, error } = await client
+      .from('grupos')
+      .update(grupo)
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (error) throw error
+    return data as Grupo
+  }
+
+  const deleteGrupo = async (id: string) => {
+    const { error } = await client
+      .from('grupos')
+      .delete()
+      .eq('id', id)
+
+    if (error) throw error
+  }
+
+  // ==========================================
+  // SUBGRUPOS
+  // ==========================================
+
+  const getSubgrupos = async (grupoId?: string) => {
+    let query = client
+      .from('subgrupos')
+      .select(`
+        *,
+        grupo:grupos(*)
+      `)
+      .order('created_at', { ascending: false })
+
+    if (grupoId) {
+      query = query.eq('grupo_id', grupoId)
+    }
+
+    const { data, error } = await query
+
+    if (error) throw error
+    return data as Subgrupo[]
+  }
+
+  const createSubgrupo = async (subgrupo: Partial<Subgrupo>) => {
+    const { data, error } = await client
+      .from('subgrupos')
+      .insert(subgrupo)
+      .select(`
+        *,
+        grupo:grupos(*)
+      `)
+      .single()
+
+    if (error) throw error
+    return data as Subgrupo
+  }
+
+  const updateSubgrupo = async (id: string, subgrupo: Partial<Subgrupo>) => {
+    const { data, error } = await client
+      .from('subgrupos')
+      .update(subgrupo)
+      .eq('id', id)
+      .select(`
+        *,
+        grupo:grupos(*)
+      `)
+      .single()
+
+    if (error) throw error
+    return data as Subgrupo
+  }
+
+  const deleteSubgrupo = async (id: string) => {
+    const { error } = await client
+      .from('subgrupos')
+      .delete()
+      .eq('id', id)
+
+    if (error) throw error
+  }
+
+  // ==========================================
   // CATEGORIAS
   // ==========================================
 
@@ -24,7 +133,7 @@ export const useEstoque = () => {
     const { data, error } = await client
       .from('categorias')
       .select('*')
-      .order('nome')
+      .order('created_at', { ascending: false })
 
     if (error) throw error
     return data as Categoria[]
@@ -70,7 +179,7 @@ export const useEstoque = () => {
     const { data, error } = await client
       .from('unidades')
       .select('*')
-      .order('sigla')
+      .order('created_at', { ascending: false })
 
     if (error) throw error
     return data as Unidade[]
@@ -116,7 +225,7 @@ export const useEstoque = () => {
     let query = client
       .from('destinos')
       .select('*')
-      .order('nome')
+      .order('created_at', { ascending: false })
 
     if (apenasAtivos) {
       query = query.eq('ativo', true)
@@ -170,9 +279,10 @@ export const useEstoque = () => {
       .select(`
         *,
         categoria:categorias(*),
+        subgrupo:subgrupos(*, grupo:grupos(*)),
         unidade:unidades(*)
       `)
-      .order('nome')
+      .order('created_at', { ascending: false })
 
     if (apenasAtivos) {
       query = query.eq('ativo', true)
@@ -190,6 +300,7 @@ export const useEstoque = () => {
       .select(`
         *,
         categoria:categorias(*),
+        subgrupo:subgrupos(*, grupo:grupos(*)),
         unidade:unidades(*)
       `)
       .eq('id', id)
@@ -549,6 +660,16 @@ export const useEstoque = () => {
   }
 
   return {
+    // Grupos
+    getGrupos,
+    createGrupo,
+    updateGrupo,
+    deleteGrupo,
+    // Subgrupos
+    getSubgrupos,
+    createSubgrupo,
+    updateSubgrupo,
+    deleteSubgrupo,
     // Categorias
     getCategorias,
     createCategoria,

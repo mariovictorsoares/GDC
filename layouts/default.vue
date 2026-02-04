@@ -9,8 +9,8 @@
     >
       <div class="flex flex-col h-full">
         <!-- Logo com fundo branco -->
-        <div class="flex items-center justify-center h-20 border-b border-gray-200 bg-white px-4">
-          <img src="/logo-guardiao.png" alt="Guardião do CMV" class="h-12 w-auto object-contain" />
+        <div class="flex items-center justify-center h-16 border-b border-gray-200 bg-white px-4">
+          <img src="/logo-guardiao.png" alt="Guardião do CMV" class="h-10 w-auto object-contain" />
         </div>
 
         <!-- Navigation -->
@@ -39,35 +39,27 @@
                   Produtos
                 </NuxtLink>
                 <NuxtLink
-                  to="/cadastro/categorias"
+                  to="/cadastro/grupos"
                   class="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-colors"
-                  :class="isActive('/cadastro/categorias') ? 'bg-guardian-50 text-guardian-700' : 'text-gray-700 hover:bg-gray-100'"
+                  :class="isActive('/cadastro/grupos') ? 'bg-guardian-50 text-guardian-700' : 'text-gray-700 hover:bg-gray-100'"
                 >
-                  <UIcon name="i-heroicons-tag" class="w-5 h-5" />
-                  Categorias
-                </NuxtLink>
-                <NuxtLink
-                  to="/cadastro/unidades"
-                  class="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-colors"
-                  :class="isActive('/cadastro/unidades') ? 'bg-guardian-50 text-guardian-700' : 'text-gray-700 hover:bg-gray-100'"
-                >
-                  <UIcon name="i-heroicons-scale" class="w-5 h-5" />
-                  Unidades
+                  <UIcon name="i-heroicons-folder" class="w-5 h-5" />
+                  Grupos / Subgrupos
                 </NuxtLink>
                 <NuxtLink
                   to="/cadastro/destinos"
                   class="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-colors"
                   :class="isActive('/cadastro/destinos') ? 'bg-guardian-50 text-guardian-700' : 'text-gray-700 hover:bg-gray-100'"
                 >
-                  <UIcon name="i-heroicons-building-storefront" class="w-5 h-5" />
-                  Destinos
+                  <UIcon name="i-heroicons-arrow-right-circle" class="w-5 h-5" />
+                  Tipos de Saída
                 </NuxtLink>
               </div>
             </div>
 
-            <!-- Movimentações -->
+            <!-- Controle de Estoque -->
             <div class="pt-4">
-              <p class="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Movimentações</p>
+              <p class="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Controle de Estoque</p>
               <div class="mt-2 space-y-1">
                 <NuxtLink
                   to="/movimentos/entradas"
@@ -147,14 +139,6 @@
                 >
                   <UIcon name="i-heroicons-chart-bar-square" class="w-5 h-5" />
                   Variação de Custo
-                </NuxtLink>
-                <NuxtLink
-                  to="/relatorios/folha-contagem"
-                  class="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-colors"
-                  :class="isActive('/relatorios/folha-contagem') ? 'bg-guardian-50 text-guardian-700' : 'text-gray-700 hover:bg-gray-100'"
-                >
-                  <UIcon name="i-heroicons-clipboard-document-list" class="w-5 h-5" />
-                  Folha Contagem
                 </NuxtLink>
               </div>
             </div>
@@ -253,15 +237,26 @@ const isActive = (path: string) => {
   return route.path.startsWith(path)
 }
 
+// Formata nome com primeira letra maiúscula e resto minúsculo
+const formatarNome = (nome: string) => {
+  return nome
+    .toLowerCase()
+    .split(' ')
+    .map(palavra => palavra.charAt(0).toUpperCase() + palavra.slice(1))
+    .join(' ')
+}
+
 // Busca o nome do usuário dos metadados do Supabase Auth
 const nomeUsuario = computed(() => {
   const metadata = user.value?.user_metadata
   // Pega apenas o primeiro nome para a saudação
   const nomeCompleto = metadata?.nome || metadata?.name || metadata?.full_name
   if (nomeCompleto) {
-    return nomeCompleto.split(' ')[0] // Retorna apenas o primeiro nome
+    const primeiroNome = nomeCompleto.split(' ')[0]
+    return formatarNome(primeiroNome)
   }
-  return user.value?.email?.split('@')[0] || 'Usuário'
+  const emailNome = user.value?.email?.split('@')[0] || 'Usuário'
+  return formatarNome(emailNome)
 })
 
 const greeting = computed(() => {

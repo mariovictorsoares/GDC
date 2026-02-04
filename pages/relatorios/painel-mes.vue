@@ -4,7 +4,7 @@
     <div class="flex items-center justify-between">
       <div>
         <h1 class="text-2xl font-bold text-gray-900">Painel do Mês</h1>
-        <p class="text-sm text-gray-500">Visão consolidada do estoque por produto com CMV e Giro</p>
+        <p class="text-sm text-gray-500">Visão consolidada do estoque por produto com CMV</p>
       </div>
     </div>
 
@@ -33,7 +33,7 @@
     </UCard>
 
     <!-- Resumo Geral -->
-    <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
       <UCard>
         <div class="text-center">
           <p class="text-sm text-gray-500">Estoque Inicial</p>
@@ -48,19 +48,13 @@
       </UCard>
       <UCard>
         <div class="text-center">
-          <p class="text-sm text-gray-500">Total Saídas</p>
-          <p class="text-2xl font-bold text-red-600">{{ formatCurrency(resumo.totalSaidas) }}</p>
-        </div>
-      </UCard>
-      <UCard>
-        <div class="text-center">
           <p class="text-sm text-gray-500">Estoque Final</p>
           <p class="text-2xl font-bold text-blue-600">{{ formatCurrency(resumo.estoqueFinal) }}</p>
         </div>
       </UCard>
       <UCard>
         <div class="text-center">
-          <p class="text-sm text-gray-500">CMV Total</p>
+          <p class="text-sm text-gray-500">CMV (Saídas)</p>
           <p class="text-2xl font-bold text-orange-600">{{ formatCurrency(resumo.cmvTotal) }}</p>
         </div>
       </UCard>
@@ -87,43 +81,65 @@
               <th rowspan="2" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r">Cat.</th>
               <th rowspan="2" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r">Produto</th>
               <th rowspan="2" class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-r">E.I.</th>
-              <th colspan="7" class="px-3 py-2 text-center text-xs font-medium text-red-600 uppercase tracking-wider border-r bg-red-50">Saídas</th>
               <th colspan="7" class="px-3 py-2 text-center text-xs font-medium text-green-600 uppercase tracking-wider border-r bg-green-50">Entradas</th>
+              <th colspan="7" class="px-3 py-2 text-center text-xs font-medium text-red-600 uppercase tracking-wider border-r bg-red-50">Saídas</th>
               <th rowspan="2" class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-r">E.F.</th>
-              <th rowspan="2" class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-r">Custo</th>
-              <th rowspan="2" class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-r">Valor</th>
-              <th rowspan="2" class="px-3 py-3 text-center text-xs font-medium text-orange-600 uppercase tracking-wider border-r bg-orange-50">CMV</th>
-              <th rowspan="2" class="px-3 py-3 text-center text-xs font-medium text-purple-600 uppercase tracking-wider border-r bg-purple-50">Giro</th>
-              <th rowspan="2" class="px-3 py-3 text-center text-xs font-medium text-purple-600 uppercase tracking-wider bg-purple-50">Vz/Mês</th>
+              <th rowspan="2" class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-r">C.Unit</th>
+              <th rowspan="2" class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-r">C.Total</th>
+              <th rowspan="2" class="px-3 py-3 text-center text-xs font-medium text-orange-600 uppercase tracking-wider bg-orange-50">CMV</th>
             </tr>
             <tr>
-              <!-- Saídas por semana -->
-              <th class="px-2 py-1 text-center text-xs font-medium text-red-500 bg-red-50">S1</th>
-              <th class="px-2 py-1 text-center text-xs font-medium text-red-500 bg-red-50">S2</th>
-              <th class="px-2 py-1 text-center text-xs font-medium text-red-500 bg-red-50">S3</th>
-              <th class="px-2 py-1 text-center text-xs font-medium text-red-500 bg-red-50">S4</th>
-              <th class="px-2 py-1 text-center text-xs font-medium text-red-500 bg-red-50">S5</th>
-              <th class="px-2 py-1 text-center text-xs font-medium text-red-500 bg-red-50">S6</th>
-              <th class="px-2 py-1 text-center text-xs font-medium text-red-600 bg-red-50 border-r">Tot</th>
               <!-- Entradas por semana -->
-              <th class="px-2 py-1 text-center text-xs font-medium text-green-500 bg-green-50">S1</th>
-              <th class="px-2 py-1 text-center text-xs font-medium text-green-500 bg-green-50">S2</th>
-              <th class="px-2 py-1 text-center text-xs font-medium text-green-500 bg-green-50">S3</th>
-              <th class="px-2 py-1 text-center text-xs font-medium text-green-500 bg-green-50">S4</th>
-              <th class="px-2 py-1 text-center text-xs font-medium text-green-500 bg-green-50">S5</th>
-              <th class="px-2 py-1 text-center text-xs font-medium text-green-500 bg-green-50">S6</th>
+              <th class="px-2 py-1 text-center text-xs font-medium text-green-500 bg-green-50">
+                <UTooltip :text="semanas[0]"><span>S1</span></UTooltip>
+              </th>
+              <th class="px-2 py-1 text-center text-xs font-medium text-green-500 bg-green-50">
+                <UTooltip :text="semanas[1]"><span>S2</span></UTooltip>
+              </th>
+              <th class="px-2 py-1 text-center text-xs font-medium text-green-500 bg-green-50">
+                <UTooltip :text="semanas[2]"><span>S3</span></UTooltip>
+              </th>
+              <th class="px-2 py-1 text-center text-xs font-medium text-green-500 bg-green-50">
+                <UTooltip :text="semanas[3]"><span>S4</span></UTooltip>
+              </th>
+              <th class="px-2 py-1 text-center text-xs font-medium text-green-500 bg-green-50">
+                <UTooltip :text="semanas[4]"><span>S5</span></UTooltip>
+              </th>
+              <th class="px-2 py-1 text-center text-xs font-medium text-green-500 bg-green-50">
+                <UTooltip :text="semanas[5]"><span>S6</span></UTooltip>
+              </th>
               <th class="px-2 py-1 text-center text-xs font-medium text-green-600 bg-green-50 border-r">Tot</th>
+              <!-- Saídas por semana -->
+              <th class="px-2 py-1 text-center text-xs font-medium text-red-500 bg-red-50">
+                <UTooltip :text="semanas[0]"><span>S1</span></UTooltip>
+              </th>
+              <th class="px-2 py-1 text-center text-xs font-medium text-red-500 bg-red-50">
+                <UTooltip :text="semanas[1]"><span>S2</span></UTooltip>
+              </th>
+              <th class="px-2 py-1 text-center text-xs font-medium text-red-500 bg-red-50">
+                <UTooltip :text="semanas[2]"><span>S3</span></UTooltip>
+              </th>
+              <th class="px-2 py-1 text-center text-xs font-medium text-red-500 bg-red-50">
+                <UTooltip :text="semanas[3]"><span>S4</span></UTooltip>
+              </th>
+              <th class="px-2 py-1 text-center text-xs font-medium text-red-500 bg-red-50">
+                <UTooltip :text="semanas[4]"><span>S5</span></UTooltip>
+              </th>
+              <th class="px-2 py-1 text-center text-xs font-medium text-red-500 bg-red-50">
+                <UTooltip :text="semanas[5]"><span>S6</span></UTooltip>
+              </th>
+              <th class="px-2 py-1 text-center text-xs font-medium text-red-600 bg-red-50 border-r">Tot</th>
             </tr>
           </thead>
           <tbody class="bg-white divide-y divide-gray-200">
             <tr v-if="loading">
-              <td colspan="22" class="px-3 py-8 text-center text-gray-500">
+              <td colspan="18" class="px-3 py-8 text-center text-gray-500">
                 <UIcon name="i-heroicons-arrow-path" class="w-6 h-6 animate-spin mx-auto mb-2" />
                 Carregando...
               </td>
             </tr>
             <tr v-else-if="filteredPainel.length === 0">
-              <td colspan="22" class="px-3 py-8 text-center text-gray-500">
+              <td colspan="18" class="px-3 py-8 text-center text-gray-500">
                 Nenhum dado encontrado para o período selecionado
               </td>
             </tr>
@@ -131,14 +147,6 @@
               <td class="px-2 py-2 text-xs text-gray-600 border-r truncate max-w-[80px]" :title="item.categoria">{{ item.categoria }}</td>
               <td class="px-2 py-2 text-xs font-medium text-gray-900 border-r truncate max-w-[120px]" :title="item.produto">{{ item.produto }}</td>
               <td class="px-2 py-2 text-xs text-center text-gray-600 border-r">{{ formatQtd(item.estoque_inicial) }}</td>
-              <!-- Saídas -->
-              <td class="px-1 py-2 text-xs text-center text-red-600 bg-red-50/50">{{ formatQtd(item.saidas_semana1) }}</td>
-              <td class="px-1 py-2 text-xs text-center text-red-600 bg-red-50/50">{{ formatQtd(item.saidas_semana2) }}</td>
-              <td class="px-1 py-2 text-xs text-center text-red-600 bg-red-50/50">{{ formatQtd(item.saidas_semana3) }}</td>
-              <td class="px-1 py-2 text-xs text-center text-red-600 bg-red-50/50">{{ formatQtd(item.saidas_semana4) }}</td>
-              <td class="px-1 py-2 text-xs text-center text-red-600 bg-red-50/50">{{ formatQtd(item.saidas_semana5) }}</td>
-              <td class="px-1 py-2 text-xs text-center text-red-600 bg-red-50/50">{{ formatQtd(item.saidas_semana6) }}</td>
-              <td class="px-1 py-2 text-xs text-center font-medium text-red-700 bg-red-100 border-r">{{ formatQtd(item.total_saidas) }}</td>
               <!-- Entradas -->
               <td class="px-1 py-2 text-xs text-center text-green-600 bg-green-50/50">{{ formatQtd(item.entradas_semana1) }}</td>
               <td class="px-1 py-2 text-xs text-center text-green-600 bg-green-50/50">{{ formatQtd(item.entradas_semana2) }}</td>
@@ -147,34 +155,32 @@
               <td class="px-1 py-2 text-xs text-center text-green-600 bg-green-50/50">{{ formatQtd(item.entradas_semana5) }}</td>
               <td class="px-1 py-2 text-xs text-center text-green-600 bg-green-50/50">{{ formatQtd(item.entradas_semana6) }}</td>
               <td class="px-1 py-2 text-xs text-center font-medium text-green-700 bg-green-100 border-r">{{ formatQtd(item.total_entradas) }}</td>
+              <!-- Saídas -->
+              <td class="px-1 py-2 text-xs text-center text-red-600 bg-red-50/50">{{ formatQtd(item.saidas_semana1) }}</td>
+              <td class="px-1 py-2 text-xs text-center text-red-600 bg-red-50/50">{{ formatQtd(item.saidas_semana2) }}</td>
+              <td class="px-1 py-2 text-xs text-center text-red-600 bg-red-50/50">{{ formatQtd(item.saidas_semana3) }}</td>
+              <td class="px-1 py-2 text-xs text-center text-red-600 bg-red-50/50">{{ formatQtd(item.saidas_semana4) }}</td>
+              <td class="px-1 py-2 text-xs text-center text-red-600 bg-red-50/50">{{ formatQtd(item.saidas_semana5) }}</td>
+              <td class="px-1 py-2 text-xs text-center text-red-600 bg-red-50/50">{{ formatQtd(item.saidas_semana6) }}</td>
+              <td class="px-1 py-2 text-xs text-center font-medium text-red-700 bg-red-100 border-r">{{ formatQtd(item.total_saidas) }}</td>
               <!-- Totais -->
               <td class="px-2 py-2 text-xs text-center font-medium text-blue-600 border-r">{{ formatQtd(item.estoque_final) }}</td>
               <td class="px-2 py-2 text-xs text-center text-gray-600 border-r">{{ formatCurrencyShort(item.custo) }}</td>
               <td class="px-2 py-2 text-xs text-center font-medium text-gray-900 border-r">{{ formatCurrencyShort(item.valor_total) }}</td>
-              <!-- CMV e Giro -->
-              <td class="px-2 py-2 text-xs text-center font-medium text-orange-600 bg-orange-50/50 border-r">{{ formatCurrencyShort(item.cmv || 0) }}</td>
-              <td class="px-2 py-2 text-xs text-center text-purple-600 bg-purple-50/50 border-r">
-                <span v-if="item.giro_dias !== null && item.giro_dias !== undefined">{{ formatQtd(item.giro_dias) }}d</span>
-                <span v-else class="text-gray-400">-</span>
-              </td>
-              <td class="px-2 py-2 text-xs text-center text-purple-600 bg-purple-50/50">
-                <span v-if="item.vezes_mes !== null && item.vezes_mes !== undefined">{{ formatQtd(item.vezes_mes) }}x</span>
-                <span v-else class="text-gray-400">-</span>
-              </td>
+              <!-- CMV -->
+              <td class="px-2 py-2 text-xs text-center font-medium text-orange-600 bg-orange-50/50">{{ formatCurrencyShort(item.cmv || 0) }}</td>
             </tr>
           </tbody>
           <tfoot class="bg-gray-100">
             <tr class="font-semibold">
               <td colspan="2" class="px-3 py-2 text-xs text-gray-700 border-r">TOTAL</td>
               <td class="px-3 py-2 text-xs text-center text-gray-700 border-r">-</td>
-              <td colspan="7" class="px-3 py-2 text-xs text-center text-red-700 border-r bg-red-100">{{ formatQtd(totais.saidas) }}</td>
               <td colspan="7" class="px-3 py-2 text-xs text-center text-green-700 border-r bg-green-100">{{ formatQtd(totais.entradas) }}</td>
+              <td colspan="7" class="px-3 py-2 text-xs text-center text-red-700 border-r bg-red-100">{{ formatQtd(totais.saidas) }}</td>
               <td class="px-3 py-2 text-xs text-center text-blue-700 border-r">-</td>
               <td class="px-3 py-2 text-xs text-center text-gray-700 border-r">-</td>
               <td class="px-3 py-2 text-xs text-center text-gray-900 border-r">{{ formatCurrencyShort(totais.valor) }}</td>
-              <td class="px-3 py-2 text-xs text-center text-orange-700 bg-orange-100 border-r">{{ formatCurrencyShort(totais.cmv) }}</td>
-              <td class="px-3 py-2 text-xs text-center text-purple-700 bg-purple-100 border-r">-</td>
-              <td class="px-3 py-2 text-xs text-center text-purple-700 bg-purple-100">-</td>
+              <td class="px-3 py-2 text-xs text-center text-orange-700 bg-orange-100">{{ formatCurrencyShort(totais.cmv) }}</td>
             </tr>
           </tfoot>
         </table>
@@ -187,32 +193,6 @@
       />
     </UCard>
 
-    <!-- Legenda -->
-    <UCard>
-      <h4 class="font-semibold mb-3">Legenda das colunas:</h4>
-      <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 text-sm">
-        <div>
-          <p class="font-medium text-gray-900">E.I. / E.F.</p>
-          <p class="text-gray-600">Estoque Inicial / Final</p>
-        </div>
-        <div>
-          <p class="font-medium text-gray-900">S1 a S6</p>
-          <p class="text-gray-600">Semanas 1 a 6 do mês</p>
-        </div>
-        <div>
-          <p class="font-medium text-orange-600">CMV</p>
-          <p class="text-gray-600">Custo da Mercadoria Vendida (excluindo MTP)</p>
-        </div>
-        <div>
-          <p class="font-medium text-purple-600">Giro (dias)</p>
-          <p class="text-gray-600">Quantos dias o estoque dura: (Est.Final / CMV) * 30</p>
-        </div>
-        <div>
-          <p class="font-medium text-purple-600">Vz/Mês</p>
-          <p class="text-gray-600">Vezes que o estoque gira no mês: CMV / Est.Final</p>
-        </div>
-      </div>
-    </UCard>
   </div>
 </template>
 
@@ -283,6 +263,27 @@ const totais = computed(() => {
     valor: data.reduce((sum, p) => sum + p.valor_total, 0),
     cmv: data.reduce((sum, p) => sum + (p.cmv || 0), 0)
   }
+})
+
+const semanas = computed(() => {
+  const ano = selectedAno.value
+  const mes = selectedMes.value - 1
+  const resultado: string[] = []
+
+  for (let i = 0; i < 6; i++) {
+    const inicio = new Date(ano, mes, i * 5 + 1)
+    const fim = new Date(ano, mes, Math.min((i + 1) * 5, new Date(ano, mes + 1, 0).getDate()))
+
+    if (inicio.getMonth() !== mes) {
+      resultado.push('')
+      continue
+    }
+
+    const formatDay = (d: Date) => d.getDate().toString().padStart(2, '0')
+    resultado.push(`${formatDay(inicio)} a ${formatDay(fim)}/${mes + 1}`)
+  }
+
+  return resultado
 })
 
 const formatQtd = (value: number | null | undefined) => {

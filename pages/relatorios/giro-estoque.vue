@@ -106,27 +106,6 @@
         @update:page-size="pageSize = $event"
       />
     </UCard>
-
-    <!-- Explicação -->
-    <UCard>
-      <h4 class="font-semibold mb-3">Como interpretar o Giro de Estoque:</h4>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
-        <div>
-          <p class="font-medium text-gray-900">Giro em Dias</p>
-          <p>Indica quantos dias o estoque demora para ser totalmente renovado. Quanto menor, melhor a eficiência.</p>
-          <ul class="mt-2 list-disc list-inside">
-            <li class="text-green-600">Até 30 dias: Excelente</li>
-            <li class="text-yellow-600">30-60 dias: Bom</li>
-            <li class="text-red-600">Acima de 60 dias: Atenção</li>
-          </ul>
-        </div>
-        <div>
-          <p class="font-medium text-gray-900">Vezes por Mês</p>
-          <p>Indica quantas vezes o estoque é renovado por mês. Quanto maior, mais eficiente.</p>
-          <p class="mt-2"><strong>Fórmula:</strong> CMV / Estoque Médio</p>
-        </div>
-      </div>
-    </UCard>
   </div>
 </template>
 

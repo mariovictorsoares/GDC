@@ -6,10 +6,16 @@
         <h1 class="text-2xl font-bold text-gray-900">Produtos</h1>
         <p class="text-sm text-gray-500">Gerencie o cadastro de produtos</p>
       </div>
-      <UButton color="primary" class="w-full sm:w-auto" @click="openModal()">
-        <UIcon name="i-heroicons-plus" class="w-4 h-4 mr-2" />
-        Novo Produto
-      </UButton>
+      <div class="flex gap-2">
+        <UButton color="white" class="w-full sm:w-auto" @click="openUnidadesModal()">
+          <UIcon name="i-heroicons-cog-6-tooth" class="w-4 h-4 mr-2" />
+          Gerenciar Unidades
+        </UButton>
+        <UButton color="primary" class="w-full sm:w-auto" @click="openModal()">
+          <UIcon name="i-heroicons-plus" class="w-4 h-4 mr-2" />
+          Novo Produto
+        </UButton>
+      </div>
     </div>
 
     <!-- Filtros -->
@@ -22,9 +28,16 @@
           class="flex-1 min-w-0 sm:min-w-64"
         />
         <USelect
-          v-model="filterCategoria"
-          :options="categoriaOptions"
-          placeholder="Categoria"
+          v-model="filterGrupo"
+          :options="grupoOptions"
+          placeholder="Grupo"
+          class="w-full sm:w-40"
+          @change="filterSubgrupo = ''"
+        />
+        <USelect
+          v-model="filterSubgrupo"
+          :options="subgrupoFilterOptions"
+          placeholder="Subgrupo"
           class="w-full sm:w-48"
         />
         <USelect
@@ -59,10 +72,13 @@
           <span class="font-semibold text-gray-900 dark:text-white">{{ row.nome }}</span>
         </template>
 
-        <template #categoria-data="{ row }">
-          <UBadge color="gray" variant="soft">
-            {{ row.categoria?.nome || '-' }}
-          </UBadge>
+        <template #subgrupo-data="{ row }">
+          <div class="flex flex-col">
+            <UBadge color="gray" variant="soft">
+              {{ row.subgrupo?.nome || '-' }}
+            </UBadge>
+            <span class="text-xs text-gray-400 mt-1">{{ row.subgrupo?.grupo?.nome || '' }}</span>
+          </div>
         </template>
 
         <template #unidade-data="{ row }">
@@ -93,14 +109,6 @@
               @click="openModal(row)"
             />
             <UButton
-              color="blue"
-              variant="ghost"
-              icon="i-heroicons-currency-dollar"
-              size="xs"
-              title="Custos Mensais"
-              @click="openCustosModal(row)"
-            />
-            <UButton
               color="red"
               variant="ghost"
               icon="i-heroicons-trash"
@@ -121,6 +129,7 @@
     <!-- Modal de Cadastro/Edição -->
     <UModal
       v-model="modalOpen"
+      :prevent-close="unidadesModalOpen"
       :ui="{
         width: 'sm:max-w-2xl',
         overlay: { background: 'bg-gray-900/50 backdrop-blur-sm' },
@@ -150,20 +159,46 @@
               <UInput v-model="form.nome" placeholder="Nome do produto" />
             </UFormGroup>
 
-            <UFormGroup label="Categoria" required>
+            <UFormGroup label="Grupo" required>
               <USelect
-                v-model="form.categoria_id"
-                :options="categoriasSelect"
-                placeholder="Selecione a categoria"
+                v-model="form.grupo_id"
+                :options="gruposSelect"
+                placeholder="Selecione o grupo"
+                :disabled="!!editingProduto"
+                :ui="editingProduto ? { color: { white: { outline: 'bg-gray-100 text-gray-500 cursor-not-allowed' } } } : {}"
+                @change="form.subgrupo_id = ''"
+              />
+            </UFormGroup>
+
+            <UFormGroup label="Subgrupo" required>
+              <USelect
+                v-model="form.subgrupo_id"
+                :options="subgruposSelectFiltered"
+                placeholder="Selecione o subgrupo"
+                :disabled="!!editingProduto || !form.grupo_id"
+                :ui="editingProduto || !form.grupo_id ? { color: { white: { outline: 'bg-gray-100 text-gray-500 cursor-not-allowed' } } } : {}"
               />
             </UFormGroup>
 
             <UFormGroup label="Unidade" required>
-              <USelect
-                v-model="form.unidade_id"
-                :options="unidadesSelect"
-                placeholder="Selecione a unidade"
-              />
+              <div class="flex gap-2">
+                <USelect
+                  v-model="form.unidade_id"
+                  :options="unidadesSelect"
+                  placeholder="Selecione a unidade"
+                  class="flex-1"
+                  :disabled="!!editingProduto"
+                  :ui="editingProduto ? { color: { white: { outline: 'bg-gray-100 text-gray-500 cursor-not-allowed' } } } : {}"
+                />
+                <UButton
+                  v-if="!editingProduto"
+                  color="gray"
+                  variant="soft"
+                  icon="i-heroicons-cog-6-tooth"
+                  @click="openUnidadesModal()"
+                  title="Gerenciar Unidades"
+                />
+              </div>
             </UFormGroup>
 
             <UFormGroup label="Estoque Inicial">
@@ -189,23 +224,6 @@
                 v-model.number="form.estoque_minimo"
                 type="number"
                 step="0.0001"
-                placeholder="0"
-              />
-            </UFormGroup>
-
-            <UFormGroup label="Margem de Segurança (%)">
-              <UInput
-                v-model.number="form.margem_seguranca"
-                type="number"
-                step="0.01"
-                placeholder="0"
-              />
-            </UFormGroup>
-
-            <UFormGroup label="Tempo de Reposição (dias)">
-              <UInput
-                v-model.number="form.tempo_reposicao"
-                type="number"
                 placeholder="0"
               />
             </UFormGroup>
@@ -327,32 +345,184 @@
         </template>
       </UCard>
     </UModal>
+
+    <!-- Modal de Gerenciamento de Unidades -->
+    <UModal
+      v-model="unidadesModalOpen"
+      :prevent-close="deleteUnidadeModalOpen"
+      :ui="{
+        width: 'sm:max-w-2xl',
+        overlay: { background: 'bg-gray-900/50 backdrop-blur-sm' },
+        background: 'bg-white dark:bg-gray-800',
+        ring: 'ring-1 ring-gray-200 dark:ring-gray-700',
+        shadow: 'shadow-2xl'
+      }"
+    >
+      <UCard :ui="{ background: 'bg-transparent', ring: 'ring-0', shadow: '', divide: 'divide-gray-100 dark:divide-gray-700' }">
+        <template #header>
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-semibold">Gerenciar Unidades</h3>
+            <UButton
+              color="gray"
+              variant="ghost"
+              icon="i-heroicons-x-mark"
+              @click="unidadesModalOpen = false"
+            />
+          </div>
+        </template>
+
+        <!-- Formulário de Nova Unidade -->
+        <div class="mb-4 p-4 bg-gray-50 rounded-lg">
+          <h4 class="text-sm font-medium text-gray-700 mb-3">{{ editingUnidade ? 'Editar Unidade' : 'Nova Unidade' }}</h4>
+          <div class="flex gap-2">
+            <UInput
+              v-model="unidadeForm.sigla"
+              placeholder="Sigla (ex: KG)"
+              class="w-24"
+              maxlength="10"
+            />
+            <UInput
+              v-model="unidadeForm.descricao"
+              placeholder="Descrição (ex: Quilograma)"
+              class="flex-1"
+            />
+            <UButton
+              color="primary"
+              :loading="savingUnidade"
+              @click="saveUnidade"
+            >
+              {{ editingUnidade ? 'Salvar' : 'Adicionar' }}
+            </UButton>
+            <UButton
+              v-if="editingUnidade"
+              color="gray"
+              variant="ghost"
+              @click="cancelEditUnidade"
+            >
+              Cancelar
+            </UButton>
+          </div>
+        </div>
+
+        <!-- Lista de Unidades -->
+        <div class="max-h-80 overflow-y-auto border rounded-lg">
+          <UTable
+            :columns="unidadesColumns"
+            :rows="unidades"
+            :ui="{
+              td: { color: 'text-gray-700 dark:text-gray-200' },
+              th: { color: 'text-gray-900 dark:text-white' },
+              thead: 'sticky top-0 bg-white dark:bg-gray-800 z-10'
+            }"
+          >
+            <template #empty-state>
+              <div class="flex flex-col items-center justify-center py-6 text-gray-500">
+                <UIcon name="i-heroicons-inbox" class="w-8 h-8 mb-2" />
+                <p class="text-sm">Nenhuma unidade cadastrada</p>
+              </div>
+            </template>
+
+            <template #sigla-data="{ row }">
+              <span class="font-semibold text-gray-900 dark:text-white">{{ row.sigla }}</span>
+            </template>
+
+            <template #descricao-data="{ row }">
+              <span class="text-gray-600">{{ row.descricao || '—' }}</span>
+            </template>
+
+            <template #actions-data="{ row }">
+              <div class="flex gap-1 justify-end">
+                <UButton
+                  color="gray"
+                  variant="ghost"
+                  icon="i-heroicons-pencil-square"
+                  size="xs"
+                  @click="editUnidade(row)"
+                />
+                <UButton
+                  color="red"
+                  variant="ghost"
+                  icon="i-heroicons-trash"
+                  size="xs"
+                  @click="confirmDeleteUnidade(row)"
+                />
+              </div>
+            </template>
+          </UTable>
+        </div>
+
+        <template #footer>
+          <div class="flex justify-end">
+            <UButton color="gray" @click="unidadesModalOpen = false">
+              Fechar
+            </UButton>
+          </div>
+        </template>
+      </UCard>
+    </UModal>
+
+    <!-- Modal de Confirmação de Exclusão de Unidade -->
+    <UModal
+      v-model="deleteUnidadeModalOpen"
+      :ui="{
+        overlay: { background: 'bg-gray-900/50 backdrop-blur-sm' },
+        background: 'bg-white dark:bg-gray-800',
+        ring: 'ring-1 ring-gray-200 dark:ring-gray-700',
+        shadow: 'shadow-2xl'
+      }"
+    >
+      <UCard :ui="{ background: 'bg-transparent', ring: 'ring-0', shadow: '', divide: 'divide-gray-100 dark:divide-gray-700' }">
+        <template #header>
+          <h3 class="text-lg font-semibold text-red-600">Confirmar Exclusão</h3>
+        </template>
+
+        <p>Tem certeza que deseja excluir a unidade <strong>{{ deletingUnidade?.sigla }}</strong>?</p>
+        <p class="text-sm text-gray-500 mt-2">Esta ação não pode ser desfeita.</p>
+
+        <template #footer>
+          <div class="flex flex-col-reverse sm:flex-row justify-end gap-3">
+            <UButton color="gray" variant="ghost" class="w-full sm:w-auto" @click="deleteUnidadeModalOpen = false">
+              Cancelar
+            </UButton>
+            <UButton color="red" class="w-full sm:w-auto" :loading="deletingUnidadeLoading" @click="deleteUnidade">
+              Excluir
+            </UButton>
+          </div>
+        </template>
+      </UCard>
+    </UModal>
   </div>
 </template>
 
 <script setup lang="ts">
-import type { Produto, Categoria, Unidade } from '~/types'
+import type { Produto, Grupo, Subgrupo, Unidade } from '~/types'
 
 const {
   getProdutos,
   createProduto,
   updateProduto,
   deleteProduto: removeProduto,
-  getCategorias,
+  getGrupos,
+  getSubgrupos,
   getUnidades,
+  createUnidade,
+  updateUnidade,
+  deleteUnidade: removeUnidade,
   getCustosMensais,
   upsertCustoMensal
 } = useEstoque()
 const toast = useToast()
 
 const produtos = ref<Produto[]>([])
-const categorias = ref<Categoria[]>([])
+const grupos = ref<Grupo[]>([])
+const subgrupos = ref<Subgrupo[]>([])
 const unidades = ref<Unidade[]>([])
 const loading = ref(true)
 const saving = ref(false)
 const deleting = ref(false)
 const search = ref('')
-const filterCategoria = ref('')
+const filterGrupo = ref('')
+const filterSubgrupo = ref('')
 const filterStatus = ref('true')
 const modalOpen = ref(false)
 const custosModalOpen = ref(false)
@@ -363,11 +533,24 @@ const deletingProduto = ref<Produto | null>(null)
 const custoAno = ref(new Date().getFullYear())
 const custosForm = ref<Record<number, number>>({})
 
+// Unidades
+const unidadesModalOpen = ref(false)
+const deleteUnidadeModalOpen = ref(false)
+const editingUnidade = ref<Unidade | null>(null)
+const deletingUnidade = ref<Unidade | null>(null)
+const savingUnidade = ref(false)
+const deletingUnidadeLoading = ref(false)
+const unidadeForm = ref({
+  sigla: '',
+  descricao: ''
+})
+
 const mesesNomes = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
 
 const form = ref({
   nome: '',
-  categoria_id: '',
+  grupo_id: '',
+  subgrupo_id: '',
   unidade_id: '',
   estoque_inicial: 0,
   preco_inicial: 0,
@@ -379,11 +562,17 @@ const form = ref({
 
 const columns = [
   { key: 'nome', label: 'Nome', sortable: true },
-  { key: 'categoria', label: 'Categoria', sortable: true },
+  { key: 'subgrupo', label: 'Subgrupo', sortable: true },
   { key: 'unidade', label: 'Unid.', sortable: true },
   { key: 'estoque_inicial', label: 'Est. Inicial' },
   { key: 'preco_inicial', label: 'Preço Inicial' },
   { key: 'ativo', label: 'Status' },
+  { key: 'actions', label: 'Ações', class: 'text-right', rowClass: 'text-right' }
+]
+
+const unidadesColumns = [
+  { key: 'sigla', label: 'Sigla', sortable: true },
+  { key: 'descricao', label: 'Descrição', sortable: true },
   { key: 'actions', label: 'Ações', class: 'text-right', rowClass: 'text-right' }
 ]
 
@@ -393,14 +582,32 @@ const statusOptions = [
   { label: 'Inativos', value: 'false' }
 ]
 
-const categoriaOptions = computed(() => [
-  { label: 'Todas', value: '' },
-  ...categorias.value.map(c => ({ label: c.nome, value: c.id }))
+const grupoOptions = computed(() => [
+  { label: 'Todos', value: '' },
+  ...grupos.value.map(g => ({ label: g.nome, value: g.id }))
 ])
 
-const categoriasSelect = computed(() =>
-  categorias.value.map(c => ({ label: c.nome, value: c.id }))
+const subgrupoFilterOptions = computed(() => {
+  const options = [{ label: 'Todos', value: '' }]
+
+  let filtered = subgrupos.value
+  if (filterGrupo.value) {
+    filtered = subgrupos.value.filter(s => s.grupo_id === filterGrupo.value)
+  }
+
+  return [...options, ...filtered.map(s => ({ label: s.nome, value: s.id }))]
+})
+
+const gruposSelect = computed(() =>
+  grupos.value.map(g => ({ label: g.nome, value: g.id }))
 )
+
+const subgruposSelectFiltered = computed(() => {
+  if (!form.value.grupo_id) return []
+  return subgrupos.value
+    .filter(s => s.grupo_id === form.value.grupo_id)
+    .map(s => ({ label: s.nome, value: s.id }))
+})
 
 const unidadesSelect = computed(() =>
   unidades.value.map(u => ({ label: `${u.sigla} - ${u.descricao || u.sigla}`, value: u.id }))
@@ -421,12 +628,17 @@ const filteredProdutos = computed(() => {
     const term = search.value.toLowerCase()
     result = result.filter(p =>
       p.nome.toLowerCase().includes(term) ||
-      p.categoria?.nome?.toLowerCase().includes(term)
+      p.subgrupo?.nome?.toLowerCase().includes(term) ||
+      p.subgrupo?.grupo?.nome?.toLowerCase().includes(term)
     )
   }
 
-  if (filterCategoria.value) {
-    result = result.filter(p => p.categoria_id === filterCategoria.value)
+  if (filterGrupo.value) {
+    result = result.filter(p => p.subgrupo?.grupo_id === filterGrupo.value)
+  }
+
+  if (filterSubgrupo.value) {
+    result = result.filter(p => p.subgrupo_id === filterSubgrupo.value)
   }
 
   if (filterStatus.value) {
@@ -438,6 +650,12 @@ const filteredProdutos = computed(() => {
 })
 
 const { page, pageSize, paginatedItems } = usePagination(filteredProdutos)
+
+// Formata texto com primeira letra maiúscula e resto minúsculo
+const formatarNome = (texto: string) => {
+  if (!texto) return ''
+  return texto.charAt(0).toUpperCase() + texto.slice(1).toLowerCase()
+}
 
 const formatNumber = (value: number) => {
   return new Intl.NumberFormat('pt-BR', {
@@ -456,13 +674,15 @@ const formatCurrency = (value: number) => {
 const loadData = async () => {
   try {
     loading.value = true
-    const [prods, cats, unids] = await Promise.all([
+    const [prods, grps, subgrps, unids] = await Promise.all([
       getProdutos(false),
-      getCategorias(),
+      getGrupos(),
+      getSubgrupos(),
       getUnidades()
     ])
     produtos.value = prods
-    categorias.value = cats
+    grupos.value = grps
+    subgrupos.value = subgrps
     unidades.value = unids
   } catch (error: any) {
     toast.add({
@@ -480,7 +700,8 @@ const openModal = (produto?: Produto) => {
     editingProduto.value = produto
     form.value = {
       nome: produto.nome,
-      categoria_id: produto.categoria_id,
+      grupo_id: produto.subgrupo?.grupo_id || '',
+      subgrupo_id: produto.subgrupo_id || '',
       unidade_id: produto.unidade_id,
       estoque_inicial: produto.estoque_inicial,
       preco_inicial: produto.preco_inicial,
@@ -493,7 +714,8 @@ const openModal = (produto?: Produto) => {
     editingProduto.value = null
     form.value = {
       nome: '',
-      categoria_id: '',
+      grupo_id: '',
+      subgrupo_id: '',
       unidade_id: '',
       estoque_inicial: 0,
       preco_inicial: 0,
@@ -561,31 +783,49 @@ watch(custoAno, async () => {
 })
 
 const saveProduto = async () => {
-  if (!form.value.nome || !form.value.categoria_id || !form.value.unidade_id) {
+  if (!form.value.nome || !form.value.subgrupo_id || !form.value.unidade_id) {
     toast.add({
       title: 'Erro',
-      description: 'Nome, categoria e unidade são obrigatórios',
+      description: 'Nome, subgrupo e unidade são obrigatórios',
       color: 'red'
     })
     return
   }
 
+  // Formata o nome antes de salvar
+  form.value.nome = formatarNome(form.value.nome)
+
+  // Prepara dados para enviar (sem grupo_id que é apenas para o formulário)
+  const dadosProduto = {
+    nome: form.value.nome,
+    subgrupo_id: form.value.subgrupo_id,
+    unidade_id: form.value.unidade_id,
+    estoque_inicial: form.value.estoque_inicial,
+    preco_inicial: form.value.preco_inicial,
+    estoque_minimo: form.value.estoque_minimo,
+    margem_seguranca: form.value.margem_seguranca,
+    tempo_reposicao: form.value.tempo_reposicao,
+    ativo: form.value.ativo
+  }
+
   try {
     saving.value = true
     if (editingProduto.value) {
-      await updateProduto(editingProduto.value.id, form.value)
+      await updateProduto(editingProduto.value.id, dadosProduto)
       toast.add({
         title: 'Sucesso',
         description: 'Produto atualizado com sucesso',
         color: 'green'
       })
     } else {
-      await createProduto(form.value)
+      await createProduto(dadosProduto)
       toast.add({
         title: 'Sucesso',
         description: 'Produto criado com sucesso',
         color: 'green'
       })
+      // Volta para página 1 ao criar novo produto
+      page.value = 1
     }
     modalOpen.value = false
     await loadData()
@@ -626,6 +866,109 @@ const deleteProduto = async () => {
     })
   } finally {
     deleting.value = false
+  }
+}
+
+// ==========================================
+// Funções de Unidades
+// ==========================================
+
+const openUnidadesModal = () => {
+  editingUnidade.value = null
+  unidadeForm.value = { sigla: '', descricao: '' }
+  unidadesModalOpen.value = true
+}
+
+const editUnidade = (unidade: Unidade) => {
+  editingUnidade.value = unidade
+  unidadeForm.value = {
+    sigla: unidade.sigla,
+    descricao: unidade.descricao || ''
+  }
+}
+
+const cancelEditUnidade = () => {
+  editingUnidade.value = null
+  unidadeForm.value = { sigla: '', descricao: '' }
+}
+
+const saveUnidade = async () => {
+  if (!unidadeForm.value.sigla) {
+    toast.add({
+      title: 'Erro',
+      description: 'A sigla é obrigatória',
+      color: 'red'
+    })
+    return
+  }
+
+  // Formata a sigla (maiúscula) e descrição
+  unidadeForm.value.sigla = unidadeForm.value.sigla.toUpperCase()
+  if (unidadeForm.value.descricao) {
+    unidadeForm.value.descricao = formatarNome(unidadeForm.value.descricao)
+  }
+
+  try {
+    savingUnidade.value = true
+    if (editingUnidade.value) {
+      await updateUnidade(editingUnidade.value.id, unidadeForm.value)
+      toast.add({
+        title: 'Sucesso',
+        description: 'Unidade atualizada com sucesso',
+        color: 'green'
+      })
+    } else {
+      await createUnidade(unidadeForm.value)
+      toast.add({
+        title: 'Sucesso',
+        description: 'Unidade criada com sucesso',
+        color: 'green'
+      })
+    }
+    editingUnidade.value = null
+    unidadeForm.value = { sigla: '', descricao: '' }
+    unidades.value = await getUnidades()
+  } catch (error: any) {
+    let mensagem = 'Erro ao salvar unidade'
+    if (error.message?.includes('unidades_sigla_key') || error.code === '23505') {
+      mensagem = 'Já existe uma unidade com essa sigla'
+    }
+    toast.add({
+      title: 'Erro',
+      description: mensagem,
+      color: 'red'
+    })
+  } finally {
+    savingUnidade.value = false
+  }
+}
+
+const confirmDeleteUnidade = (unidade: Unidade) => {
+  deletingUnidade.value = unidade
+  deleteUnidadeModalOpen.value = true
+}
+
+const deleteUnidade = async () => {
+  if (!deletingUnidade.value) return
+
+  try {
+    deletingUnidadeLoading.value = true
+    await removeUnidade(deletingUnidade.value.id)
+    toast.add({
+      title: 'Sucesso',
+      description: 'Unidade excluída com sucesso',
+      color: 'green'
+    })
+    deleteUnidadeModalOpen.value = false
+    unidades.value = await getUnidades()
+  } catch (error: any) {
+    toast.add({
+      title: 'Erro',
+      description: error.message || 'Erro ao excluir unidade',
+      color: 'red'
+    })
+  } finally {
+    deletingUnidadeLoading.value = false
   }
 }
 

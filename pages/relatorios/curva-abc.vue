@@ -24,7 +24,7 @@
         <UCard class="border-l-4 border-green-500">
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm text-gray-500">Classe A</p>
+              <p class="text-sm text-gray-500">Curva A</p>
               <p class="text-2xl font-bold text-green-600">{{ resumoEstoque.A.quantidade }}</p>
               <p class="text-xs text-gray-500">{{ resumoEstoque.A.percentual.toFixed(1) }}% dos itens</p>
             </div>
@@ -38,7 +38,7 @@
         <UCard class="border-l-4 border-yellow-500">
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm text-gray-500">Classe B</p>
+              <p class="text-sm text-gray-500">Curva B</p>
               <p class="text-2xl font-bold text-yellow-600">{{ resumoEstoque.B.quantidade }}</p>
               <p class="text-xs text-gray-500">{{ resumoEstoque.B.percentual.toFixed(1) }}% dos itens</p>
             </div>
@@ -52,7 +52,7 @@
         <UCard class="border-l-4 border-gray-400">
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm text-gray-500">Classe C</p>
+              <p class="text-sm text-gray-500">Curva C</p>
               <p class="text-2xl font-bold text-gray-600">{{ resumoEstoque.C.quantidade }}</p>
               <p class="text-xs text-gray-500">{{ resumoEstoque.C.percentual.toFixed(1) }}% dos itens</p>
             </div>
@@ -81,7 +81,13 @@
       <!-- Filtros -->
       <UCard>
         <div class="flex flex-wrap gap-4 items-end">
-          <UFormGroup label="Filtrar por Classe">
+          <UFormGroup label="Ano">
+            <USelect v-model="selectedAno" :options="anosOptions" class="w-32" />
+          </UFormGroup>
+          <UFormGroup label="Mês">
+            <USelect v-model="selectedMes" :options="mesesOptions" class="w-40" />
+          </UFormGroup>
+          <UFormGroup label="Filtrar por Curva">
             <USelect v-model="filterClasseEstoque" :options="classeOptions" class="w-32" />
           </UFormGroup>
           <UFormGroup label="Buscar">
@@ -116,21 +122,6 @@
           <template #valor-data="{ row }">
             {{ formatCurrency(row.valor) }}
           </template>
-          <template #percentual_valor-data="{ row }">
-            {{ row.percentual_valor.toFixed(2) }}%
-          </template>
-          <template #percentual_acumulado-data="{ row }">
-            <div class="flex items-center gap-2">
-              <div class="flex-1 bg-gray-200 rounded-full h-2 w-24">
-                <div
-                  class="h-2 rounded-full"
-                  :class="getClasseColor(row.classe)"
-                  :style="{ width: `${Math.min(row.percentual_acumulado, 100)}%` }"
-                />
-              </div>
-              <span class="text-sm">{{ row.percentual_acumulado.toFixed(1) }}%</span>
-            </div>
-          </template>
           <template #classe-data="{ row }">
             <UBadge :color="getClasseBadgeColor(row.classe)">{{ row.classe }}</UBadge>
           </template>
@@ -151,7 +142,7 @@
         <UCard class="border-l-4 border-green-500">
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm text-gray-500">Classe A</p>
+              <p class="text-sm text-gray-500">Curva A</p>
               <p class="text-2xl font-bold text-green-600">{{ resumoCMV.A.quantidade }}</p>
               <p class="text-xs text-gray-500">{{ resumoCMV.A.percentual.toFixed(1) }}% dos itens</p>
             </div>
@@ -165,7 +156,7 @@
         <UCard class="border-l-4 border-yellow-500">
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm text-gray-500">Classe B</p>
+              <p class="text-sm text-gray-500">Curva B</p>
               <p class="text-2xl font-bold text-yellow-600">{{ resumoCMV.B.quantidade }}</p>
               <p class="text-xs text-gray-500">{{ resumoCMV.B.percentual.toFixed(1) }}% dos itens</p>
             </div>
@@ -179,7 +170,7 @@
         <UCard class="border-l-4 border-gray-400">
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm text-gray-500">Classe C</p>
+              <p class="text-sm text-gray-500">Curva C</p>
               <p class="text-2xl font-bold text-gray-600">{{ resumoCMV.C.quantidade }}</p>
               <p class="text-xs text-gray-500">{{ resumoCMV.C.percentual.toFixed(1) }}% dos itens</p>
             </div>
@@ -245,21 +236,6 @@
           </template>
           <template #valor_cmv-data="{ row }">
             <span class="text-red-600 font-medium">{{ formatCurrency(row.valor_cmv) }}</span>
-          </template>
-          <template #percentual_valor-data="{ row }">
-            {{ row.percentual_valor.toFixed(2) }}%
-          </template>
-          <template #percentual_acumulado-data="{ row }">
-            <div class="flex items-center gap-2">
-              <div class="flex-1 bg-gray-200 rounded-full h-2 w-24">
-                <div
-                  class="h-2 rounded-full"
-                  :class="getClasseColor(row.classe)"
-                  :style="{ width: `${Math.min(row.percentual_acumulado, 100)}%` }"
-                />
-              </div>
-              <span class="text-sm">{{ row.percentual_acumulado.toFixed(1) }}%</span>
-            </div>
           </template>
           <template #classe-data="{ row }">
             <UBadge :color="getClasseBadgeColor(row.classe)">{{ row.classe }}</UBadge>
@@ -416,33 +392,6 @@
       </UCard>
     </template>
 
-    <!-- Legenda ABC (visivel em todas as tabs) -->
-    <UCard>
-      <h4 class="font-semibold mb-4">Metodologia da Curva ABC</h4>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div class="flex items-start gap-3">
-          <UBadge color="green" size="lg">A</UBadge>
-          <div>
-            <p class="font-medium text-gray-900">Classe A - Alta Prioridade</p>
-            <p class="text-sm text-gray-500">Até 80% do valor total. Itens mais valiosos que requerem controle rigoroso.</p>
-          </div>
-        </div>
-        <div class="flex items-start gap-3">
-          <UBadge color="yellow" size="lg">B</UBadge>
-          <div>
-            <p class="font-medium text-gray-900">Classe B - Média Prioridade</p>
-            <p class="text-sm text-gray-500">Entre 80% e 95% do valor. Itens com importância intermediária.</p>
-          </div>
-        </div>
-        <div class="flex items-start gap-3">
-          <UBadge color="gray" size="lg">C</UBadge>
-          <div>
-            <p class="font-medium text-gray-900">Classe C - Baixa Prioridade</p>
-            <p class="text-sm text-gray-500">Acima de 95% do valor. Itens de menor impacto financeiro.</p>
-          </div>
-        </div>
-      </div>
-    </UCard>
   </div>
 </template>
 
@@ -490,18 +439,14 @@ const columnsEstoque = [
   { key: 'categoria', label: 'Categoria' },
   { key: 'quantidade', label: 'Quantidade', sortable: true },
   { key: 'valor', label: 'Valor Estoque', sortable: true },
-  { key: 'percentual_valor', label: '% Valor', sortable: true },
-  { key: 'percentual_acumulado', label: '% Acumulado' },
-  { key: 'classe', label: 'Classe', sortable: true }
+  { key: 'classe', label: 'Curva', sortable: true }
 ]
 
 const columnsCMV = [
   { key: 'produto', label: 'Produto', sortable: true },
   { key: 'categoria', label: 'Categoria' },
   { key: 'valor_cmv', label: 'Valor CMV', sortable: true },
-  { key: 'percentual_valor', label: '% Valor', sortable: true },
-  { key: 'percentual_acumulado', label: '% Acumulado' },
-  { key: 'classe', label: 'Classe', sortable: true }
+  { key: 'classe', label: 'Curva', sortable: true }
 ]
 
 const columnsComparativo = [

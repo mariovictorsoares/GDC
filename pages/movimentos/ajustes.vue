@@ -204,19 +204,9 @@
             </p>
           </UFormGroup>
 
-          <div class="grid grid-cols-2 gap-4">
-            <UFormGroup label="Data" required>
-              <UInput v-model="form.data" type="date" />
-            </UFormGroup>
-
-            <UFormGroup label="Semana">
-              <USelect
-                v-model="form.semana"
-                :options="semanaOptions"
-                placeholder="Automático"
-              />
-            </UFormGroup>
-          </div>
+          <UFormGroup label="Data" required>
+            <UInput v-model="form.data" type="date" />
+          </UFormGroup>
 
           <!-- Estoque do Sistema -->
           <div v-if="form.produto_id" class="p-4 bg-blue-50 rounded-lg border border-blue-200">

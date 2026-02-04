@@ -3,12 +3,12 @@
     <!-- Header -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900">Destinos</h1>
-        <p class="text-sm text-gray-500">Gerencie os destinos de saída de produtos</p>
+        <h1 class="text-2xl font-bold text-gray-900">Tipos de Saída</h1>
+        <p class="text-sm text-gray-500">Gerencie os tipos de saída de produtos</p>
       </div>
       <UButton color="primary" class="w-full sm:w-auto" @click="openModal()">
         <UIcon name="i-heroicons-plus" class="w-4 h-4 mr-2" />
-        Novo Destino
+        Novo Tipo
       </UButton>
     </div>
 
@@ -17,7 +17,7 @@
       <div class="flex flex-col sm:flex-row gap-4">
         <UInput
           v-model="search"
-          placeholder="Buscar destino..."
+          placeholder="Buscar tipo de saída..."
           icon="i-heroicons-magnifying-glass"
           class="flex-1"
         />
@@ -50,7 +50,12 @@
         </template>
 
         <template #nome-data="{ row }">
-          <span class="font-semibold text-gray-900 dark:text-white">{{ row.nome }}</span>
+          <div class="flex items-center gap-2">
+            <span class="font-semibold text-gray-900 dark:text-white">{{ row.nome }}</span>
+            <UBadge v-if="row.nome === 'Principal'" color="blue" variant="soft" size="xs">
+              Padrão
+            </UBadge>
+          </div>
         </template>
 
         <template #ativo-data="{ row }">
@@ -61,20 +66,31 @@
 
         <template #actions-data="{ row }">
           <div class="flex gap-2 justify-end">
-            <UButton
-              color="gray"
-              variant="ghost"
-              icon="i-heroicons-pencil-square"
-              size="xs"
-              @click="openModal(row)"
-            />
-            <UButton
-              color="red"
-              variant="ghost"
-              icon="i-heroicons-trash"
-              size="xs"
-              @click="confirmDelete(row)"
-            />
+            <template v-if="row.nome !== 'Principal'">
+              <UButton
+                color="gray"
+                variant="ghost"
+                icon="i-heroicons-pencil-square"
+                size="xs"
+                @click="openModal(row)"
+              />
+              <UButton
+                color="red"
+                variant="ghost"
+                icon="i-heroicons-trash"
+                size="xs"
+                @click="confirmDelete(row)"
+              />
+            </template>
+            <UTooltip v-else text="Tipo padrão não pode ser editado ou excluído">
+              <UButton
+                color="gray"
+                variant="ghost"
+                icon="i-heroicons-lock-closed"
+                size="xs"
+                disabled
+              />
+            </UTooltip>
           </div>
         </template>
       </UTable>
@@ -100,7 +116,7 @@
         <template #header>
           <div class="flex items-center justify-between">
             <h3 class="text-lg font-semibold">
-              {{ editingDestino ? 'Editar Destino' : 'Novo Destino' }}
+              {{ editingDestino ? 'Editar Tipo de Saída' : 'Novo Tipo de Saída' }}
             </h3>
             <UButton
               color="gray"
@@ -113,7 +129,7 @@
 
         <form @submit.prevent="saveDestino" class="space-y-4">
           <UFormGroup label="Nome" required>
-            <UInput v-model="form.nome" placeholder="Nome do destino" />
+            <UInput v-model="form.nome" placeholder="Nome do tipo de saída" />
           </UFormGroup>
 
           <UFormGroup label="Status">
@@ -150,7 +166,7 @@
           <h3 class="text-lg font-semibold text-red-600">Confirmar Exclusão</h3>
         </template>
 
-        <p>Tem certeza que deseja excluir o destino <strong>{{ deletingDestino?.nome }}</strong>?</p>
+        <p>Tem certeza que deseja excluir o tipo de saída <strong>{{ deletingDestino?.nome }}</strong>?</p>
         <p class="text-sm text-gray-500 mt-2">Esta ação não pode ser desfeita.</p>
 
         <template #footer>
@@ -220,14 +236,27 @@ const filteredDestinos = computed(() => {
 
 const { page, pageSize, paginatedItems } = usePagination(filteredDestinos)
 
+// Formata texto com primeira letra maiúscula e resto minúsculo
+const formatarNome = (texto: string) => {
+  if (!texto) return ''
+  return texto.charAt(0).toUpperCase() + texto.slice(1).toLowerCase()
+}
+
 const loadDestinos = async () => {
   try {
     loading.value = true
     destinos.value = await getDestinos(false) // Buscar todos, incluindo inativos
+
+    // Criar tipo "Principal" se não existir
+    const principal = destinos.value.find(d => d.nome === 'Principal')
+    if (!principal) {
+      await createDestino({ nome: 'Principal', ativo: true })
+      destinos.value = await getDestinos(false)
+    }
   } catch (error: any) {
     toast.add({
       title: 'Erro',
-      description: error.message || 'Erro ao carregar destinos',
+      description: error.message || 'Erro ao carregar tipos de saída',
       color: 'red'
     })
   } finally {
@@ -259,29 +288,40 @@ const saveDestino = async () => {
     return
   }
 
+  // Formata o nome antes de salvar
+  form.value.nome = formatarNome(form.value.nome)
+
   try {
     saving.value = true
     if (editingDestino.value) {
       await updateDestino(editingDestino.value.id, form.value)
       toast.add({
         title: 'Sucesso',
-        description: 'Destino atualizado com sucesso',
+        description: 'Tipo de saída atualizado com sucesso',
         color: 'green'
       })
     } else {
       await createDestino(form.value)
       toast.add({
         title: 'Sucesso',
-        description: 'Destino criado com sucesso',
+        description: 'Tipo de saída criado com sucesso',
         color: 'green'
       })
+      // Volta para página 1 ao criar novo destino
+      page.value = 1
     }
     modalOpen.value = false
     await loadDestinos()
   } catch (error: any) {
+    let mensagem = 'Erro ao salvar tipo de saída'
+
+    if (error.message?.includes('destinos_nome_key') || error.code === '23505') {
+      mensagem = 'Já existe um tipo de saída com esse nome'
+    }
+
     toast.add({
       title: 'Erro',
-      description: error.message || 'Erro ao salvar destino',
+      description: mensagem,
       color: 'red'
     })
   } finally {
@@ -302,7 +342,7 @@ const deleteDestino = async () => {
     await removeDestino(deletingDestino.value.id)
     toast.add({
       title: 'Sucesso',
-      description: 'Destino excluído com sucesso',
+      description: 'Tipo de saída excluído com sucesso',
       color: 'green'
     })
     deleteModalOpen.value = false
@@ -310,7 +350,7 @@ const deleteDestino = async () => {
   } catch (error: any) {
     toast.add({
       title: 'Erro',
-      description: error.message || 'Erro ao excluir destino',
+      description: error.message || 'Erro ao excluir tipo de saída',
       color: 'red'
     })
   } finally {

@@ -66,28 +66,6 @@
         </div>
       </form>
     </UCard>
-
-    <!-- Informações do Sistema -->
-    <UCard>
-      <template #header>
-        <h3 class="font-semibold">Informações do Sistema</h3>
-      </template>
-
-      <div class="space-y-4">
-        <div class="flex justify-between items-center py-2 border-b">
-          <span class="text-gray-600">Versão</span>
-          <span class="font-medium">1.0.0</span>
-        </div>
-        <div class="flex justify-between items-center py-2 border-b">
-          <span class="text-gray-600">Tecnologia</span>
-          <span class="font-medium">Nuxt 3 + Supabase</span>
-        </div>
-        <div class="flex justify-between items-center py-2">
-          <span class="text-gray-600">Baseado em</span>
-          <span class="font-medium">Planilha Controle Estoque - CD</span>
-        </div>
-      </div>
-    </UCard>
   </div>
 </template>
 

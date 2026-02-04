@@ -1,5 +1,22 @@
 // Tipos base do sistema de estoque
 
+export interface Grupo {
+  id: string
+  nome: string
+  created_at?: string
+  // Relacionamentos
+  subgrupos?: Subgrupo[]
+}
+
+export interface Subgrupo {
+  id: string
+  grupo_id: string
+  nome: string
+  created_at?: string
+  // Relacionamentos
+  grupo?: Grupo
+}
+
 export interface Categoria {
   id: string
   nome: string
@@ -11,17 +28,20 @@ export interface Unidade {
   id: string
   sigla: string
   descricao?: string
+  created_at?: string
 }
 
 export interface Destino {
   id: string
   nome: string
   ativo: boolean
+  created_at?: string
 }
 
 export interface Produto {
   id: string
-  categoria_id: string
+  categoria_id?: string
+  subgrupo_id?: string
   nome: string
   unidade_id: string
   estoque_inicial: number
@@ -33,6 +53,7 @@ export interface Produto {
   created_at?: string
   // Relacionamentos
   categoria?: Categoria
+  subgrupo?: Subgrupo
   unidade?: Unidade
 }
 
@@ -213,20 +234,6 @@ export interface ComparativoABC {
   recomendacao: string
 }
 
-export interface FolhaContagem {
-  produto_id: string
-  categoria: string
-  produto: string
-  unidade: string
-  estoque_sistema: number
-  domingo?: number
-  segunda?: number
-  terca?: number
-  quarta?: number
-  quinta?: number
-  sexta?: number
-  sabado?: number
-}
 
 export interface FiltroData {
   dataInicio?: string

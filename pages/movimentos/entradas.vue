@@ -204,19 +204,9 @@
             </USelectMenu>
           </UFormGroup>
 
-          <div class="grid grid-cols-2 gap-4">
-            <UFormGroup label="Data" required>
-              <UInput v-model="form.data" type="date" />
-            </UFormGroup>
-
-            <UFormGroup label="Semana">
-              <USelect
-                v-model="form.semana"
-                :options="semanaOptions"
-                placeholder="Automático"
-              />
-            </UFormGroup>
-          </div>
+          <UFormGroup label="Data" required>
+            <UInput v-model="form.data" type="date" />
+          </UFormGroup>
 
           <div class="grid grid-cols-2 gap-4">
             <UFormGroup label="Quantidade" required>
@@ -229,9 +219,9 @@
               />
             </UFormGroup>
 
-            <UFormGroup label="Custo Unitário" required>
+            <UFormGroup label="Valor Total" required>
               <UInput
-                v-model.number="form.custo_unitario"
+                v-model.number="form.valor_total"
                 type="number"
                 step="0.01"
                 min="0"
@@ -242,9 +232,9 @@
 
           <div class="p-3 bg-green-50 rounded-lg">
             <div class="flex justify-between items-center">
-              <span class="text-sm text-gray-600">Valor Total:</span>
+              <span class="text-sm text-gray-600">Custo Unitário:</span>
               <span class="text-lg font-bold text-green-600">
-                {{ formatCurrency(valorTotalCalc) }}
+                {{ formatCurrency(custoUnitarioCalc) }}
               </span>
             </div>
           </div>
@@ -333,9 +323,8 @@ const form = ref({
   categoria_id: '',
   produto_id: '',
   data: new Date().toISOString().split('T')[0],
-  semana: '',
   quantidade: 0,
-  custo_unitario: 0,
+  valor_total: 0,
   numero_nf: '',
   observacao: ''
 })
@@ -415,9 +404,10 @@ const totalValor = computed(() =>
   filteredEntradas.value.reduce((sum, e) => sum + Number(e.valor_total), 0)
 )
 
-const valorTotalCalc = computed(() =>
-  (form.value.quantidade || 0) * (form.value.custo_unitario || 0)
-)
+const custoUnitarioCalc = computed(() => {
+  if (!form.value.quantidade || form.value.quantidade === 0) return 0
+  return (form.value.valor_total || 0) / form.value.quantidade
+})
 
 const formatDate = (date: string | undefined) => {
   if (!date) return '-'
@@ -481,9 +471,8 @@ const openModal = (entrada?: Entrada) => {
       categoria_id: produto?.categoria_id || '',
       produto_id: entrada.produto_id,
       data: entrada.data,
-      semana: entrada.semana || '',
       quantidade: entrada.quantidade,
-      custo_unitario: entrada.custo_unitario,
+      valor_total: entrada.valor_total,
       numero_nf: entrada.numero_nf || '',
       observacao: entrada.observacao || ''
     }
@@ -493,9 +482,8 @@ const openModal = (entrada?: Entrada) => {
       categoria_id: '',
       produto_id: '',
       data: new Date().toISOString().split('T')[0],
-      semana: '',
       quantidade: 0,
-      custo_unitario: 0,
+      valor_total: 0,
       numero_nf: '',
       observacao: ''
     }
@@ -515,10 +503,10 @@ watch(() => form.value.categoria_id, () => {
 })
 
 const saveEntrada = async () => {
-  if (!form.value.produto_id || !form.value.data || !form.value.quantidade || form.value.custo_unitario === undefined) {
+  if (!form.value.produto_id || !form.value.data || !form.value.quantidade || !form.value.valor_total) {
     toast.add({
       title: 'Erro',
-      description: 'Produto, data, quantidade e custo são obrigatórios',
+      description: 'Produto, data, quantidade e valor total são obrigatórios',
       color: 'red'
     })
     return
@@ -529,9 +517,8 @@ const saveEntrada = async () => {
     const data = {
       produto_id: form.value.produto_id,
       data: form.value.data,
-      semana: form.value.semana || null,
       quantidade: form.value.quantidade,
-      custo_unitario: form.value.custo_unitario,
+      custo_unitario: custoUnitarioCalc.value,
       numero_nf: form.value.numero_nf || null,
       observacao: form.value.observacao || null
     }

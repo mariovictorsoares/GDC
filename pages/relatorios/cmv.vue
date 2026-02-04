@@ -146,31 +146,6 @@
         @update:page-size="pageSize = $event"
       />
     </UCard>
-
-    <!-- Fórmula e Explicação -->
-    <UCard>
-      <h4 class="font-semibold mb-3">Fórmula do CMV:</h4>
-      <div class="p-4 bg-gray-50 rounded-lg text-center">
-        <p class="text-lg font-mono">
-          CMV = Estoque Inicial + Compras - Estoque Final
-        </p>
-      </div>
-      <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
-        <div>
-          <p class="font-medium text-gray-900">O que é CMV?</p>
-          <p>O Custo da Mercadoria Vendida representa o custo direto dos produtos que foram vendidos em um período.</p>
-        </div>
-        <div>
-          <p class="font-medium text-gray-900">% CMV ideal</p>
-          <p>Para restaurantes e food service, o CMV ideal geralmente fica entre 28% e 35% do faturamento.</p>
-          <ul class="mt-2 list-disc list-inside">
-            <li class="text-green-600">Até 35%: Excelente</li>
-            <li class="text-yellow-600">35% - 40%: Atenção</li>
-            <li class="text-red-600">Acima de 40%: Crítico</li>
-          </ul>
-        </div>
-      </div>
-    </UCard>
   </div>
 </template>
 

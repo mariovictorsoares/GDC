@@ -221,19 +221,9 @@
             />
           </UFormGroup>
 
-          <div class="grid grid-cols-2 gap-4">
-            <UFormGroup label="Data" required>
-              <UInput v-model="form.data" type="date" />
-            </UFormGroup>
-
-            <UFormGroup label="Semana">
-              <USelect
-                v-model="form.semana"
-                :options="semanaOptions"
-                placeholder="Automático"
-              />
-            </UFormGroup>
-          </div>
+          <UFormGroup label="Data" required>
+            <UInput v-model="form.data" type="date" />
+          </UFormGroup>
 
           <UFormGroup label="Quantidade" required>
             <UInput
@@ -559,10 +549,12 @@ const openModal = async (saida?: Saida) => {
     await carregarSaldoProduto(saida.produto_id)
   } else {
     editingSaida.value = null
+    // Buscar o destino "Principal" para pré-selecionar
+    const destinoPrincipal = destinos.value.find(d => d.nome === 'Principal')
     form.value = {
       categoria_id: '',
       produto_id: '',
-      destino_id: '',
+      destino_id: destinoPrincipal?.id || '',
       data: new Date().toISOString().split('T')[0],
       semana: '',
       quantidade: 0,

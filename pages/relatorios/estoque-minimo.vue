@@ -173,58 +173,6 @@
         @update:page-size="pageSize = $event"
       />
     </UCard>
-
-    <!-- Legenda -->
-    <UCard>
-      <h4 class="font-semibold mb-3">Como interpretar:</h4>
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
-        <div class="flex items-start gap-2">
-          <UBadge color="green">OK</UBadge>
-          <p class="text-gray-600">Estoque acima do mínimo, não precisa repor.</p>
-        </div>
-        <div class="flex items-start gap-2">
-          <UBadge color="red">REPOR</UBadge>
-          <p class="text-gray-600">Estoque abaixo do mínimo, fazer pedido de reposição.</p>
-        </div>
-        <div class="flex items-start gap-2">
-          <UBadge color="green">Em Tempo</UBadge>
-          <p class="text-gray-600">Ainda há tempo para fazer o pedido antes da ruptura.</p>
-        </div>
-        <div class="flex items-start gap-2">
-          <UBadge color="orange">Atrasado</UBadge>
-          <p class="text-gray-600">O pedido deveria ter sido feito - risco de ruptura!</p>
-        </div>
-        <div>
-          <p class="text-gray-600"><strong>Dias até Ruptura:</strong> Quantos dias o estoque atual dura, descontando o tempo de reposição.</p>
-        </div>
-        <div>
-          <p class="text-gray-600"><strong>Data Ponto Pedido:</strong> Data ideal para fazer o pedido e evitar ruptura.</p>
-        </div>
-      </div>
-    </UCard>
-
-    <!-- Formulas -->
-    <UCard>
-      <h4 class="font-semibold mb-3">Fórmulas utilizadas:</h4>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-        <div class="p-3 bg-gray-50 rounded-lg">
-          <p class="font-medium text-gray-900">Dias até Ruptura</p>
-          <p class="font-mono text-xs mt-1">(Estoque Atual / Consumo Diário) - Tempo Reposição</p>
-        </div>
-        <div class="p-3 bg-gray-50 rounded-lg">
-          <p class="font-medium text-gray-900">Data Ponto de Pedido</p>
-          <p class="font-mono text-xs mt-1">Hoje + Dias até Ruptura</p>
-        </div>
-        <div class="p-3 bg-gray-50 rounded-lg">
-          <p class="font-medium text-gray-900">Sugestão de Pedido</p>
-          <p class="font-mono text-xs mt-1">(Consumo Semanal * Semanas Cobertura) + Estoque Mínimo - Estoque Atual</p>
-        </div>
-        <div class="p-3 bg-gray-50 rounded-lg">
-          <p class="font-medium text-gray-900">Estoque Mínimo c/ Margem</p>
-          <p class="font-mono text-xs mt-1">Estoque Mínimo * (1 + Margem Segurança%)</p>
-        </div>
-      </div>
-    </UCard>
   </div>
 </template>
 

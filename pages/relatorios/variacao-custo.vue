@@ -121,25 +121,6 @@
         </table>
       </div>
     </UCard>
-
-    <!-- Legenda -->
-    <UCard>
-      <h4 class="font-semibold mb-3">Legenda:</h4>
-      <div class="flex flex-wrap gap-4 text-sm">
-        <div class="flex items-center gap-2">
-          <span class="text-red-600 font-medium">+10%</span>
-          <span class="text-gray-600">Aumento de custo</span>
-        </div>
-        <div class="flex items-center gap-2">
-          <span class="text-green-600 font-medium">-10%</span>
-          <span class="text-gray-600">Redução de custo</span>
-        </div>
-        <div class="flex items-center gap-2">
-          <span class="text-gray-400">-</span>
-          <span class="text-gray-600">Sem dados no período</span>
-        </div>
-      </div>
-    </UCard>
   </div>
 </template>
 

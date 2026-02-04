@@ -5,8 +5,7 @@ import type {
   CMV,
   EstoqueMinimo,
   SaldoEstoque,
-  ComparativoABC,
-  FolhaContagem
+  ComparativoABC
 } from '~/types'
 
 export const useRelatorios = () => {
@@ -66,14 +65,24 @@ export const useRelatorios = () => {
 
     if (ajuError) throw ajuError
 
-    // Buscar custos do mês
-    const { data: custos, error: cusError } = await client
-      .from('custos_mensais')
-      .select('produto_id, custo')
-      .eq('ano', ano)
-      .eq('mes', mes)
+    // Buscar última entrada de cada produto para pegar o custo unitário mais recente
+    const { data: ultimasEntradas, error: ultEntError } = await client
+      .from('entradas')
+      .select('produto_id, quantidade, valor_total, data')
+      .order('data', { ascending: false })
 
-    if (cusError) throw cusError
+    if (ultEntError) throw ultEntError
+
+    // Criar mapa com última entrada por produto (custo unitário = valor_total / quantidade)
+    const ultimaEntradaPorProduto = new Map<string, number>()
+    ultimasEntradas?.forEach(e => {
+      if (!ultimaEntradaPorProduto.has(e.produto_id)) {
+        const custoUnitario = Number(e.quantidade) > 0
+          ? Number(e.valor_total || 0) / Number(e.quantidade)
+          : 0
+        ultimaEntradaPorProduto.set(e.produto_id, custoUnitario)
+      }
+    })
 
     // Calcular estoque inicial do mês (movimentos até o mês anterior)
     const mesAnterior = mes === 1 ? 12 : mes - 1
@@ -122,7 +131,7 @@ export const useRelatorios = () => {
       const prodEntradas = entradas?.filter(e => e.produto_id === p.id) || []
       const prodSaidas = saidas?.filter(s => s.produto_id === p.id) || []
       const prodAjustes = ajustes?.filter(a => a.produto_id === p.id) || []
-      const prodCusto = custos?.find(c => c.produto_id === p.id)?.custo || p.preco_inicial || 0
+      const prodCusto = ultimaEntradaPorProduto.get(p.id) || p.preco_inicial || 0
       const categoriaNome = (p.categoria as any)?.nome || ''
 
       const sumBySemana = (items: any[], semana: string) =>
@@ -211,36 +220,84 @@ export const useRelatorios = () => {
   // CURVA ABC DE ESTOQUE
   // ==========================================
 
-  const getCurvaABCEstoque = async (): Promise<CurvaABC[]> => {
-    // Buscar saldo de estoque atual com categoria
-    const { data: saldos, error } = await client
-      .from('v_saldo_estoque')
-      .select('*')
+  const getCurvaABCEstoque = async (ano?: number, mes?: number): Promise<CurvaABC[]> => {
+    // Se não passou período, usa o mês atual
+    const hoje = new Date()
+    const anoRef = ano || hoje.getFullYear()
+    const mesRef = mes || hoje.getMonth() + 1
 
-    if (error) throw error
+    // Data início e fim do mês selecionado
+    const dataInicio = `${anoRef}-${String(mesRef).padStart(2, '0')}-01`
+    const ultimoDia = new Date(anoRef, mesRef, 0).getDate()
+    const dataFim = `${anoRef}-${String(mesRef).padStart(2, '0')}-${ultimoDia}`
 
-    if (!saldos || saldos.length === 0) return []
+    // Buscar produtos ativos com categoria
+    const { data: produtos, error: prodError } = await client
+      .from('produtos')
+      .select(`
+        id,
+        nome,
+        estoque_inicial,
+        preco_inicial,
+        categoria:categorias(nome)
+      `)
+      .eq('ativo', true)
 
-    // Calcular valor total
-    const valorTotal = saldos.reduce((sum, s) => sum + Number(s.valor_estoque || 0), 0)
+    if (prodError) throw prodError
+    if (!produtos || produtos.length === 0) return []
+
+    // Buscar saídas do período com custo (para CMV)
+    const { data: saidas } = await client
+      .from('saidas')
+      .select('produto_id, quantidade, custo_saida')
+      .gte('data', dataInicio)
+      .lte('data', dataFim)
+
+    // Calcular CMV (valor de saída) por produto
+    const cmvPorProduto = new Map<string, { quantidade: number, cmv: number }>()
+
+    saidas?.forEach(s => {
+      const prodId = s.produto_id
+      const atual = cmvPorProduto.get(prodId) || { quantidade: 0, cmv: 0 }
+      atual.quantidade += Number(s.quantidade || 0)
+      atual.cmv += Number(s.custo_saida || 0)
+      cmvPorProduto.set(prodId, atual)
+    })
+
+    // Montar lista de produtos com CMV
+    const produtosComCMV = produtos
+      .map(p => {
+        const cmvInfo = cmvPorProduto.get(p.id) || { quantidade: 0, cmv: 0 }
+        return {
+          produto_id: p.id,
+          produto: p.nome,
+          categoria: (p.categoria as any)?.nome || '',
+          quantidade: cmvInfo.quantidade,
+          valor_cmv: cmvInfo.cmv
+        }
+      })
+      .filter(p => p.valor_cmv > 0) // Apenas produtos com saída no período
+
+    if (produtosComCMV.length === 0) return []
+
+    // Calcular valor total do CMV
+    const valorTotal = produtosComCMV.reduce((sum, p) => sum + p.valor_cmv, 0)
 
     if (valorTotal === 0) return []
 
-    // Ordenar por valor decrescente
-    const ordenados = [...saldos].sort((a, b) =>
-      Number(b.valor_estoque || 0) - Number(a.valor_estoque || 0)
-    )
+    // Ordenar por CMV decrescente
+    const ordenados = [...produtosComCMV].sort((a, b) => b.valor_cmv - a.valor_cmv)
 
-    // Calcular percentuais e classificar
+    // Calcular percentuais e classificar (A=50%, B=30%, C=20%)
     let acumulado = 0
     const resultado: CurvaABC[] = ordenados.map(item => {
-      const percentual = (Number(item.valor_estoque || 0) / valorTotal) * 100
+      const percentual = (item.valor_cmv / valorTotal) * 100
       acumulado += percentual
 
       let classe: 'A' | 'B' | 'C'
-      if (acumulado <= 80) {
+      if (acumulado <= 50) {
         classe = 'A'
-      } else if (acumulado <= 95) {
+      } else if (acumulado <= 80) { // 50 + 30 = 80
         classe = 'B'
       } else {
         classe = 'C'
@@ -249,9 +306,9 @@ export const useRelatorios = () => {
       return {
         produto_id: item.produto_id,
         produto: item.produto,
-        categoria: item.categoria || '',
-        quantidade: Number(item.saldo_atual || 0),
-        valor: Number(item.valor_estoque || 0),
+        categoria: item.categoria,
+        quantidade: item.quantidade,
+        valor: item.valor_cmv,
         percentual_valor: percentual,
         percentual_acumulado: acumulado,
         classe
@@ -792,35 +849,6 @@ export const useRelatorios = () => {
   }
 
   // ==========================================
-  // FOLHA DE CONTAGEM PARA IMPRESSÃO
-  // ==========================================
-
-  const getFolhaContagem = async (): Promise<FolhaContagem[]> => {
-    const { data: saldos, error } = await client
-      .from('v_saldo_estoque')
-      .select('*')
-      .order('categoria')
-      .order('produto')
-
-    if (error) throw error
-
-    return saldos?.map(s => ({
-      produto_id: s.produto_id,
-      categoria: s.categoria || '',
-      produto: s.produto || '',
-      unidade: s.unidade || '',
-      estoque_sistema: Number(s.saldo_atual || 0),
-      domingo: undefined,
-      segunda: undefined,
-      terca: undefined,
-      quarta: undefined,
-      quinta: undefined,
-      sexta: undefined,
-      sabado: undefined
-    })) || []
-  }
-
-  // ==========================================
   // DASHBOARD
   // ==========================================
 
@@ -880,7 +908,6 @@ export const useRelatorios = () => {
     getCMV,
     getEstoqueMinimo,
     getVariacaoCusto,
-    getFolhaContagem,
     getDashboardResumo
   }
 }
