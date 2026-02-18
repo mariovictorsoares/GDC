@@ -34,14 +34,13 @@
           <p class="text-sm text-yellow-700">
             {{ mesesSemFaturamento }} {{ mesesSemFaturamento === 1 ? 'mês' : 'meses' }} com compras mas sem faturamento registrado.
             O % CMV não pode ser calculado corretamente.
-            <NuxtLink to="/configuracoes/faturamentos" class="underline font-medium">Cadastrar faturamentos</NuxtLink>
           </p>
         </div>
       </div>
     </UCard>
 
     <!-- Resumo Anual -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
       <UCard>
         <div class="text-center">
           <p class="text-sm text-gray-500">Total Compras</p>
@@ -50,7 +49,7 @@
       </UCard>
       <UCard>
         <div class="text-center">
-          <p class="text-sm text-gray-500">CMV Total</p>
+          <p class="text-sm text-gray-500">CMV Real</p>
           <p class="text-2xl font-bold text-red-600">{{ formatCurrency(resumoAnual.cmv) }}</p>
         </div>
       </UCard>
@@ -58,17 +57,6 @@
         <div class="text-center">
           <p class="text-sm text-gray-500">Faturamento Total</p>
           <p class="text-2xl font-bold text-blue-600">{{ formatCurrency(resumoAnual.faturamento) }}</p>
-        </div>
-      </UCard>
-      <UCard>
-        <div class="text-center">
-          <p class="text-sm text-gray-500">% CMV Médio</p>
-          <p
-            class="text-2xl font-bold"
-            :class="resumoAnual.percentualCmv <= 35 ? 'text-green-600' : resumoAnual.percentualCmv <= 40 ? 'text-yellow-600' : 'text-red-600'"
-          >
-            {{ formatNumber(resumoAnual.percentualCmv) }}%
-          </p>
         </div>
       </UCard>
     </div>
@@ -79,8 +67,9 @@
         <div class="flex items-center justify-between">
           <h3 class="font-semibold">Evolução Mensal</h3>
           <div class="flex items-center gap-2 text-sm">
-            <span class="text-gray-500">Meta CMV:</span>
-            <UBadge color="gray">{{ metaCMV }}%</UBadge>
+            <UBadge color="yellow">≤25% Atenção</UBadge>
+            <UBadge color="green">25-32% Aceitável</UBadge>
+            <UBadge color="red">>32% Perigo</UBadge>
           </div>
         </div>
       </template>
@@ -116,6 +105,11 @@
         <template #faturamento-data="{ row }">
           <span class="text-blue-600">{{ formatCurrency(row.faturamento) }}</span>
         </template>
+        <template #cmc-data="{ row }">
+          <span class="font-medium text-purple-600">
+            {{ row.faturamento > 0 ? formatNumber((row.compras / row.faturamento) * 100) : '0' }}%
+          </span>
+        </template>
         <template #percentual_cmv-data="{ row }">
           <div class="flex items-center gap-2">
             <div class="flex-1 bg-gray-200 rounded-full h-2 w-20">
@@ -134,8 +128,8 @@
           </div>
         </template>
         <template #status-data="{ row }">
-          <UBadge :color="row.percentual_cmv <= metaCMV ? 'green' : 'red'">
-            {{ row.percentual_cmv <= metaCMV ? 'OK' : 'ACIMA' }}
+          <UBadge :color="row.percentual_cmv <= 25 ? 'yellow' : row.percentual_cmv <= 32 ? 'green' : 'red'">
+            {{ row.percentual_cmv <= 25 ? 'ATENÇÃO' : row.percentual_cmv <= 32 ? 'ACEITÁVEL' : 'PERIGO' }}
           </UBadge>
         </template>
       </UTable>
@@ -153,13 +147,12 @@
 import type { CMV } from '~/types'
 
 const { getCMV } = useRelatorios()
-const { getConfiguracao } = useEstoque()
+const { empresaId } = useEmpresa()
 const toast = useToast()
 
 const cmvData = ref<CMV[]>([])
 const loading = ref(false)
 const selectedAno = ref(new Date().getFullYear())
-const metaCMV = ref(35)
 
 const { page, pageSize, paginatedItems } = usePagination(cmvData)
 
@@ -173,7 +166,8 @@ const columns = [
   { key: 'estoque_final', label: 'Est. Final' },
   { key: 'cmv', label: 'CMV' },
   { key: 'faturamento', label: 'Faturamento' },
-  { key: 'percentual_cmv', label: '% CMV' },
+  { key: 'cmc', label: '% CMC' },
+  { key: 'percentual_cmv', label: '% CMV Real' },
   { key: 'status', label: 'Status' }
 ]
 
@@ -187,15 +181,14 @@ const anosOptions = computed(() => {
 
 const resumoAnual = computed(() => {
   if (cmvData.value.length === 0) {
-    return { compras: 0, cmv: 0, faturamento: 0, percentualCmv: 0 }
+    return { compras: 0, cmv: 0, faturamento: 0 }
   }
 
   const compras = cmvData.value.reduce((sum, c) => sum + c.compras, 0)
   const cmv = cmvData.value.reduce((sum, c) => sum + c.cmv, 0)
   const faturamento = cmvData.value.reduce((sum, c) => sum + c.faturamento, 0)
-  const percentualCmv = faturamento > 0 ? (cmv / faturamento) * 100 : 0
 
-  return { compras, cmv, faturamento, percentualCmv }
+  return { compras, cmv, faturamento }
 })
 
 // Verificar se há meses sem faturamento cadastrado
@@ -206,14 +199,14 @@ const mesesSemFaturamento = computed(() => {
 const temFaturamentoFaltando = computed(() => mesesSemFaturamento.value > 0)
 
 const getPercentualClass = (percentual: number) => {
-  if (percentual <= 35) return 'bg-green-500'
-  if (percentual <= 40) return 'bg-yellow-500'
+  if (percentual <= 25) return 'bg-yellow-500'
+  if (percentual <= 32) return 'bg-green-500'
   return 'bg-red-500'
 }
 
 const getPercentualTextClass = (percentual: number) => {
-  if (percentual <= 35) return 'text-green-600'
-  if (percentual <= 40) return 'text-yellow-600'
+  if (percentual <= 25) return 'text-yellow-600'
+  if (percentual <= 32) return 'text-green-600'
   return 'text-red-600'
 }
 
@@ -246,23 +239,13 @@ const loadCMV = async () => {
   }
 }
 
-const loadMeta = async () => {
-  try {
-    const config = await getConfiguracao('meta_cmv')
-    if (config) {
-      metaCMV.value = parseFloat(config.valor) * 100
-    }
-  } catch (error) {
-    console.error('Erro ao carregar meta:', error)
-  }
-}
-
 watch(selectedAno, () => {
   loadCMV()
 })
 
-onMounted(() => {
-  loadMeta()
-  loadCMV()
-})
+watch(empresaId, () => {
+  if (empresaId.value) {
+    loadCMV()
+  }
+}, { immediate: true })
 </script>

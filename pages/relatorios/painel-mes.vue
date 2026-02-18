@@ -25,6 +25,37 @@
             class="w-32"
           />
         </UFormGroup>
+        <UFormGroup label="Visualização">
+          <div class="flex rounded-md shadow-sm">
+            <UButton
+              :color="tipoVisualizacao === 'todos' ? 'primary' : 'gray'"
+              :variant="tipoVisualizacao === 'todos' ? 'solid' : 'outline'"
+              size="sm"
+              class="rounded-r-none"
+              @click="tipoVisualizacao = 'todos'; loadPainel()"
+            >
+              Transf. + Consumo
+            </UButton>
+            <UButton
+              :color="tipoVisualizacao === 'transferencia' ? 'primary' : 'gray'"
+              :variant="tipoVisualizacao === 'transferencia' ? 'solid' : 'outline'"
+              size="sm"
+              class="rounded-none border-x-0"
+              @click="tipoVisualizacao = 'transferencia'; loadPainel()"
+            >
+              Transferência
+            </UButton>
+            <UButton
+              :color="tipoVisualizacao === 'definitiva' ? 'primary' : 'gray'"
+              :variant="tipoVisualizacao === 'definitiva' ? 'solid' : 'outline'"
+              size="sm"
+              class="rounded-l-none"
+              @click="tipoVisualizacao = 'definitiva'; loadPainel()"
+            >
+              Consumo Final
+            </UButton>
+          </div>
+        </UFormGroup>
         <UButton color="primary" @click="loadPainel" :loading="loading">
           <UIcon name="i-heroicons-arrow-path" class="w-4 h-4 mr-2" />
           Atualizar
@@ -74,72 +105,55 @@
         </div>
       </template>
 
-      <div class="overflow-x-auto">
+      <div class="relative overflow-x-auto">
+        <!-- Loading overlay -->
+        <Transition
+          enter-active-class="transition-opacity duration-200"
+          leave-active-class="transition-opacity duration-200"
+          enter-from-class="opacity-0"
+          leave-to-class="opacity-0"
+        >
+          <div v-if="loading" class="absolute inset-0 z-10 flex items-center justify-center bg-white/70 backdrop-blur-[1px] rounded-lg">
+            <div class="flex flex-col items-center gap-2">
+              <div class="w-8 h-8 border-[3px] border-gray-200 border-t-primary-500 rounded-full animate-spin" />
+              <span class="text-sm text-gray-500 font-medium">Carregando dados...</span>
+            </div>
+          </div>
+        </Transition>
+
         <table class="min-w-full divide-y divide-gray-200">
           <thead class="bg-gray-50">
             <tr>
               <th rowspan="2" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r">Cat.</th>
               <th rowspan="2" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r">Produto</th>
               <th rowspan="2" class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-r">E.I.</th>
-              <th colspan="7" class="px-3 py-2 text-center text-xs font-medium text-green-600 uppercase tracking-wider border-r bg-green-50">Entradas</th>
-              <th colspan="7" class="px-3 py-2 text-center text-xs font-medium text-red-600 uppercase tracking-wider border-r bg-red-50">Saídas</th>
+              <th :colspan="semanas.length + 1" class="px-3 py-2 text-center text-xs font-medium text-green-600 uppercase tracking-wider border-r bg-green-50">Entradas</th>
+              <th :colspan="semanas.length + 1" class="px-3 py-2 text-center text-xs font-medium text-red-600 uppercase tracking-wider border-r bg-red-50">Saídas</th>
               <th rowspan="2" class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-r">E.F.</th>
               <th rowspan="2" class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-r">C.Unit</th>
               <th rowspan="2" class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-r">C.Total</th>
               <th rowspan="2" class="px-3 py-3 text-center text-xs font-medium text-orange-600 uppercase tracking-wider bg-orange-50">CMV</th>
             </tr>
             <tr>
-              <!-- Entradas por semana -->
-              <th class="px-2 py-1 text-center text-xs font-medium text-green-500 bg-green-50">
-                <UTooltip :text="semanas[0]"><span>S1</span></UTooltip>
-              </th>
-              <th class="px-2 py-1 text-center text-xs font-medium text-green-500 bg-green-50">
-                <UTooltip :text="semanas[1]"><span>S2</span></UTooltip>
-              </th>
-              <th class="px-2 py-1 text-center text-xs font-medium text-green-500 bg-green-50">
-                <UTooltip :text="semanas[2]"><span>S3</span></UTooltip>
-              </th>
-              <th class="px-2 py-1 text-center text-xs font-medium text-green-500 bg-green-50">
-                <UTooltip :text="semanas[3]"><span>S4</span></UTooltip>
-              </th>
-              <th class="px-2 py-1 text-center text-xs font-medium text-green-500 bg-green-50">
-                <UTooltip :text="semanas[4]"><span>S5</span></UTooltip>
-              </th>
-              <th class="px-2 py-1 text-center text-xs font-medium text-green-500 bg-green-50">
-                <UTooltip :text="semanas[5]"><span>S6</span></UTooltip>
+              <!-- Entradas por semana (dinâmico) -->
+              <th v-for="sem in semanas" :key="'ent-' + sem.label" class="px-2 py-1 text-center text-xs font-medium text-green-500 bg-green-50">
+                <MiniCalendar :mes="selectedMes" :ano="selectedAno" :dia-inicio="getDiaFromISO(sem.inicio)" :dia-fim="getDiaFromISO(sem.fim)">
+                  {{ sem.label }}
+                </MiniCalendar>
               </th>
               <th class="px-2 py-1 text-center text-xs font-medium text-green-600 bg-green-50 border-r">Tot</th>
-              <!-- Saídas por semana -->
-              <th class="px-2 py-1 text-center text-xs font-medium text-red-500 bg-red-50">
-                <UTooltip :text="semanas[0]"><span>S1</span></UTooltip>
-              </th>
-              <th class="px-2 py-1 text-center text-xs font-medium text-red-500 bg-red-50">
-                <UTooltip :text="semanas[1]"><span>S2</span></UTooltip>
-              </th>
-              <th class="px-2 py-1 text-center text-xs font-medium text-red-500 bg-red-50">
-                <UTooltip :text="semanas[2]"><span>S3</span></UTooltip>
-              </th>
-              <th class="px-2 py-1 text-center text-xs font-medium text-red-500 bg-red-50">
-                <UTooltip :text="semanas[3]"><span>S4</span></UTooltip>
-              </th>
-              <th class="px-2 py-1 text-center text-xs font-medium text-red-500 bg-red-50">
-                <UTooltip :text="semanas[4]"><span>S5</span></UTooltip>
-              </th>
-              <th class="px-2 py-1 text-center text-xs font-medium text-red-500 bg-red-50">
-                <UTooltip :text="semanas[5]"><span>S6</span></UTooltip>
+              <!-- Saídas por semana (dinâmico) -->
+              <th v-for="sem in semanas" :key="'sai-' + sem.label" class="px-2 py-1 text-center text-xs font-medium text-red-500 bg-red-50">
+                <MiniCalendar :mes="selectedMes" :ano="selectedAno" :dia-inicio="getDiaFromISO(sem.inicio)" :dia-fim="getDiaFromISO(sem.fim)">
+                  {{ sem.label }}
+                </MiniCalendar>
               </th>
               <th class="px-2 py-1 text-center text-xs font-medium text-red-600 bg-red-50 border-r">Tot</th>
             </tr>
           </thead>
           <tbody class="bg-white divide-y divide-gray-200">
-            <tr v-if="loading">
-              <td colspan="18" class="px-3 py-8 text-center text-gray-500">
-                <UIcon name="i-heroicons-arrow-path" class="w-6 h-6 animate-spin mx-auto mb-2" />
-                Carregando...
-              </td>
-            </tr>
-            <tr v-else-if="filteredPainel.length === 0">
-              <td colspan="18" class="px-3 py-8 text-center text-gray-500">
+            <tr v-if="!loading && filteredPainel.length === 0">
+              <td :colspan="totalColunas" class="px-3 py-8 text-center text-gray-500">
                 Nenhum dado encontrado para o período selecionado
               </td>
             </tr>
@@ -147,21 +161,11 @@
               <td class="px-2 py-2 text-xs text-gray-600 border-r truncate max-w-[80px]" :title="item.categoria">{{ item.categoria }}</td>
               <td class="px-2 py-2 text-xs font-medium text-gray-900 border-r truncate max-w-[120px]" :title="item.produto">{{ item.produto }}</td>
               <td class="px-2 py-2 text-xs text-center text-gray-600 border-r">{{ formatQtd(item.estoque_inicial) }}</td>
-              <!-- Entradas -->
-              <td class="px-1 py-2 text-xs text-center text-green-600 bg-green-50/50">{{ formatQtd(item.entradas_semana1) }}</td>
-              <td class="px-1 py-2 text-xs text-center text-green-600 bg-green-50/50">{{ formatQtd(item.entradas_semana2) }}</td>
-              <td class="px-1 py-2 text-xs text-center text-green-600 bg-green-50/50">{{ formatQtd(item.entradas_semana3) }}</td>
-              <td class="px-1 py-2 text-xs text-center text-green-600 bg-green-50/50">{{ formatQtd(item.entradas_semana4) }}</td>
-              <td class="px-1 py-2 text-xs text-center text-green-600 bg-green-50/50">{{ formatQtd(item.entradas_semana5) }}</td>
-              <td class="px-1 py-2 text-xs text-center text-green-600 bg-green-50/50">{{ formatQtd(item.entradas_semana6) }}</td>
+              <!-- Entradas por semana (dinâmico) -->
+              <td v-for="(_, idx) in semanas" :key="'ent-' + idx" class="px-1 py-2 text-xs text-center text-green-600 bg-green-50/50">{{ formatQtd(item.entradas_por_semana[idx]) }}</td>
               <td class="px-1 py-2 text-xs text-center font-medium text-green-700 bg-green-100 border-r">{{ formatQtd(item.total_entradas) }}</td>
-              <!-- Saídas -->
-              <td class="px-1 py-2 text-xs text-center text-red-600 bg-red-50/50">{{ formatQtd(item.saidas_semana1) }}</td>
-              <td class="px-1 py-2 text-xs text-center text-red-600 bg-red-50/50">{{ formatQtd(item.saidas_semana2) }}</td>
-              <td class="px-1 py-2 text-xs text-center text-red-600 bg-red-50/50">{{ formatQtd(item.saidas_semana3) }}</td>
-              <td class="px-1 py-2 text-xs text-center text-red-600 bg-red-50/50">{{ formatQtd(item.saidas_semana4) }}</td>
-              <td class="px-1 py-2 text-xs text-center text-red-600 bg-red-50/50">{{ formatQtd(item.saidas_semana5) }}</td>
-              <td class="px-1 py-2 text-xs text-center text-red-600 bg-red-50/50">{{ formatQtd(item.saidas_semana6) }}</td>
+              <!-- Saídas por semana (dinâmico) -->
+              <td v-for="(_, idx) in semanas" :key="'sai-' + idx" class="px-1 py-2 text-xs text-center text-red-600 bg-red-50/50">{{ formatQtd(item.saidas_por_semana[idx]) }}</td>
               <td class="px-1 py-2 text-xs text-center font-medium text-red-700 bg-red-100 border-r">{{ formatQtd(item.total_saidas) }}</td>
               <!-- Totais -->
               <td class="px-2 py-2 text-xs text-center font-medium text-blue-600 border-r">{{ formatQtd(item.estoque_final) }}</td>
@@ -175,8 +179,8 @@
             <tr class="font-semibold">
               <td colspan="2" class="px-3 py-2 text-xs text-gray-700 border-r">TOTAL</td>
               <td class="px-3 py-2 text-xs text-center text-gray-700 border-r">-</td>
-              <td colspan="7" class="px-3 py-2 text-xs text-center text-green-700 border-r bg-green-100">{{ formatQtd(totais.entradas) }}</td>
-              <td colspan="7" class="px-3 py-2 text-xs text-center text-red-700 border-r bg-red-100">{{ formatQtd(totais.saidas) }}</td>
+              <td :colspan="semanas.length + 1" class="px-3 py-2 text-xs text-center text-green-700 border-r bg-green-100">{{ formatQtd(totais.entradas) }}</td>
+              <td :colspan="semanas.length + 1" class="px-3 py-2 text-xs text-center text-red-700 border-r bg-red-100">{{ formatQtd(totais.saidas) }}</td>
               <td class="px-3 py-2 text-xs text-center text-blue-700 border-r">-</td>
               <td class="px-3 py-2 text-xs text-center text-gray-700 border-r">-</td>
               <td class="px-3 py-2 text-xs text-center text-gray-900 border-r">{{ formatCurrencyShort(totais.valor) }}</td>
@@ -197,18 +201,24 @@
 </template>
 
 <script setup lang="ts">
-import type { PainelMes } from '~/types'
+import type { PainelMes, SemanaInfo } from '~/types'
 
 const { getPainelMes } = useRelatorios()
+const { empresaId } = useEmpresa()
 const toast = useToast()
 
 const painelData = ref<PainelMes[]>([])
+const semanas = ref<SemanaInfo[]>([])
 const loading = ref(false)
 const search = ref('')
+const tipoVisualizacao = ref<'todos' | 'transferencia' | 'definitiva'>('todos')
 
 const hoje = new Date()
 const selectedMes = ref(hoje.getMonth() + 1)
 const selectedAno = ref(hoje.getFullYear())
+
+// Total de colunas: Cat + Produto + EI + (semanas * 2 entradas/saídas) + 2 totais + EF + CUnit + CTotal + CMV
+const totalColunas = computed(() => 3 + (semanas.value.length + 1) * 2 + 4)
 
 const mesesOptions = [
   { label: 'Janeiro', value: 1 },
@@ -265,27 +275,6 @@ const totais = computed(() => {
   }
 })
 
-const semanas = computed(() => {
-  const ano = selectedAno.value
-  const mes = selectedMes.value - 1
-  const resultado: string[] = []
-
-  for (let i = 0; i < 6; i++) {
-    const inicio = new Date(ano, mes, i * 5 + 1)
-    const fim = new Date(ano, mes, Math.min((i + 1) * 5, new Date(ano, mes + 1, 0).getDate()))
-
-    if (inicio.getMonth() !== mes) {
-      resultado.push('')
-      continue
-    }
-
-    const formatDay = (d: Date) => d.getDate().toString().padStart(2, '0')
-    resultado.push(`${formatDay(inicio)} a ${formatDay(fim)}/${mes + 1}`)
-  }
-
-  return resultado
-})
-
 const formatQtd = (value: number | null | undefined) => {
   if (value === null || value === undefined || value === 0) return '-'
   return new Intl.NumberFormat('pt-BR', {
@@ -319,10 +308,16 @@ const formatCurrencyShort = (value: number) => {
   }).format(value)
 }
 
+const getDiaFromISO = (isoDate: string): number => {
+  return parseInt(isoDate.split('-')[2], 10)
+}
+
 const loadPainel = async () => {
   try {
     loading.value = true
-    painelData.value = await getPainelMes(selectedAno.value, selectedMes.value)
+    const resultado = await getPainelMes(selectedAno.value, selectedMes.value, tipoVisualizacao.value)
+    semanas.value = resultado.semanas
+    painelData.value = resultado.itens
   } catch (error: any) {
     toast.add({
       title: 'Erro',
@@ -334,7 +329,9 @@ const loadPainel = async () => {
   }
 }
 
-onMounted(() => {
-  loadPainel()
-})
+watch(empresaId, () => {
+  if (empresaId.value) {
+    loadPainel()
+  }
+}, { immediate: true })
 </script>

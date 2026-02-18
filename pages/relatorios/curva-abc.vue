@@ -337,16 +337,6 @@
           <template #valor_cmv-data="{ row }">
             <span class="text-red-600">{{ formatCurrency(row.valor_cmv) }}</span>
           </template>
-          <template #status-data="{ row }">
-            <UBadge :color="getStatusColor(row.status)">
-              {{ formatStatus(row.status) }}
-            </UBadge>
-          </template>
-          <template #recomendacao-data="{ row }">
-            <p class="text-xs text-gray-600 max-w-xs truncate" :title="row.recomendacao">
-              {{ row.recomendacao }}
-            </p>
-          </template>
         </UTable>
         <TablePagination
           v-model="pageComparativo"
@@ -399,6 +389,7 @@
 import type { CurvaABC, CurvaABCCMV, ComparativoABC } from '~/types'
 
 const { getCurvaABC, getCurvaABCCMV, getComparativoABC } = useRelatorios()
+const { empresaId } = useEmpresa()
 const toast = useToast()
 
 // Estado
@@ -455,9 +446,7 @@ const columnsComparativo = [
   { key: 'classe_estoque', label: 'ABC Estoque' },
   { key: 'classe_cmv', label: 'ABC CMV' },
   { key: 'valor_estoque', label: 'Valor Estoque' },
-  { key: 'valor_cmv', label: 'Valor CMV' },
-  { key: 'status', label: 'Status' },
-  { key: 'recomendacao', label: 'Recomendação' }
+  { key: 'valor_cmv', label: 'Valor CMV' }
 ]
 
 // Opções de filtro
@@ -674,7 +663,9 @@ watch([selectedAno, selectedMes], () => {
   loadAllData()
 })
 
-onMounted(() => {
-  loadAllData()
-})
+watch(empresaId, () => {
+  if (empresaId.value) {
+    loadAllData()
+  }
+}, { immediate: true })
 </script>

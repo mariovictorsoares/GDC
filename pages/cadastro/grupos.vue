@@ -317,6 +317,7 @@ const {
   updateSubgrupo: updateSubgrupoApi,
   deleteSubgrupo: removeSubgrupo
 } = useEstoque()
+const { empresaId } = useEmpresa()
 const toast = useToast()
 
 const grupos = ref<Grupo[]>([])
@@ -567,7 +568,10 @@ const deleteSubgrupo = async () => {
   }
 }
 
-onMounted(() => {
-  loadData()
-})
+// Recarregar dados quando a empresa ativa mudar
+watch(empresaId, () => {
+  if (empresaId.value) {
+    loadData()
+  }
+}, { immediate: true })
 </script>

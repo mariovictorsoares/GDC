@@ -3,30 +3,38 @@ import type {
   Subgrupo,
   Categoria,
   Unidade,
-  Destino,
+  Fornecedor,
   Produto,
   Entrada,
   Saida,
   Ajuste,
   Faturamento,
   CustoMensal,
-  Configuracao,
+
   SaldoEstoque,
-  FiltroData
+  FiltroData,
+  TipoSaida
 } from '~/types'
 
 export const useEstoque = () => {
   const client = useSupabaseClient()
+  const { empresaId } = useEmpresa()
 
   // ==========================================
   // GRUPOS
   // ==========================================
 
   const getGrupos = async () => {
-    const { data, error } = await client
+    let query = client
       .from('grupos')
       .select('*')
       .order('created_at', { ascending: false })
+
+    if (empresaId.value) {
+      query = query.eq('empresa_id', empresaId.value)
+    }
+
+    const { data, error } = await query
 
     if (error) throw error
     return data as Grupo[]
@@ -35,7 +43,7 @@ export const useEstoque = () => {
   const createGrupo = async (grupo: Partial<Grupo>) => {
     const { data, error } = await client
       .from('grupos')
-      .insert(grupo)
+      .insert({ ...grupo, empresa_id: empresaId.value })
       .select()
       .single()
 
@@ -77,6 +85,10 @@ export const useEstoque = () => {
       `)
       .order('created_at', { ascending: false })
 
+    if (empresaId.value) {
+      query = query.eq('empresa_id', empresaId.value)
+    }
+
     if (grupoId) {
       query = query.eq('grupo_id', grupoId)
     }
@@ -90,7 +102,7 @@ export const useEstoque = () => {
   const createSubgrupo = async (subgrupo: Partial<Subgrupo>) => {
     const { data, error } = await client
       .from('subgrupos')
-      .insert(subgrupo)
+      .insert({ ...subgrupo, empresa_id: empresaId.value })
       .select(`
         *,
         grupo:grupos(*)
@@ -130,10 +142,16 @@ export const useEstoque = () => {
   // ==========================================
 
   const getCategorias = async () => {
-    const { data, error } = await client
+    let query = client
       .from('categorias')
       .select('*')
       .order('created_at', { ascending: false })
+
+    if (empresaId.value) {
+      query = query.eq('empresa_id', empresaId.value)
+    }
+
+    const { data, error } = await query
 
     if (error) throw error
     return data as Categoria[]
@@ -142,7 +160,7 @@ export const useEstoque = () => {
   const createCategoria = async (categoria: Partial<Categoria>) => {
     const { data, error } = await client
       .from('categorias')
-      .insert(categoria)
+      .insert({ ...categoria, empresa_id: empresaId.value })
       .select()
       .single()
 
@@ -176,10 +194,16 @@ export const useEstoque = () => {
   // ==========================================
 
   const getUnidades = async () => {
-    const { data, error } = await client
+    let query = client
       .from('unidades')
       .select('*')
       .order('created_at', { ascending: false })
+
+    if (empresaId.value) {
+      query = query.eq('empresa_id', empresaId.value)
+    }
+
+    const { data, error } = await query
 
     if (error) throw error
     return data as Unidade[]
@@ -188,7 +212,7 @@ export const useEstoque = () => {
   const createUnidade = async (unidade: Partial<Unidade>) => {
     const { data, error } = await client
       .from('unidades')
-      .insert(unidade)
+      .insert({ ...unidade, empresa_id: empresaId.value })
       .select()
       .single()
 
@@ -218,14 +242,18 @@ export const useEstoque = () => {
   }
 
   // ==========================================
-  // DESTINOS
+  // FORNECEDORES
   // ==========================================
 
-  const getDestinos = async (apenasAtivos = true) => {
+  const getFornecedores = async (apenasAtivos = true) => {
     let query = client
-      .from('destinos')
+      .from('fornecedores')
       .select('*')
       .order('created_at', { ascending: false })
+
+    if (empresaId.value) {
+      query = query.eq('empresa_id', empresaId.value)
+    }
 
     if (apenasAtivos) {
       query = query.eq('ativo', true)
@@ -234,35 +262,35 @@ export const useEstoque = () => {
     const { data, error } = await query
 
     if (error) throw error
-    return data as Destino[]
+    return data as Fornecedor[]
   }
 
-  const createDestino = async (destino: Partial<Destino>) => {
+  const createFornecedor = async (fornecedor: Partial<Fornecedor>) => {
     const { data, error } = await client
-      .from('destinos')
-      .insert(destino)
+      .from('fornecedores')
+      .insert({ ...fornecedor, empresa_id: empresaId.value })
       .select()
       .single()
 
     if (error) throw error
-    return data as Destino
+    return data as Fornecedor
   }
 
-  const updateDestino = async (id: string, destino: Partial<Destino>) => {
+  const updateFornecedor = async (id: string, fornecedor: Partial<Fornecedor>) => {
     const { data, error } = await client
-      .from('destinos')
-      .update(destino)
+      .from('fornecedores')
+      .update(fornecedor)
       .eq('id', id)
       .select()
       .single()
 
     if (error) throw error
-    return data as Destino
+    return data as Fornecedor
   }
 
-  const deleteDestino = async (id: string) => {
+  const deleteFornecedor = async (id: string) => {
     const { error } = await client
-      .from('destinos')
+      .from('fornecedores')
       .delete()
       .eq('id', id)
 
@@ -283,6 +311,10 @@ export const useEstoque = () => {
         unidade:unidades(*)
       `)
       .order('created_at', { ascending: false })
+
+    if (empresaId.value) {
+      query = query.eq('empresa_id', empresaId.value)
+    }
 
     if (apenasAtivos) {
       query = query.eq('ativo', true)
@@ -313,7 +345,7 @@ export const useEstoque = () => {
   const createProduto = async (produto: Partial<Produto>) => {
     const { data, error } = await client
       .from('produtos')
-      .insert(produto)
+      .insert({ ...produto, empresa_id: empresaId.value })
       .select()
       .single()
 
@@ -368,7 +400,7 @@ export const useEstoque = () => {
   const upsertCustoMensal = async (custoMensal: Partial<CustoMensal>) => {
     const { data, error } = await client
       .from('custos_mensais')
-      .upsert(custoMensal, {
+      .upsert({ ...custoMensal, empresa_id: empresaId.value }, {
         onConflict: 'produto_id,ano,mes'
       })
       .select()
@@ -390,6 +422,11 @@ export const useEstoque = () => {
         produto:produtos(*, categoria:categorias(*), unidade:unidades(*))
       `)
       .order('data', { ascending: false })
+      .order('created_at', { ascending: false })
+
+    if (empresaId.value) {
+      query = query.eq('empresa_id', empresaId.value)
+    }
 
     if (filtro?.dataInicio) {
       query = query.gte('data', filtro.dataInicio)
@@ -407,7 +444,7 @@ export const useEstoque = () => {
   const createEntrada = async (entrada: Partial<Entrada>) => {
     const { data, error } = await client
       .from('entradas')
-      .insert(entrada)
+      .insert({ ...entrada, empresa_id: empresaId.value })
       .select(`
         *,
         produto:produtos(*, categoria:categorias(*), unidade:unidades(*))
@@ -443,15 +480,22 @@ export const useEstoque = () => {
   // SAÍDAS
   // ==========================================
 
-  const getSaidas = async (filtro?: FiltroData) => {
+  const getSaidas = async (filtro?: FiltroData & { tipo?: TipoSaida | 'todos' }) => {
     let query = client
       .from('saidas')
       .select(`
         *,
-        produto:produtos(*, categoria:categorias(*), unidade:unidades(*)),
-        destino:destinos(*)
+        produto:produtos(*, categoria:categorias(*), unidade:unidades(*))
       `)
       .order('data', { ascending: false })
+
+    if (empresaId.value) {
+      query = query.eq('empresa_id', empresaId.value)
+    }
+
+    if (filtro?.tipo && filtro.tipo !== 'todos') {
+      query = query.eq('tipo', filtro.tipo)
+    }
 
     if (filtro?.dataInicio) {
       query = query.gte('data', filtro.dataInicio)
@@ -469,11 +513,10 @@ export const useEstoque = () => {
   const createSaida = async (saida: Partial<Saida>) => {
     const { data, error } = await client
       .from('saidas')
-      .insert(saida)
+      .insert({ ...saida, empresa_id: empresaId.value })
       .select(`
         *,
-        produto:produtos(*, categoria:categorias(*), unidade:unidades(*)),
-        destino:destinos(*)
+        produto:produtos(*, categoria:categorias(*), unidade:unidades(*))
       `)
       .single()
 
@@ -515,6 +558,10 @@ export const useEstoque = () => {
       `)
       .order('data', { ascending: false })
 
+    if (empresaId.value) {
+      query = query.eq('empresa_id', empresaId.value)
+    }
+
     if (filtro?.dataInicio) {
       query = query.gte('data', filtro.dataInicio)
     }
@@ -531,7 +578,7 @@ export const useEstoque = () => {
   const createAjuste = async (ajuste: Partial<Ajuste>) => {
     const { data, error } = await client
       .from('ajustes')
-      .insert(ajuste)
+      .insert({ ...ajuste, empresa_id: empresaId.value })
       .select(`
         *,
         produto:produtos(*, categoria:categorias(*), unidade:unidades(*))
@@ -563,6 +610,37 @@ export const useEstoque = () => {
     if (error) throw error
   }
 
+  const createAjustesEmLote = async (ajustes: Array<{ produto_id: string; data: string; quantidade: number; motivo: string }>) => {
+    if (!ajustes.length) return []
+
+    const payload = ajustes.map(a => ({
+      ...a,
+      empresa_id: empresaId.value
+    }))
+
+    const { data, error } = await client
+      .from('ajustes')
+      .insert(payload)
+      .select(`
+        *,
+        produto:produtos(*, categoria:categorias(*), subgrupo:subgrupos(*, grupo:grupos(*)), unidade:unidades(*))
+      `)
+
+    if (error) throw error
+    return data as Ajuste[]
+  }
+
+  const deleteAjustesEmLote = async (ids: string[]) => {
+    if (!ids.length) return
+
+    const { error } = await client
+      .from('ajustes')
+      .delete()
+      .in('id', ids)
+
+    if (error) throw error
+  }
+
   // ==========================================
   // FATURAMENTOS
   // ==========================================
@@ -573,6 +651,10 @@ export const useEstoque = () => {
       .select('*')
       .order('ano', { ascending: false })
       .order('mes', { ascending: false })
+
+    if (empresaId.value) {
+      query = query.eq('empresa_id', empresaId.value)
+    }
 
     if (ano) {
       query = query.eq('ano', ano)
@@ -587,7 +669,7 @@ export const useEstoque = () => {
   const upsertFaturamento = async (faturamento: Partial<Faturamento>) => {
     const { data, error } = await client
       .from('faturamentos')
-      .upsert(faturamento, {
+      .upsert({ ...faturamento, empresa_id: empresaId.value }, {
         onConflict: 'ano,mes'
       })
       .select()
@@ -595,43 +677,6 @@ export const useEstoque = () => {
 
     if (error) throw error
     return data as Faturamento
-  }
-
-  // ==========================================
-  // CONFIGURAÇÕES
-  // ==========================================
-
-  const getConfiguracoes = async () => {
-    const { data, error } = await client
-      .from('configuracoes')
-      .select('*')
-
-    if (error) throw error
-    return data as Configuracao[]
-  }
-
-  const getConfiguracao = async (chave: string) => {
-    const { data, error } = await client
-      .from('configuracoes')
-      .select('*')
-      .eq('chave', chave)
-      .single()
-
-    if (error && error.code !== 'PGRST116') throw error
-    return data as Configuracao | null
-  }
-
-  const setConfiguracao = async (chave: string, valor: string) => {
-    const { data, error } = await client
-      .from('configuracoes')
-      .upsert({ chave, valor }, {
-        onConflict: 'chave'
-      })
-      .select()
-      .single()
-
-    if (error) throw error
-    return data as Configuracao
   }
 
   // ==========================================
@@ -651,12 +696,28 @@ export const useEstoque = () => {
   const getSaldoProduto = async (produtoId: string): Promise<number> => {
     const { data, error } = await client
       .from('v_saldo_estoque')
-      .select('saldo_atual')
+      .select('saldo_principal')
       .eq('produto_id', produtoId)
       .single()
 
     if (error && error.code !== 'PGRST116') throw error
-    return Number(data?.saldo_atual || 0)
+    return Number(data?.saldo_principal || 0)
+  }
+
+  // Buscar saldo duplo (principal + apoio)
+  const getSaldoDuplo = async (produtoId: string) => {
+    const { data, error } = await client
+      .from('v_saldo_estoque')
+      .select('saldo_principal, saldo_apoio, saldo_atual')
+      .eq('produto_id', produtoId)
+      .single()
+
+    if (error && error.code !== 'PGRST116') throw error
+    return {
+      principal: Number(data?.saldo_principal || 0),
+      apoio: Number(data?.saldo_apoio || 0),
+      total: Number(data?.saldo_atual || 0)
+    }
   }
 
   return {
@@ -680,11 +741,11 @@ export const useEstoque = () => {
     createUnidade,
     updateUnidade,
     deleteUnidade,
-    // Destinos
-    getDestinos,
-    createDestino,
-    updateDestino,
-    deleteDestino,
+    // Fornecedores
+    getFornecedores,
+    createFornecedor,
+    updateFornecedor,
+    deleteFornecedor,
     // Produtos
     getProdutos,
     getProduto,
@@ -709,15 +770,14 @@ export const useEstoque = () => {
     createAjuste,
     updateAjuste,
     deleteAjuste,
+    createAjustesEmLote,
+    deleteAjustesEmLote,
     // Faturamentos
     getFaturamentos,
     upsertFaturamento,
-    // Configurações
-    getConfiguracoes,
-    getConfiguracao,
-    setConfiguracao,
     // Relatórios
     getSaldoEstoque,
-    getSaldoProduto
+    getSaldoProduto,
+    getSaldoDuplo
   }
 }

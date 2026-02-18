@@ -1,5 +1,26 @@
 // Tipos base do sistema de estoque
 
+export interface Empresa {
+  id: string
+  nome: string
+  cnpj?: string
+  logo_url?: string
+  ativo: boolean
+  created_at?: string
+  // Campo extra vindo do join (não persiste)
+  papel?: string
+}
+
+export interface UsuarioEmpresa {
+  id: string
+  user_id: string
+  empresa_id: string
+  papel: string
+  created_at?: string
+  // Relacionamentos
+  empresa?: Empresa
+}
+
 export interface Grupo {
   id: string
   nome: string
@@ -28,12 +49,28 @@ export interface Unidade {
   id: string
   sigla: string
   descricao?: string
+  empresa_id?: string
   created_at?: string
 }
 
 export interface Destino {
   id: string
   nome: string
+  ativo: boolean
+  created_at?: string
+}
+
+export interface Fornecedor {
+  id: string
+  nome_empresa: string
+  cnpj: string
+  cep?: string
+  logradouro?: string
+  numero?: string
+  complemento?: string
+  bairro?: string
+  cidade?: string
+  estado?: string
   ativo: boolean
   created_at?: string
 }
@@ -80,10 +117,13 @@ export interface Entrada {
   produto?: Produto
 }
 
+export type TipoSaida = 'transferencia' | 'definitiva'
+
 export interface Saida {
   id: string
   produto_id: string
-  destino_id: string
+  tipo: TipoSaida
+  destino_id?: string
   data: string
   semana: string
   quantidade: number
@@ -93,6 +133,13 @@ export interface Saida {
   // Relacionamentos
   produto?: Produto
   destino?: Destino
+}
+
+export interface ItemSaida {
+  produto_id: string
+  quantidade: number
+  observacao: string
+  showObs: boolean
 }
 
 export interface Ajuste {
@@ -114,12 +161,6 @@ export interface Faturamento {
   valor: number
 }
 
-export interface Configuracao {
-  id: string
-  chave: string
-  valor: string
-}
-
 // Tipos para relatórios
 export interface SaldoEstoque {
   produto_id: string
@@ -130,6 +171,8 @@ export interface SaldoEstoque {
   total_entradas: number
   total_saidas: number
   total_ajustes: number
+  saldo_principal: number
+  saldo_apoio: number
   saldo_atual: number
   custo_medio: number
   valor_estoque: number
@@ -141,19 +184,9 @@ export interface PainelMes {
   produto: string
   unidade: string
   estoque_inicial: number
-  saidas_semana1: number
-  saidas_semana2: number
-  saidas_semana3: number
-  saidas_semana4: number
-  saidas_semana5: number
-  saidas_semana6: number
+  entradas_por_semana: number[]
+  saidas_por_semana: number[]
   total_saidas: number
-  entradas_semana1: number
-  entradas_semana2: number
-  entradas_semana3: number
-  entradas_semana4: number
-  entradas_semana5: number
-  entradas_semana6: number
   total_entradas: number
   estoque_final: number
   custo: number
@@ -161,6 +194,13 @@ export interface PainelMes {
   cmv: number
   giro_dias: number
   vezes_mes: number
+}
+
+export interface SemanaInfo {
+  label: string
+  tooltip: string
+  inicio: string
+  fim: string
 }
 
 export interface CurvaABC {
@@ -201,22 +241,31 @@ export interface CMV {
 
 export interface EstoqueMinimo {
   produto_id: string
-  categoria: string
+  subgrupo: string
   nome: string
-  quantidade_estoque: number
   unidade: string
-  estoque_minimo: number
-  estoque_minimo_base: number
-  margem_seguranca: number
-  consumo_medio_semanal: number
-  consumo_medio_diario: number
-  tempo_reposicao: number
-  repor_estoque: boolean
-  dias_ate_ruptura: number
-  data_ponto_pedido: string
-  status_prazo: 'ATRASADO' | 'EM TEMPO' | 'OK'
-  dentro_prazo: boolean
-  sugestao_pedido: number
+  quantidade_estoque: number
+  semana1: number
+  semana1_periodo: string
+  semana2: number
+  semana2_periodo: string
+  semana3: number
+  semana3_periodo: string
+  media_semanas: number
+}
+
+export interface GestaoInventario {
+  produto_id: string
+  produto: string
+  categoria: string
+  unidade: string
+  ei_quantidade: number
+  ei_valor: number
+  ef_quantidade: number
+  ef_valor: number
+  custo_medio: number
+  variacao_quantidade: number
+  variacao_valor: number
 }
 
 // Tipos utilitários
@@ -235,6 +284,40 @@ export interface ComparativoABC {
 }
 
 
+export interface FaturamentoSemanal {
+  id?: string
+  empresa_id?: string
+  ano: number
+  semana_inicio: string // date yyyy-mm-dd (segunda)
+  semana_fim: string    // date yyyy-mm-dd (domingo)
+  valor: number
+}
+
+export interface CmcSemanalGrupo {
+  grupo_id: string
+  grupo_nome: string
+  subgrupos: CmcSemanalSubgrupo[]
+  totais_semanas: number[] // valor total entradas por semana
+}
+
+export interface CmcSemanalSubgrupo {
+  subgrupo_id: string
+  subgrupo_nome: string
+  totais_semanas: number[] // valor total entradas por semana
+}
+
+export interface CmcSemanalResumo {
+  semanas: {
+    inicio: string  // dd/mm
+    fim: string     // dd/mm
+    inicio_date: string // yyyy-mm-dd
+    fim_date: string    // yyyy-mm-dd
+  }[]
+  grupos: CmcSemanalGrupo[]
+  faturamentos: number[] // faturamento por semana (input manual)
+  cmc_percentuais: number[] // CMC % = entradas / faturamento * 100
+}
+
 export interface FiltroData {
   dataInicio?: string
   dataFim?: string
@@ -245,4 +328,28 @@ export interface FiltroData {
 export interface FiltroRelatorio extends FiltroData {
   categoria_id?: string
   produto_id?: string
+  tipo_saida?: TipoSaida | 'todos'
+}
+
+// Tipos para Contagem de Estoque (inventário em lote)
+export interface ContagemItem {
+  produto_id: string
+  nome: string
+  unidade_sigla: string
+  subgrupo_nome: string
+  saldo_sistema: number
+  quantidade_contada: number | null
+  diferenca: number | null
+}
+
+export interface ContagemHistorico {
+  data: string
+  motivo: string
+  grupo_nome: string
+  subgrupo_nome?: string
+  total_itens: number
+  total_sobras: number
+  total_faltas: number
+  total_zerados: number
+  ajustes: Ajuste[]
 }

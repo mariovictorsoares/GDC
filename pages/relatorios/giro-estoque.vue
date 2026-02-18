@@ -26,13 +26,7 @@
     </UCard>
 
     <!-- Resumo Anual -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-      <UCard>
-        <div class="text-center">
-          <p class="text-sm text-gray-500">Estoque Médio Anual</p>
-          <p class="text-2xl font-bold text-gray-900">{{ formatCurrency(resumoAnual.estoqueMedio) }}</p>
-        </div>
-      </UCard>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <UCard>
         <div class="text-center">
           <p class="text-sm text-gray-500">CMV Total</p>
@@ -42,13 +36,7 @@
       <UCard>
         <div class="text-center">
           <p class="text-sm text-gray-500">Giro Médio (dias)</p>
-          <p class="text-2xl font-bold text-blue-600">{{ formatNumber(resumoAnual.giroMedioDias) }}</p>
-        </div>
-      </UCard>
-      <UCard>
-        <div class="text-center">
-          <p class="text-sm text-gray-500">Giro Médio (vezes/mês)</p>
-          <p class="text-2xl font-bold text-green-600">{{ formatNumber(resumoAnual.giroMedioVezes) }}</p>
+          <p class="text-2xl font-bold" :class="getGiroClass(resumoAnual.giroMedioDias)">{{ formatNumber(resumoAnual.giroMedioDias) }}</p>
         </div>
       </UCard>
     </div>
@@ -78,9 +66,6 @@
         <template #estoque_real-data="{ row }">
           {{ formatCurrency(row.estoque_real) }}
         </template>
-        <template #estoque_medio-data="{ row }">
-          {{ formatCurrency(row.estoque_medio) }}
-        </template>
         <template #cmv-data="{ row }">
           <span class="text-red-600">{{ formatCurrency(row.cmv) }}</span>
         </template>
@@ -88,15 +73,6 @@
           <span :class="getGiroClass(row.giro_dias_real)">
             {{ formatNumber(row.giro_dias_real) }} dias
           </span>
-        </template>
-        <template #vezes_mes_real-data="{ row }">
-          {{ formatNumber(row.vezes_mes_real) }}x
-        </template>
-        <template #giro_dias_medio-data="{ row }">
-          {{ formatNumber(row.giro_dias_medio) }} dias
-        </template>
-        <template #vezes_mes_medio-data="{ row }">
-          {{ formatNumber(row.vezes_mes_medio) }}x
         </template>
       </UTable>
       <TablePagination
@@ -113,6 +89,7 @@
 import type { GiroEstoque } from '~/types'
 
 const { getGiroEstoque } = useRelatorios()
+const { empresaId } = useEmpresa()
 const toast = useToast()
 
 const giroData = ref<GiroEstoque[]>([])
@@ -123,13 +100,9 @@ const { page, pageSize, paginatedItems } = usePagination(giroData)
 
 const columns = [
   { key: 'mes', label: 'Mês' },
-  { key: 'estoque_real', label: 'Estoque Real' },
-  { key: 'estoque_medio', label: 'Estoque Médio' },
-  { key: 'cmv', label: 'CMV' },
-  { key: 'giro_dias_real', label: 'Giro (dias)' },
-  { key: 'vezes_mes_real', label: 'Vezes/Mês' },
-  { key: 'giro_dias_medio', label: 'Giro Médio (dias)' },
-  { key: 'vezes_mes_medio', label: 'Vezes/Mês Médio' }
+  { key: 'estoque_real', label: 'Estoque Final (R$)' },
+  { key: 'cmv', label: 'CMV (R$)' },
+  { key: 'giro_dias_real', label: 'Giro (dias)' }
 ]
 
 const anosOptions = computed(() => {
@@ -142,29 +115,24 @@ const anosOptions = computed(() => {
 
 const resumoAnual = computed(() => {
   if (giroData.value.length === 0) {
-    return { estoqueMedio: 0, cmvTotal: 0, giroMedioDias: 0, giroMedioVezes: 0 }
+    return { cmvTotal: 0, giroMedioDias: 0 }
   }
 
   const mesesComDados = giroData.value.filter(g => g.cmv > 0)
 
-  const estoqueMedio = giroData.value.reduce((sum, g) => sum + g.estoque_medio, 0) / giroData.value.length
   const cmvTotal = giroData.value.reduce((sum, g) => sum + g.cmv, 0)
 
   const giroMedioDias = mesesComDados.length > 0
     ? mesesComDados.reduce((sum, g) => sum + g.giro_dias_real, 0) / mesesComDados.length
     : 0
 
-  const giroMedioVezes = mesesComDados.length > 0
-    ? mesesComDados.reduce((sum, g) => sum + g.vezes_mes_real, 0) / mesesComDados.length
-    : 0
-
-  return { estoqueMedio, cmvTotal, giroMedioDias, giroMedioVezes }
+  return { cmvTotal, giroMedioDias }
 })
 
 const getGiroClass = (dias: number) => {
-  if (dias <= 30) return 'text-green-600 font-medium'
-  if (dias <= 60) return 'text-yellow-600'
-  return 'text-red-600'
+  if (dias <= 6.99) return 'text-green-600 font-medium'  // Excelente
+  if (dias <= 9.99) return 'text-yellow-600 font-medium'  // Aceitável
+  return 'text-red-600 font-medium'                        // Atenção
 }
 
 const formatNumber = (value: number) => {
@@ -200,7 +168,9 @@ watch(selectedAno, () => {
   loadGiro()
 })
 
-onMounted(() => {
-  loadGiro()
-})
+watch(empresaId, () => {
+  if (empresaId.value) {
+    loadGiro()
+  }
+}, { immediate: true })
 </script>

@@ -50,7 +50,7 @@ export default {
         operacao: {
           50: '#FAFAFA',
           100: '#F5F5F5',
-          200: '#F2F2F5',
+          200: '#F5F5F5',
           300: '#E5E5E5',
           400: '#71717A',
           500: '#3F3F46',

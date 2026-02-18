@@ -142,11 +142,11 @@
       />
     </UCard>
 
-    <!-- Modal de Cadastro/Edição -->
+    <!-- Modal de Nova Entrada (Multi-item) -->
     <UModal
       v-model="modalOpen"
       :ui="{
-        width: 'sm:max-w-xl',
+        width: 'sm:max-w-3xl',
         overlay: { background: 'bg-gray-900/50 backdrop-blur-sm' },
         background: 'bg-white dark:bg-gray-800',
         ring: 'ring-1 ring-gray-200 dark:ring-gray-700',
@@ -156,9 +156,19 @@
       <UCard :ui="{ background: 'bg-transparent', ring: 'ring-0', shadow: '', divide: 'divide-gray-100 dark:divide-gray-700' }">
         <template #header>
           <div class="flex items-center justify-between">
-            <h3 class="text-lg font-semibold">
-              {{ editingEntrada ? 'Editar Entrada' : 'Nova Entrada' }}
-            </h3>
+            <div class="flex items-center gap-3">
+              <div class="p-2 bg-green-100 rounded-lg">
+                <UIcon name="i-heroicons-arrow-down-tray" class="w-5 h-5 text-green-600" />
+              </div>
+              <div>
+                <h3 class="text-lg font-semibold text-gray-900">
+                  {{ editingEntrada ? 'Editar Entrada' : 'Nova Entrada' }}
+                </h3>
+                <p class="text-xs text-gray-500" v-if="!editingEntrada">
+                  Adicione um ou mais produtos à entrada
+                </p>
+              </div>
+            </div>
             <UButton
               color="gray"
               variant="ghost"
@@ -168,85 +178,163 @@
           </div>
         </template>
 
-        <form @submit.prevent="saveEntrada" class="space-y-4">
-          <!-- Filtro Cascata: Categoria → Produto -->
-          <UFormGroup label="Categoria">
-            <USelectMenu
-              v-model="form.categoria_id"
-              :options="categoriasSelect"
-              placeholder="Todas as categorias"
-              searchable
-              searchable-placeholder="Buscar categoria..."
-              value-attribute="value"
-              option-attribute="label"
-              :ui="{ option: { container: 'truncate' } }"
-            >
-              <template #leading>
-                <UIcon name="i-heroicons-tag" class="w-4 h-4 text-gray-400" />
-              </template>
-            </USelectMenu>
-            <p class="text-xs text-gray-500 mt-1">Selecione uma categoria para filtrar os produtos</p>
-          </UFormGroup>
-
-          <UFormGroup label="Produto" required>
-            <USelectMenu
-              v-model="form.produto_id"
-              :options="produtosSelect"
-              :placeholder="form.categoria_id ? 'Selecione o produto' : 'Selecione uma categoria primeiro'"
-              searchable
-              searchable-placeholder="Buscar produto..."
-              value-attribute="value"
-              option-attribute="label"
-            >
-              <template #leading>
-                <UIcon name="i-heroicons-cube" class="w-4 h-4 text-gray-400" />
-              </template>
-            </USelectMenu>
-          </UFormGroup>
-
-          <UFormGroup label="Data" required>
-            <UInput v-model="form.data" type="date" />
-          </UFormGroup>
-
-          <div class="grid grid-cols-2 gap-4">
-            <UFormGroup label="Quantidade" required>
-              <UInput
-                v-model.number="form.quantidade"
-                type="number"
-                step="0.0001"
-                min="0.0001"
-                placeholder="0"
-              />
+        <div class="space-y-5">
+          <!-- Campos compartilhados -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <UFormGroup label="Data" required>
+              <UInput v-model="formData" type="date" />
             </UFormGroup>
-
-            <UFormGroup label="Valor Total" required>
-              <UInput
-                v-model.number="form.valor_total"
-                type="number"
-                step="0.01"
-                min="0"
-                placeholder="0,00"
-              />
+            <UFormGroup label="Número da NF">
+              <UInput v-model="formNf" placeholder="Ex: 001234" />
             </UFormGroup>
           </div>
 
-          <div class="p-3 bg-green-50 rounded-lg">
-            <div class="flex justify-between items-center">
-              <span class="text-sm text-gray-600">Custo Unitário:</span>
-              <span class="text-lg font-bold text-green-600">
-                {{ formatCurrency(custoUnitarioCalc) }}
+          <!-- Divider -->
+          <div class="border-t border-gray-200 dark:border-gray-700" />
+
+          <!-- Lista de itens -->
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-sm font-medium text-gray-700">
+                Itens da entrada
               </span>
+              <UBadge color="green" variant="subtle" size="xs" v-if="itens.length > 0">
+                {{ itens.length }} {{ itens.length === 1 ? 'item' : 'itens' }}
+              </UBadge>
             </div>
+
+            <!-- Item rows -->
+            <div class="space-y-3">
+              <div
+                v-for="(item, index) in itens"
+                :key="index"
+                class="relative group rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/30 p-4 transition-all hover:border-green-300 hover:shadow-sm"
+              >
+                <!-- Botão remover (só se multi-item e não editando) -->
+                <button
+                  v-if="itens.length > 1 && !editingEntrada"
+                  @click="removeItem(index)"
+                  class="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-sm hover:bg-red-600"
+                >
+                  <UIcon name="i-heroicons-x-mark" class="w-3.5 h-3.5" />
+                </button>
+
+                <!-- Linha 1: Produto -->
+                <div class="mb-3">
+                  <USelectMenu
+                    v-model="item.produto_id"
+                    :options="produtosSelect"
+                    placeholder="Buscar produto..."
+                    searchable
+                    searchable-placeholder="Digite para buscar..."
+                    value-attribute="value"
+                    option-attribute="label"
+                    size="md"
+                    :ui="{ trigger: { base: 'w-full' } }"
+                    @change="onProdutoChange(index)"
+                  >
+                    <template #leading>
+                      <UIcon name="i-heroicons-cube" class="w-4 h-4 text-gray-400" />
+                    </template>
+                    <template #label>
+                      <span v-if="item.produto_id" class="truncate">
+                        {{ getProdutoNome(item.produto_id) }}
+                      </span>
+                      <span v-else class="text-gray-400">Buscar produto...</span>
+                    </template>
+                  </USelectMenu>
+                </div>
+
+                <!-- Linha 2: Quantidade + UN | Valor Total | Custo Unitário -->
+                <div class="grid grid-cols-3 gap-3">
+                  <!-- Quantidade com UN -->
+                  <div>
+                    <label class="block text-xs font-medium text-gray-500 mb-1">Quantidade</label>
+                    <div class="flex">
+                      <UInput
+                        v-model.number="item.quantidade"
+                        type="number"
+                        step="0.0001"
+                        min="0.0001"
+                        placeholder="0"
+                        size="md"
+                        :ui="item.produto_id && getProdutoUnidade(item.produto_id) ? { wrapper: 'w-full', base: 'rounded-r-none' } : { wrapper: 'w-full' }"
+                      />
+                      <div
+                        v-if="item.produto_id && getProdutoUnidade(item.produto_id)"
+                        class="inline-flex items-center px-3 border border-l-0 border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 rounded-r-md text-sm font-medium text-gray-600 dark:text-gray-300 whitespace-nowrap"
+                      >
+                        {{ getProdutoUnidade(item.produto_id) }}
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Valor Total -->
+                  <div>
+                    <label class="block text-xs font-medium text-gray-500 mb-1">Valor Total (R$)</label>
+                    <UInput
+                      v-model.number="item.valor_total"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="0,00"
+                      size="md"
+                    />
+                  </div>
+
+                  <!-- Custo Unitário (calculado) -->
+                  <div>
+                    <label class="block text-xs font-medium text-gray-500 mb-1">Custo Unit.</label>
+                    <div class="h-[38px] flex items-center px-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md">
+                      <span class="text-sm font-semibold text-green-700 dark:text-green-400">
+                        {{ formatCurrency(calcCustoUnitario(item)) }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Observação (colapsável) -->
+                <div class="mt-3" v-if="item.showObs">
+                  <UTextarea
+                    v-model="item.observacao"
+                    placeholder="Observações deste item..."
+                    :rows="2"
+                    size="sm"
+                  />
+                </div>
+                <button
+                  v-if="!item.showObs"
+                  @click="item.showObs = true"
+                  class="mt-2 text-xs text-gray-400 hover:text-gray-600 transition-colors flex items-center gap-1"
+                >
+                  <UIcon name="i-heroicons-chat-bubble-bottom-center-text" class="w-3.5 h-3.5" />
+                  Adicionar observação
+                </button>
+              </div>
+            </div>
+
+            <!-- Botão adicionar item (só no modo criação) -->
+            <button
+              v-if="!editingEntrada"
+              @click="addItem"
+              class="w-full py-3 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl text-sm text-gray-500 hover:border-green-400 hover:text-green-600 hover:bg-green-50/50 transition-all flex items-center justify-center gap-2"
+            >
+              <UIcon name="i-heroicons-plus-circle" class="w-5 h-5" />
+              Adicionar outro produto
+            </button>
           </div>
 
-          <UFormGroup label="Número da NF">
-            <UInput v-model="form.numero_nf" placeholder="Número da nota fiscal" />
-          </UFormGroup>
-
-          <UFormGroup label="Observação">
-            <UTextarea v-model="form.observacao" placeholder="Observações..." rows="2" />
-          </UFormGroup>
-        </form>
+          <!-- Resumo do total (quando multi-item) -->
+          <div
+            v-if="itens.length > 1"
+            class="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800"
+          >
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Total da entrada</span>
+            <span class="text-lg font-bold text-green-700 dark:text-green-400">
+              {{ formatCurrency(totalItens) }}
+            </span>
+          </div>
+        </div>
 
         <template #footer>
           <div class="flex flex-col-reverse sm:flex-row justify-end gap-3">
@@ -254,7 +342,8 @@
               Cancelar
             </UButton>
             <UButton color="primary" class="w-full sm:w-auto" :loading="saving" @click="saveEntrada">
-              {{ editingEntrada ? 'Salvar' : 'Criar' }}
+              <UIcon name="i-heroicons-check" class="w-4 h-4 mr-1.5" />
+              {{ editingEntrada ? 'Salvar Alterações' : `Registrar ${itens.length > 1 ? itens.length + ' Entradas' : 'Entrada'}` }}
             </UButton>
           </div>
         </template>
@@ -300,14 +389,22 @@
 </template>
 
 <script setup lang="ts">
-import type { Entrada, Produto, Categoria } from '~/types'
+import type { Entrada, Produto } from '~/types'
 
-const { getEntradas, createEntrada, updateEntrada, deleteEntrada: removeEntrada, getProdutos, getCategorias } = useEstoque()
+interface ItemEntrada {
+  produto_id: string
+  quantidade: number
+  valor_total: number
+  observacao: string
+  showObs: boolean
+}
+
+const { getEntradas, createEntrada, updateEntrada, deleteEntrada: removeEntrada, getProdutos } = useEstoque()
+const { empresaId } = useEmpresa()
 const toast = useToast()
 
 const entradas = ref<Entrada[]>([])
 const produtos = ref<Produto[]>([])
-const categorias = ref<Categoria[]>([])
 const loading = ref(true)
 const saving = ref(false)
 const deleting = ref(false)
@@ -319,15 +416,12 @@ const deleteModalOpen = ref(false)
 const editingEntrada = ref<Entrada | null>(null)
 const deletingEntrada = ref<Entrada | null>(null)
 
-const form = ref({
-  categoria_id: '',
-  produto_id: '',
-  data: new Date().toISOString().split('T')[0],
-  quantidade: 0,
-  valor_total: 0,
-  numero_nf: '',
-  observacao: ''
-})
+// Campos compartilhados do modal
+const formData = ref(new Date().toISOString().split('T')[0])
+const formNf = ref('')
+
+// Lista de itens da entrada
+const itens = ref<ItemEntrada[]>([])
 
 const columns = [
   { key: 'data', label: 'Data', sortable: true },
@@ -340,35 +434,10 @@ const columns = [
   { key: 'actions', label: 'Ações', class: 'text-right', rowClass: 'text-right' }
 ]
 
-const semanaOptions = [
-  { label: 'Automático', value: '' },
-  { label: 'SEMANA 1', value: 'SEMANA 1' },
-  { label: 'SEMANA 2', value: 'SEMANA 2' },
-  { label: 'SEMANA 3', value: 'SEMANA 3' },
-  { label: 'SEMANA 4', value: 'SEMANA 4' },
-  { label: 'SEMANA 5', value: 'SEMANA 5' },
-  { label: 'SEMANA 6', value: 'SEMANA 6' }
-]
-
-// Opções de categorias para o select
-const categoriasSelect = computed(() =>
-  categorias.value.map(c => ({
-    label: c.nome,
-    value: c.id
-  }))
-)
-
-// Produtos filtrados pela categoria selecionada (filtro cascata)
-const produtosFiltrados = computed(() => {
-  if (!form.value.categoria_id) {
-    return produtos.value
-  }
-  return produtos.value.filter(p => p.categoria_id === form.value.categoria_id)
-})
-
+// Opções de produtos para o select
 const produtosSelect = computed(() =>
-  produtosFiltrados.value.map(p => ({
-    label: `${p.nome} (${p.categoria?.nome || ''})`,
+  produtos.value.map(p => ({
+    label: `${p.nome} ${p.unidade?.sigla ? `(${p.unidade.sigla})` : ''}`,
     value: p.id
   }))
 )
@@ -404,10 +473,46 @@ const totalValor = computed(() =>
   filteredEntradas.value.reduce((sum, e) => sum + Number(e.valor_total), 0)
 )
 
-const custoUnitarioCalc = computed(() => {
-  if (!form.value.quantidade || form.value.quantidade === 0) return 0
-  return (form.value.valor_total || 0) / form.value.quantidade
+// Total dos itens no modal
+const totalItens = computed(() =>
+  itens.value.reduce((sum, item) => sum + (Number(item.valor_total) || 0), 0)
+)
+
+// Helpers de produto
+const getProdutoNome = (produtoId: string) => {
+  const p = produtos.value.find(p => p.id === produtoId)
+  return p ? p.nome : ''
+}
+
+const getProdutoUnidade = (produtoId: string) => {
+  const p = produtos.value.find(p => p.id === produtoId)
+  return p?.unidade?.sigla || ''
+}
+
+const onProdutoChange = (_index: number) => {
+  // Hook para futuras ações ao mudar produto
+}
+
+const calcCustoUnitario = (item: ItemEntrada) => {
+  if (!item.quantidade || item.quantidade === 0) return 0
+  return (item.valor_total || 0) / item.quantidade
+}
+
+const createEmptyItem = (): ItemEntrada => ({
+  produto_id: '',
+  quantidade: 0,
+  valor_total: 0,
+  observacao: '',
+  showObs: false
 })
+
+const addItem = () => {
+  itens.value.push(createEmptyItem())
+}
+
+const removeItem = (index: number) => {
+  itens.value.splice(index, 1)
+}
 
 const formatDate = (date: string | undefined) => {
   if (!date) return '-'
@@ -454,92 +559,115 @@ const loadProdutos = async () => {
   }
 }
 
-const loadCategorias = async () => {
-  try {
-    categorias.value = await getCategorias()
-  } catch (error) {
-    console.error('Erro ao carregar categorias:', error)
-  }
-}
-
 const openModal = (entrada?: Entrada) => {
   if (entrada) {
     editingEntrada.value = entrada
-    // Buscar categoria do produto para preencher o filtro cascata
-    const produto = produtos.value.find(p => p.id === entrada.produto_id)
-    form.value = {
-      categoria_id: produto?.categoria_id || '',
+    formData.value = entrada.data
+    formNf.value = entrada.numero_nf || ''
+    itens.value = [{
       produto_id: entrada.produto_id,
-      data: entrada.data,
       quantidade: entrada.quantidade,
       valor_total: entrada.valor_total,
-      numero_nf: entrada.numero_nf || '',
-      observacao: entrada.observacao || ''
-    }
+      observacao: entrada.observacao || '',
+      showObs: !!entrada.observacao
+    }]
   } else {
     editingEntrada.value = null
-    form.value = {
-      categoria_id: '',
-      produto_id: '',
-      data: new Date().toISOString().split('T')[0],
-      quantidade: 0,
-      valor_total: 0,
-      numero_nf: '',
-      observacao: ''
-    }
+    formData.value = new Date().toISOString().split('T')[0]
+    formNf.value = ''
+    itens.value = [createEmptyItem()]
   }
   modalOpen.value = true
 }
 
-// Limpar produto selecionado quando categoria mudar
-watch(() => form.value.categoria_id, () => {
-  // Se mudar a categoria, verificar se o produto atual pertence à nova categoria
-  if (form.value.produto_id) {
-    const produtoAtual = produtos.value.find(p => p.id === form.value.produto_id)
-    if (produtoAtual && produtoAtual.categoria_id !== form.value.categoria_id) {
-      form.value.produto_id = ''
+const saveEntrada = async () => {
+  // Validar itens
+  const itensValidos = itens.value.filter(item => item.produto_id)
+
+  if (itensValidos.length === 0) {
+    toast.add({
+      title: 'Atenção',
+      description: 'Selecione pelo menos um produto',
+      color: 'amber'
+    })
+    return
+  }
+
+  for (const item of itensValidos) {
+    if (!item.quantidade || item.quantidade <= 0) {
+      const nome = getProdutoNome(item.produto_id)
+      toast.add({
+        title: 'Atenção',
+        description: `Informe a quantidade para "${nome}"`,
+        color: 'amber'
+      })
+      return
+    }
+    if (!item.valor_total || item.valor_total <= 0) {
+      const nome = getProdutoNome(item.produto_id)
+      toast.add({
+        title: 'Atenção',
+        description: `Informe o valor total para "${nome}"`,
+        color: 'amber'
+      })
+      return
     }
   }
-})
 
-const saveEntrada = async () => {
-  if (!form.value.produto_id || !form.value.data || !form.value.quantidade || !form.value.valor_total) {
+  if (!formData.value) {
     toast.add({
-      title: 'Erro',
-      description: 'Produto, data, quantidade e valor total são obrigatórios',
-      color: 'red'
+      title: 'Atenção',
+      description: 'Informe a data da entrada',
+      color: 'amber'
     })
     return
   }
 
   try {
     saving.value = true
-    const data = {
-      produto_id: form.value.produto_id,
-      data: form.value.data,
-      quantidade: form.value.quantidade,
-      custo_unitario: custoUnitarioCalc.value,
-      numero_nf: form.value.numero_nf || null,
-      observacao: form.value.observacao || null
-    }
 
     if (editingEntrada.value) {
-      await updateEntrada(editingEntrada.value.id, data)
+      // Edição: salva apenas o primeiro item
+      const item = itensValidos[0]
+      await updateEntrada(editingEntrada.value.id, {
+        produto_id: item.produto_id,
+        data: formData.value,
+        quantidade: item.quantidade,
+        custo_unitario: calcCustoUnitario(item),
+        valor_total: item.valor_total,
+        numero_nf: formNf.value || undefined,
+        observacao: item.observacao || undefined
+      })
       toast.add({
         title: 'Sucesso',
         description: 'Entrada atualizada com sucesso',
         color: 'green'
       })
     } else {
-      await createEntrada(data)
+      // Criação: salva todos os itens
+      for (const item of itensValidos) {
+        await createEntrada({
+          produto_id: item.produto_id,
+          data: formData.value,
+          quantidade: item.quantidade,
+          custo_unitario: calcCustoUnitario(item),
+          valor_total: item.valor_total,
+          numero_nf: formNf.value || undefined,
+          observacao: item.observacao || undefined
+        })
+      }
       toast.add({
         title: 'Sucesso',
-        description: 'Entrada registrada com sucesso',
+        description: itensValidos.length > 1
+          ? `${itensValidos.length} entradas registradas com sucesso`
+          : 'Entrada registrada com sucesso',
         color: 'green'
       })
     }
+
     modalOpen.value = false
     await loadEntradas()
+    page.value = 1
   } catch (error: any) {
     toast.add({
       title: 'Erro',
@@ -584,9 +712,10 @@ watch([filtroDataInicio, filtroDataFim], () => {
   loadEntradas()
 })
 
-onMounted(() => {
-  loadEntradas()
-  loadProdutos()
-  loadCategorias()
-})
+watch(empresaId, () => {
+  if (empresaId.value) {
+    loadEntradas()
+    loadProdutos()
+  }
+}, { immediate: true })
 </script>

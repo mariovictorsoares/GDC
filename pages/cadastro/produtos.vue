@@ -43,6 +43,8 @@
         <USelect
           v-model="filterStatus"
           :options="statusOptions"
+          value-attribute="value"
+          option-attribute="label"
           placeholder="Status"
           class="w-full sm:w-32"
         />
@@ -157,6 +159,21 @@
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <UFormGroup label="Nome" required class="md:col-span-2">
               <UInput v-model="form.nome" placeholder="Nome do produto" />
+              <!-- Alerta de produtos similares -->
+              <div v-if="!editingProduto && produtosSimilares.length > 0" class="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                <div class="flex items-start gap-2">
+                  <UIcon name="i-heroicons-exclamation-triangle" class="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
+                  <div class="text-sm">
+                    <p class="font-medium text-amber-700">Produtos similares encontrados:</p>
+                    <ul class="mt-1 space-y-0.5">
+                      <li v-for="similar in produtosSimilares" :key="similar.id" class="text-amber-600">
+                        <span class="font-medium">{{ similar.nome }}</span>
+                        <span class="text-amber-400 text-xs ml-1">({{ similar.subgrupo?.nome || 'sem subgrupo' }})</span>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
             </UFormGroup>
 
             <UFormGroup label="Grupo" required>
@@ -216,15 +233,6 @@
                 type="number"
                 step="0.01"
                 placeholder="0,00"
-              />
-            </UFormGroup>
-
-            <UFormGroup label="Estoque Mínimo">
-              <UInput
-                v-model.number="form.estoque_minimo"
-                type="number"
-                step="0.0001"
-                placeholder="0"
               />
             </UFormGroup>
 
@@ -511,6 +519,7 @@ const {
   getCustosMensais,
   upsertCustoMensal
 } = useEstoque()
+const { empresaId } = useEmpresa()
 const toast = useToast()
 
 const produtos = ref<Produto[]>([])
@@ -641,7 +650,7 @@ const filteredProdutos = computed(() => {
     result = result.filter(p => p.subgrupo_id === filterSubgrupo.value)
   }
 
-  if (filterStatus.value) {
+  if (filterStatus.value !== '') {
     const isActive = filterStatus.value === 'true'
     result = result.filter(p => p.ativo === isActive)
   }
@@ -650,6 +659,26 @@ const filteredProdutos = computed(() => {
 })
 
 const { page, pageSize, paginatedItems } = usePagination(filteredProdutos)
+
+// Busca produtos similares ao digitar o nome (apenas no cadastro novo)
+const produtosSimilares = computed(() => {
+  const nome = form.value.nome.trim()
+  if (!nome || nome.length < 3 || editingProduto.value) return []
+
+  const termo = nome.toLowerCase()
+  return produtos.value.filter(p => {
+    const nomeProduto = p.nome.toLowerCase()
+    // Verifica se contém o termo ou se o termo contém o nome do produto
+    if (nomeProduto.includes(termo) || termo.includes(nomeProduto)) return true
+    // Verifica similaridade por palavras em comum
+    const palavrasTermo = termo.split(/\s+/).filter(w => w.length > 2)
+    const palavrasProduto = nomeProduto.split(/\s+/).filter(w => w.length > 2)
+    const palavrasComuns = palavrasTermo.filter(pt =>
+      palavrasProduto.some(pp => pp.includes(pt) || pt.includes(pp))
+    )
+    return palavrasComuns.length > 0 && palavrasTermo.length > 0
+  }).slice(0, 5) // Limita a 5 resultados
+})
 
 // Formata texto com primeira letra maiúscula e resto minúsculo
 const formatarNome = (texto: string) => {
@@ -972,7 +1001,10 @@ const deleteUnidade = async () => {
   }
 }
 
-onMounted(() => {
-  loadData()
-})
+// Recarregar dados quando a empresa ativa mudar
+watch(empresaId, () => {
+  if (empresaId.value) {
+    loadData()
+  }
+}, { immediate: true })
 </script>

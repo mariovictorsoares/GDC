@@ -1,21 +1,102 @@
 import type {
   PainelMes,
+  SemanaInfo,
   CurvaABC,
   GiroEstoque,
   CMV,
   EstoqueMinimo,
   SaldoEstoque,
-  ComparativoABC
+  ComparativoABC,
+  CmcSemanalResumo,
+  CmcSemanalGrupo,
+  CmcSemanalSubgrupo,
+  FaturamentoSemanal,
+  GestaoInventario
 } from '~/types'
 
 export const useRelatorios = () => {
   const client = useSupabaseClient()
+  const { empresaId } = useEmpresa()
+
+  // Helper para aplicar filtro empresa_id em queries
+  const comEmpresa = (query: any) => {
+    if (empresaId.value) {
+      return query.eq('empresa_id', empresaId.value)
+    }
+    return query
+  }
 
   // ==========================================
   // PAINEL MÊS (COM CMV E GIRO POR PRODUTO)
   // ==========================================
 
-  const getPainelMes = async (ano: number, mes: number): Promise<PainelMes[]> => {
+  /**
+   * Calcula as semanas Seg-Dom reais de um mês.
+   * Ex: Fev/2025 → S1 (03/02 - 09/02), S2 (10/02 - 16/02), ...
+   * Dias do mês que caem antes da 1ª segunda ficam na S1 (junto com ela).
+   * Dias após o último domingo ficam na última semana.
+   */
+  const calcularSemanasDoMes = (ano: number, mes: number): SemanaInfo[] => {
+    const primeiroDia = new Date(ano, mes - 1, 1)
+    const ultimoDia = new Date(ano, mes, 0)
+    const totalDias = ultimoDia.getDate()
+    const mesStr = String(mes).padStart(2, '0')
+
+    const formatDia = (d: Date) => `${String(d.getDate()).padStart(2, '0')}/${mesStr}`
+    const formatISO = (d: Date) => `${ano}-${mesStr}-${String(d.getDate()).padStart(2, '0')}`
+
+    // Encontrar a 1ª segunda-feira do mês (ou depois)
+    const diaSem1 = primeiroDia.getDay() // 0=dom, 1=seg
+    // Dias antes da 1ª segunda: pertencem à semana 1
+    // 1ª segunda do mês: se dia 1 é seg (1), é dia 1. Se dom (0), é dia 2. Se sab (6), é dia 3, etc.
+    let primeiraSegunda = 1
+    if (diaSem1 !== 1) {
+      // Avançar até a próxima segunda
+      primeiraSegunda = diaSem1 === 0 ? 2 : 1 + (8 - diaSem1)
+    }
+
+    const semanas: SemanaInfo[] = []
+    let semanaNum = 1
+
+    // Cada semana começa na segunda e termina no domingo
+    let inicioSemana = 1 // sempre começa do dia 1
+    let seg = primeiraSegunda
+
+    while (inicioSemana <= totalDias) {
+      let fimSemana: number
+
+      if (semanaNum === 1) {
+        // Primeira semana: do dia 1 até o domingo após a 1ª segunda
+        const domAposSeg = seg + 6
+        fimSemana = Math.min(domAposSeg, totalDias)
+      } else {
+        // Semanas seguintes: seg a dom
+        fimSemana = Math.min(seg + 6, totalDias)
+      }
+
+      const dInicio = new Date(ano, mes - 1, inicioSemana)
+      const dFim = new Date(ano, mes - 1, fimSemana)
+
+      semanas.push({
+        label: `S${semanaNum}`,
+        tooltip: `${formatDia(dInicio)} - ${formatDia(dFim)}`,
+        inicio: formatISO(dInicio),
+        fim: formatISO(dFim)
+      })
+
+      inicioSemana = fimSemana + 1
+      seg = fimSemana + 1 // próxima segunda
+      semanaNum++
+    }
+
+    return semanas
+  }
+
+  const getPainelMes = async (ano: number, mes: number, tipoSaida: 'todos' | 'transferencia' | 'definitiva' = 'todos'): Promise<{ semanas: SemanaInfo[], itens: PainelMes[] }> => {
+    // Calcular semanas Seg-Dom reais do mês
+    const semanasDoMes = calcularSemanasDoMes(ano, mes)
+    const qtdSemanas = semanasDoMes.length
+
     // Primeiro dia do mês
     const dataInicio = `${ano}-${String(mes).padStart(2, '0')}-01`
     // Último dia do mês
@@ -23,7 +104,7 @@ export const useRelatorios = () => {
     const dataFim = `${ano}-${String(mes).padStart(2, '0')}-${ultimoDia}`
 
     // Buscar produtos ativos com categoria
-    const { data: produtos, error: prodError } = await client
+    const { data: produtos, error: prodError } = await comEmpresa(client
       .from('produtos')
       .select(`
         id,
@@ -34,42 +115,42 @@ export const useRelatorios = () => {
         unidade:unidades(sigla)
       `)
       .eq('ativo', true)
-      .order('nome')
+      .order('nome'))
 
     if (prodError) throw prodError
 
-    // Buscar entradas do mês
-    const { data: entradas, error: entError } = await client
+    // Buscar entradas do mês (com data para agrupar por semana real)
+    const { data: entradas, error: entError } = await comEmpresa(client
       .from('entradas')
-      .select('produto_id, quantidade, semana, valor_total')
+      .select('produto_id, quantidade, data, valor_total')
       .gte('data', dataInicio)
-      .lte('data', dataFim)
+      .lte('data', dataFim))
 
     if (entError) throw entError
 
-    // Buscar saídas do mês com custo
-    const { data: saidas, error: saiError } = await client
+    // Buscar saídas do mês com custo e tipo (com data)
+    const { data: saidas, error: saiError } = await comEmpresa(client
       .from('saidas')
-      .select('produto_id, quantidade, semana, custo_saida')
+      .select('produto_id, quantidade, data, custo_saida, tipo')
       .gte('data', dataInicio)
-      .lte('data', dataFim)
+      .lte('data', dataFim))
 
     if (saiError) throw saiError
 
-    // Buscar ajustes do mês
-    const { data: ajustes, error: ajuError } = await client
+    // Buscar ajustes do mês (com data)
+    const { data: ajustes, error: ajuError } = await comEmpresa(client
       .from('ajustes')
-      .select('produto_id, quantidade, semana')
+      .select('produto_id, quantidade, data')
       .gte('data', dataInicio)
-      .lte('data', dataFim)
+      .lte('data', dataFim))
 
     if (ajuError) throw ajuError
 
     // Buscar última entrada de cada produto para pegar o custo unitário mais recente
-    const { data: ultimasEntradas, error: ultEntError } = await client
+    const { data: ultimasEntradas, error: ultEntError } = await comEmpresa(client
       .from('entradas')
       .select('produto_id, quantidade, valor_total, data')
-      .order('data', { ascending: false })
+      .order('data', { ascending: false }))
 
     if (ultEntError) throw ultEntError
 
@@ -89,20 +170,20 @@ export const useRelatorios = () => {
     const anoAnterior = mes === 1 ? ano - 1 : ano
     const dataFimAnterior = `${anoAnterior}-${String(mesAnterior).padStart(2, '0')}-${new Date(anoAnterior, mesAnterior, 0).getDate()}`
 
-    const { data: entradasAnt } = await client
+    const { data: entradasAnt } = await comEmpresa(client
       .from('entradas')
       .select('produto_id, quantidade')
-      .lte('data', dataFimAnterior)
+      .lte('data', dataFimAnterior))
 
-    const { data: saidasAnt } = await client
+    const { data: saidasAnt } = await comEmpresa(client
       .from('saidas')
-      .select('produto_id, quantidade')
-      .lte('data', dataFimAnterior)
+      .select('produto_id, quantidade, tipo')
+      .lte('data', dataFimAnterior))
 
-    const { data: ajustesAnt } = await client
+    const { data: ajustesAnt } = await comEmpresa(client
       .from('ajustes')
       .select('produto_id, quantidade')
-      .lte('data', dataFimAnterior)
+      .lte('data', dataFimAnterior))
 
     // Montar mapa de movimentos anteriores
     const movimentosAnteriores = new Map<string, number>()
@@ -126,55 +207,62 @@ export const useRelatorios = () => {
       movimentosAnteriores.set(a.produto_id, atual + Number(a.quantidade))
     })
 
+    // Helper: encontrar índice da semana pela data
+    const getIndiceSemana = (data: string): number => {
+      return semanasDoMes.findIndex(s => data >= s.inicio && data <= s.fim)
+    }
+
     // Montar painel
     const painel: PainelMes[] = produtos?.map(p => {
       const prodEntradas = entradas?.filter(e => e.produto_id === p.id) || []
-      const prodSaidas = saidas?.filter(s => s.produto_id === p.id) || []
+      const prodSaidasAll = saidas?.filter(s => s.produto_id === p.id) || []
+      const prodSaidas = tipoSaida === 'todos'
+        ? prodSaidasAll
+        : prodSaidasAll.filter(s => s.tipo === tipoSaida)
       const prodAjustes = ajustes?.filter(a => a.produto_id === p.id) || []
       const prodCusto = ultimaEntradaPorProduto.get(p.id) || p.preco_inicial || 0
       const categoriaNome = (p.categoria as any)?.nome || ''
 
-      const sumBySemana = (items: any[], semana: string) =>
-        items.filter(i => i.semana === semana).reduce((sum, i) => sum + Number(i.quantidade), 0)
-
       const estoqueInicial = movimentosAnteriores.get(p.id) || 0
 
-      const saidas_semana1 = sumBySemana(prodSaidas, 'SEMANA 1')
-      const saidas_semana2 = sumBySemana(prodSaidas, 'SEMANA 2')
-      const saidas_semana3 = sumBySemana(prodSaidas, 'SEMANA 3')
-      const saidas_semana4 = sumBySemana(prodSaidas, 'SEMANA 4')
-      const saidas_semana5 = sumBySemana(prodSaidas, 'SEMANA 5')
-      const saidas_semana6 = sumBySemana(prodSaidas, 'SEMANA 6')
-      const total_saidas = saidas_semana1 + saidas_semana2 + saidas_semana3 + saidas_semana4 + saidas_semana5 + saidas_semana6
+      // Agrupar por semana real usando a data
+      const entradas_por_semana = new Array(qtdSemanas).fill(0)
+      prodEntradas.forEach(e => {
+        const idx = getIndiceSemana(e.data)
+        if (idx >= 0) entradas_por_semana[idx] += Number(e.quantidade)
+      })
 
-      const entradas_semana1 = sumBySemana(prodEntradas, 'SEMANA 1')
-      const entradas_semana2 = sumBySemana(prodEntradas, 'SEMANA 2')
-      const entradas_semana3 = sumBySemana(prodEntradas, 'SEMANA 3')
-      const entradas_semana4 = sumBySemana(prodEntradas, 'SEMANA 4')
-      const entradas_semana5 = sumBySemana(prodEntradas, 'SEMANA 5')
-      const entradas_semana6 = sumBySemana(prodEntradas, 'SEMANA 6')
-      const total_entradas = entradas_semana1 + entradas_semana2 + entradas_semana3 + entradas_semana4 + entradas_semana5 + entradas_semana6
+      const saidas_por_semana = new Array(qtdSemanas).fill(0)
+      prodSaidas.forEach(s => {
+        const idx = getIndiceSemana(s.data)
+        if (idx >= 0) saidas_por_semana[idx] += Number(s.quantidade)
+      })
+
+      const total_entradas = entradas_por_semana.reduce((sum, v) => sum + v, 0)
+      const total_saidas = saidas_por_semana.reduce((sum, v) => sum + v, 0)
 
       const total_ajustes = prodAjustes.reduce((sum, a) => sum + Number(a.quantidade), 0)
 
-      const estoque_final = estoqueInicial + total_entradas - total_saidas + total_ajustes
+      // Estoque final sempre considera TODAS as saídas (independente do filtro de visualização)
+      const totalSaidasAll = prodSaidasAll.reduce((sum, s) => sum + Number(s.quantidade), 0)
+      const estoque_final = estoqueInicial + total_entradas - totalSaidasAll + total_ajustes
       const valor_total = estoque_final * Number(prodCusto)
 
-      // CMV do produto (soma dos custo_saida) - EXCLUINDO MTP
-      const cmvProduto = categoriaNome.toUpperCase() === 'MTP'
+      // CMV do produto (soma dos custo_saida) - EXCLUINDO MTP e transferências
+      const cmvProduto = categoriaNome.toUpperCase() === 'MTP' || tipoSaida === 'transferencia'
         ? 0
-        : prodSaidas.reduce((sum, s) => sum + Number(s.custo_saida || 0), 0)
+        : prodSaidas
+            .filter((s: any) => tipoSaida === 'definitiva' || s.tipo === 'definitiva')
+            .reduce((sum: number, s: any) => sum + Number(s.custo_saida || 0), 0)
 
       // Giro em dias - Fórmula especial para MTP
       let giro_dias = 0
       let vezes_mes = 0
 
       if (categoriaNome.toUpperCase() === 'MTP') {
-        // Para MTP: (VALOR_ESTOQUE / (QTD_SAIDAS * CUSTO_UNITARIO)) * 30
         const custoSaidasMTP = total_saidas * Number(prodCusto)
         giro_dias = custoSaidasMTP > 0 ? (valor_total / custoSaidasMTP) * 30 : 0
       } else {
-        // Para outros: (VALOR_ESTOQUE / CMV) * 30
         giro_dias = cmvProduto > 0 ? (valor_total / cmvProduto) * 30 : 0
       }
       vezes_mes = giro_dias > 0 ? 30 / giro_dias : 0
@@ -185,19 +273,9 @@ export const useRelatorios = () => {
         produto: p.nome,
         unidade: (p.unidade as any)?.sigla || '',
         estoque_inicial: estoqueInicial,
-        saidas_semana1,
-        saidas_semana2,
-        saidas_semana3,
-        saidas_semana4,
-        saidas_semana5,
-        saidas_semana6,
+        entradas_por_semana,
+        saidas_por_semana,
         total_saidas,
-        entradas_semana1,
-        entradas_semana2,
-        entradas_semana3,
-        entradas_semana4,
-        entradas_semana5,
-        entradas_semana6,
         total_entradas,
         estoque_final,
         custo: Number(prodCusto),
@@ -208,12 +286,14 @@ export const useRelatorios = () => {
       }
     }) || []
 
-    return painel.filter(p =>
+    const itens = painel.filter(p =>
       p.estoque_inicial !== 0 ||
       p.total_entradas !== 0 ||
       p.total_saidas !== 0 ||
       p.estoque_final !== 0
     )
+
+    return { semanas: semanasDoMes, itens }
   }
 
   // ==========================================
@@ -232,7 +312,7 @@ export const useRelatorios = () => {
     const dataFim = `${anoRef}-${String(mesRef).padStart(2, '0')}-${ultimoDia}`
 
     // Buscar produtos ativos com categoria
-    const { data: produtos, error: prodError } = await client
+    const { data: produtos, error: prodError } = await comEmpresa(client
       .from('produtos')
       .select(`
         id,
@@ -241,17 +321,18 @@ export const useRelatorios = () => {
         preco_inicial,
         categoria:categorias(nome)
       `)
-      .eq('ativo', true)
+      .eq('ativo', true))
 
     if (prodError) throw prodError
     if (!produtos || produtos.length === 0) return []
 
-    // Buscar saídas do período com custo (para CMV)
-    const { data: saidas } = await client
+    // Buscar saídas definitivas do período com custo (para CMV)
+    const { data: saidas } = await comEmpresa(client
       .from('saidas')
       .select('produto_id, quantidade, custo_saida')
+      .eq('tipo', 'definitiva')
       .gte('data', dataInicio)
-      .lte('data', dataFim)
+      .lte('data', dataFim))
 
     // Calcular CMV (valor de saída) por produto
     const cmvPorProduto = new Map<string, { quantidade: number, cmv: number }>()
@@ -340,8 +421,8 @@ export const useRelatorios = () => {
     const ultimoDia = new Date(anoRef, mesRef, 0).getDate()
     const dataFim = `${anoRef}-${String(mesRef).padStart(2, '0')}-${ultimoDia}`
 
-    // Buscar saídas com produto e categoria (EXCLUINDO MTP)
-    const { data: saidas, error } = await client
+    // Buscar saídas definitivas com produto e categoria (EXCLUINDO MTP)
+    const { data: saidas, error } = await comEmpresa(client
       .from('saidas')
       .select(`
         produto_id,
@@ -349,8 +430,9 @@ export const useRelatorios = () => {
         custo_saida,
         produto:produtos(id, nome, categoria:categorias(nome))
       `)
+      .eq('tipo', 'definitiva')
       .gte('data', dataInicio)
-      .lte('data', dataFim)
+      .lte('data', dataFim))
 
     if (error) throw error
 
@@ -494,30 +576,31 @@ export const useRelatorios = () => {
   // Função auxiliar para calcular valor do estoque em uma data específica (EXCLUINDO MTP)
   const calcularValorEstoqueEmData = async (dataLimite: string, excluirMTP: boolean = false): Promise<number> => {
     // Buscar produtos ativos com categoria
-    const { data: produtos } = await client
+    const { data: produtos } = await comEmpresa(client
       .from('produtos')
       .select('id, estoque_inicial, preco_inicial, categoria:categorias(nome)')
-      .eq('ativo', true)
+      .eq('ativo', true))
 
     if (!produtos || produtos.length === 0) return 0
 
     // Buscar entradas até a data
-    const { data: entradas } = await client
+    const { data: entradas } = await comEmpresa(client
       .from('entradas')
       .select('produto_id, quantidade, valor_total')
-      .lte('data', dataLimite)
+      .lte('data', dataLimite))
 
-    // Buscar saídas até a data
-    const { data: saidas } = await client
+    // Buscar saídas definitivas até a data (transferências não saem do sistema)
+    const { data: saidas } = await comEmpresa(client
       .from('saidas')
       .select('produto_id, quantidade')
-      .lte('data', dataLimite)
+      .eq('tipo', 'definitiva')
+      .lte('data', dataLimite))
 
     // Buscar ajustes até a data
-    const { data: ajustes } = await client
+    const { data: ajustes } = await comEmpresa(client
       .from('ajustes')
       .select('produto_id, quantidade')
-      .lte('data', dataLimite)
+      .lte('data', dataLimite))
 
     let valorTotal = 0
 
@@ -563,10 +646,81 @@ export const useRelatorios = () => {
   }
 
   const getGiroEstoque = async (ano: number): Promise<GiroEstoque[]> => {
-    const meses = [
+    const mesesNomes = [
       'JANEIRO', 'FEVEREIRO', 'MARÇO', 'ABRIL', 'MAIO', 'JUNHO',
       'JULHO', 'AGOSTO', 'SETEMBRO', 'OUTUBRO', 'NOVEMBRO', 'DEZEMBRO'
     ]
+
+    // Buscar TODOS os dados necessários de uma vez (em paralelo)
+    const dataFimTotal = `${ano}-12-31`
+
+    const [
+      { data: produtos },
+      { data: todasEntradas },
+      { data: todasSaidas },
+      { data: todosAjustes },
+      { data: saidasComCusto }
+    ] = await Promise.all([
+      comEmpresa(client
+        .from('produtos')
+        .select('id, estoque_inicial, preco_inicial, categoria:categorias(nome)')
+        .eq('ativo', true)),
+      comEmpresa(client
+        .from('entradas')
+        .select('produto_id, quantidade, valor_total, data')
+        .lte('data', dataFimTotal)),
+      comEmpresa(client
+        .from('saidas')
+        .select('produto_id, quantidade, data, tipo')
+        .lte('data', dataFimTotal)),
+      comEmpresa(client
+        .from('ajustes')
+        .select('produto_id, quantidade, data')
+        .lte('data', dataFimTotal)),
+      comEmpresa(client
+        .from('saidas')
+        .select('produto_id, custo_saida, data, tipo, produto:produtos(categoria:categorias(nome))')
+        .eq('tipo', 'definitiva')
+        .gte('data', `${ano}-01-01`)
+        .lte('data', dataFimTotal))
+    ])
+
+    if (!produtos || produtos.length === 0) return []
+
+    // IDs de produtos MTP
+    const idsMTP = new Set(
+      produtos.filter(p => ((p.categoria as any)?.nome || '').toUpperCase() === 'MTP').map(p => p.id)
+    )
+
+    // Helper: calcular valor do estoque em uma data (INCLUINDO MTP para giro)
+    const calcularEstoqueEmData = (dataLimite: string): number => {
+      let valorTotal = 0
+
+      for (const produto of produtos) {
+        let quantidade = Number(produto.estoque_inicial || 0)
+        let valorEntradas = Number(produto.estoque_inicial || 0) * Number(produto.preco_inicial || 0)
+        let qtdEntradas = Number(produto.estoque_inicial || 0)
+
+        todasEntradas?.filter(e => e.produto_id === produto.id && e.data <= dataLimite).forEach(e => {
+          quantidade += Number(e.quantidade)
+          valorEntradas += Number(e.valor_total || 0)
+          qtdEntradas += Number(e.quantidade)
+        })
+
+        todasSaidas?.filter(s => s.produto_id === produto.id && s.tipo === 'definitiva' && s.data <= dataLimite).forEach(s => {
+          quantidade -= Number(s.quantidade)
+        })
+
+        todosAjustes?.filter(a => a.produto_id === produto.id && a.data <= dataLimite).forEach(a => {
+          quantidade += Number(a.quantidade)
+        })
+
+        const custoMedio = qtdEntradas > 0 ? valorEntradas / qtdEntradas : 0
+        valorTotal += Math.max(0, quantidade) * custoMedio
+      }
+
+      return valorTotal
+    }
 
     const resultado: GiroEstoque[] = []
 
@@ -575,42 +729,22 @@ export const useRelatorios = () => {
       const ultimoDia = new Date(ano, mes, 0).getDate()
       const dataFim = `${ano}-${String(mes).padStart(2, '0')}-${ultimoDia}`
 
-      // Calcular data do último dia do mês anterior
       const mesAnterior = mes === 1 ? 12 : mes - 1
       const anoAnterior = mes === 1 ? ano - 1 : ano
       const ultimoDiaAnterior = new Date(anoAnterior, mesAnterior, 0).getDate()
       const dataFimAnterior = `${anoAnterior}-${String(mesAnterior).padStart(2, '0')}-${ultimoDiaAnterior}`
 
-      // CMV do mês (soma das saídas valoradas) - EXCLUINDO MTP
-      const { data: saidas } = await client
-        .from('saidas')
-        .select(`
-          custo_saida,
-          produto:produtos(categoria:categorias(nome))
-        `)
-        .gte('data', dataInicio)
-        .lte('data', dataFim)
+      // CMV do mês (excluindo MTP) - filtrado em memória
+      const cmv = saidasComCusto
+        ?.filter(s => s.data >= dataInicio && s.data <= dataFim && !idsMTP.has(s.produto_id))
+        .reduce((sum, s) => sum + Number(s.custo_saida || 0), 0) || 0
 
-      // Filtrar saídas excluindo MTP
-      const cmv = saidas?.reduce((sum, s) => {
-        const categoriaNome = (s.produto as any)?.categoria?.nome || ''
-        if (categoriaNome.toUpperCase() === 'MTP') return sum
-        return sum + Number(s.custo_saida || 0)
-      }, 0) || 0
-
-      // Estoque inicial do mês (valor do estoque no final do mês anterior)
-      const estoque_inicial = await calcularValorEstoqueEmData(dataFimAnterior)
-
-      // Estoque final do mês (valor do estoque no final do mês atual)
-      const estoque_final = await calcularValorEstoqueEmData(dataFim)
-
-      // Estoque médio = (estoque inicial + estoque final) / 2
+      // Estoques calculados em memória
+      const estoque_inicial = calcularEstoqueEmData(dataFimAnterior)
+      const estoque_final = calcularEstoqueEmData(dataFim)
       const estoque_medio = (estoque_inicial + estoque_final) / 2
-
-      // Estoque real = estoque final (para compatibilidade)
       const estoque_real = estoque_final
 
-      // Cálculos de giro
       const giro_dias_real = cmv > 0 ? (estoque_real / cmv) * 30 : 0
       const vezes_mes_real = estoque_real > 0 ? cmv / estoque_real : 0
       const giro_dias_medio = cmv > 0 ? (estoque_medio / cmv) * 30 : 0
@@ -618,7 +752,7 @@ export const useRelatorios = () => {
 
       resultado.push({
         ano,
-        mes: meses[mes - 1],
+        mes: mesesNomes[mes - 1],
         estoque_real,
         estoque_medio,
         cmv,
@@ -637,51 +771,107 @@ export const useRelatorios = () => {
   // ==========================================
 
   const getCMV = async (ano: number): Promise<CMV[]> => {
-    const resultado: CMV[] = []
-
-    // Buscar faturamentos do ano
-    const { data: faturamentos } = await client
+    // Buscar TODOS os dados necessários de uma vez (em paralelo)
+    let fatQuery = client
       .from('faturamentos')
       .select('*')
       .eq('ano', ano)
+
+    if (empresaId.value) {
+      fatQuery = fatQuery.eq('empresa_id', empresaId.value)
+    }
+
+    // Data range: do início do ano anterior (para estoque inicial de jan) até fim do ano
+    const dataInicioTotal = `${ano - 1}-01-01`
+    const dataFimTotal = `${ano}-12-31`
+
+    const [
+      { data: faturamentos },
+      { data: produtos },
+      { data: todasEntradas },
+      { data: todasSaidas },
+      { data: todosAjustes }
+    ] = await Promise.all([
+      fatQuery,
+      comEmpresa(client
+        .from('produtos')
+        .select('id, estoque_inicial, preco_inicial, categoria:categorias(nome)')
+        .eq('ativo', true)),
+      comEmpresa(client
+        .from('entradas')
+        .select('produto_id, quantidade, valor_total, data')
+        .lte('data', dataFimTotal)),
+      comEmpresa(client
+        .from('saidas')
+        .select('produto_id, quantidade, data, tipo')
+        .lte('data', dataFimTotal)),
+      comEmpresa(client
+        .from('ajustes')
+        .select('produto_id, quantidade, data')
+        .lte('data', dataFimTotal))
+    ])
+
+    if (!produtos || produtos.length === 0) return []
+
+    // Filtrar produtos não-MTP
+    const produtosNaoMTP = produtos.filter(p => {
+      const cat = (p.categoria as any)?.nome || ''
+      return cat.toUpperCase() !== 'MTP'
+    })
+    const idsNaoMTP = new Set(produtosNaoMTP.map(p => p.id))
+
+    // Helper: calcular valor do estoque em uma data (excluindo MTP) - tudo em memória
+    const calcularEstoqueEmData = (dataLimite: string): number => {
+      let valorTotal = 0
+
+      for (const produto of produtosNaoMTP) {
+        let quantidade = Number(produto.estoque_inicial || 0)
+        let valorEntradas = Number(produto.estoque_inicial || 0) * Number(produto.preco_inicial || 0)
+        let qtdEntradas = Number(produto.estoque_inicial || 0)
+
+        todasEntradas?.filter(e => e.produto_id === produto.id && e.data <= dataLimite).forEach(e => {
+          quantidade += Number(e.quantidade)
+          valorEntradas += Number(e.valor_total || 0)
+          qtdEntradas += Number(e.quantidade)
+        })
+
+        todasSaidas?.filter(s => s.produto_id === produto.id && s.tipo === 'definitiva' && s.data <= dataLimite).forEach(s => {
+          quantidade -= Number(s.quantidade)
+        })
+
+        todosAjustes?.filter(a => a.produto_id === produto.id && a.data <= dataLimite).forEach(a => {
+          quantidade += Number(a.quantidade)
+        })
+
+        const custoMedio = qtdEntradas > 0 ? valorEntradas / qtdEntradas : 0
+        valorTotal += Math.max(0, quantidade) * custoMedio
+      }
+
+      return valorTotal
+    }
+
+    const resultado: CMV[] = []
 
     for (let mes = 1; mes <= 12; mes++) {
       const dataInicio = `${ano}-${String(mes).padStart(2, '0')}-01`
       const ultimoDia = new Date(ano, mes, 0).getDate()
       const dataFim = `${ano}-${String(mes).padStart(2, '0')}-${ultimoDia}`
 
-      // Calcular data do último dia do mês anterior
       const mesAnterior = mes === 1 ? 12 : mes - 1
       const anoAnterior = mes === 1 ? ano - 1 : ano
       const ultimoDiaAnterior = new Date(anoAnterior, mesAnterior, 0).getDate()
       const dataFimAnterior = `${anoAnterior}-${String(mesAnterior).padStart(2, '0')}-${ultimoDiaAnterior}`
 
-      // Compras do mês (EXCLUINDO MTP)
-      const { data: entradas } = await client
-        .from('entradas')
-        .select(`
-          valor_total,
-          produto:produtos(categoria:categorias(nome))
-        `)
-        .gte('data', dataInicio)
-        .lte('data', dataFim)
+      // Compras do mês (excluindo MTP) - filtrado em memória
+      const compras = todasEntradas
+        ?.filter(e => e.data >= dataInicio && e.data <= dataFim && idsNaoMTP.has(e.produto_id))
+        .reduce((sum, e) => sum + Number(e.valor_total || 0), 0) || 0
 
-      // Filtrar entradas excluindo MTP
-      const compras = entradas?.reduce((sum, e) => {
-        const categoriaNome = (e.produto as any)?.categoria?.nome || ''
-        if (categoriaNome.toUpperCase() === 'MTP') return sum
-        return sum + Number(e.valor_total || 0)
-      }, 0) || 0
+      // Estoques calculados em memória (sem queries adicionais)
+      const estoque_inicial = calcularEstoqueEmData(dataFimAnterior)
+      const estoque_final = calcularEstoqueEmData(dataFim)
 
-      // Estoque inicial (valor do estoque no final do mês anterior) - EXCLUINDO MTP
-      const estoque_inicial = await calcularValorEstoqueEmData(dataFimAnterior, true)
-
-      // Estoque final (valor do estoque no final do mês atual) - EXCLUINDO MTP
-      const estoque_final = await calcularValorEstoqueEmData(dataFim, true)
-
-      // CMV = Estoque Inicial + Compras - Estoque Final (EXCLUINDO MTP)
       const cmv = estoque_inicial + compras - estoque_final
-
       const faturamento = faturamentos?.find(f => f.mes === mes)?.valor || 0
       const percentual_cmv = faturamento > 0 ? (cmv / Number(faturamento)) * 100 : 0
 
@@ -691,7 +881,7 @@ export const useRelatorios = () => {
         estoque_inicial,
         compras,
         estoque_final,
-        cmv: Math.max(0, cmv), // CMV não pode ser negativo
+        cmv: Math.max(0, cmv),
         faturamento: Number(faturamento),
         percentual_cmv
       })
@@ -705,101 +895,95 @@ export const useRelatorios = () => {
   // ==========================================
 
   const getEstoqueMinimo = async (): Promise<EstoqueMinimo[]> => {
-    const { data: produtos, error } = await client
+    const { data: produtos, error } = await comEmpresa(client
       .from('produtos')
       .select(`
         id,
         nome,
-        estoque_minimo,
-        margem_seguranca,
-        tempo_reposicao,
-        categoria:categorias(nome),
+        subgrupo:subgrupos(nome),
         unidade:unidades(sigla)
       `)
-      .eq('ativo', true)
+      .eq('ativo', true))
 
     if (error) throw error
 
     // Buscar saldos atuais
     const { data: saldos } = await client
       .from('v_saldo_estoque')
-      .select('produto_id, saldo_atual')
+      .select('produto_id, saldo_principal')
 
-    // Calcular consumo médio semanal (últimas 4 semanas)
-    const dataInicio = new Date()
-    dataInicio.setDate(dataInicio.getDate() - 28)
-
-    const { data: saidas } = await client
-      .from('saidas')
-      .select('produto_id, quantidade')
-      .gte('data', dataInicio.toISOString().split('T')[0])
-
+    // Calcular limites das 3 últimas semanas (seg-dom)
     const hoje = new Date()
+    const diaSemana = hoje.getDay() // 0=dom, 1=seg...
+    // Ir até a segunda-feira desta semana
+    const segAtual = new Date(hoje)
+    segAtual.setDate(hoje.getDate() - ((diaSemana + 6) % 7))
+    segAtual.setHours(0, 0, 0, 0)
+
+    // Semana 1 = mais recente (semana passada), Semana 3 = mais antiga
+    const sem1Inicio = new Date(segAtual)
+    sem1Inicio.setDate(segAtual.getDate() - 7)
+    const sem1Fim = new Date(segAtual)
+    sem1Fim.setDate(segAtual.getDate() - 1)
+
+    const sem2Inicio = new Date(segAtual)
+    sem2Inicio.setDate(segAtual.getDate() - 14)
+    const sem2Fim = new Date(segAtual)
+    sem2Fim.setDate(segAtual.getDate() - 8)
+
+    const sem3Inicio = new Date(segAtual)
+    sem3Inicio.setDate(segAtual.getDate() - 21)
+    const sem3Fim = new Date(segAtual)
+    sem3Fim.setDate(segAtual.getDate() - 15)
+
+    const formatData = (d: Date) => d.toISOString().split('T')[0]
+    const formatDataBR = (d: Date) => `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`
+
+    const sem1Periodo = `${formatDataBR(sem1Inicio)} - ${formatDataBR(sem1Fim)}`
+    const sem2Periodo = `${formatDataBR(sem2Inicio)} - ${formatDataBR(sem2Fim)}`
+    const sem3Periodo = `${formatDataBR(sem3Inicio)} - ${formatDataBR(sem3Fim)}`
+
+    // Buscar saídas definitivas das últimas 3 semanas
+    const { data: saidas } = await comEmpresa(client
+      .from('saidas')
+      .select('produto_id, quantidade, data')
+      .eq('tipo', 'definitiva')
+      .gte('data', formatData(sem3Inicio))
+      .lte('data', formatData(sem1Fim)))
 
     const resultado: EstoqueMinimo[] = produtos?.map(p => {
       const saldo = saldos?.find(s => s.produto_id === p.id)
-      const quantidade_estoque = Number(saldo?.saldo_atual || 0)
+      const quantidade_estoque = Number(saldo?.saldo_principal || 0)
 
       const prodSaidas = saidas?.filter(s => s.produto_id === p.id) || []
-      const totalSaidas = prodSaidas.reduce((sum, s) => sum + Number(s.quantidade), 0)
-      const consumo_medio_semanal = totalSaidas / 4
-      const consumo_medio_diario = consumo_medio_semanal / 7
 
-      const estoque_minimo_base = Number(p.estoque_minimo || 0)
-      const margem = Number(p.margem_seguranca || 0) / 100
-      const tempo_reposicao = Number(p.tempo_reposicao || 0)
+      const somarSemana = (inicio: Date, fim: Date) =>
+        prodSaidas
+          .filter(s => s.data >= formatData(inicio) && s.data <= formatData(fim))
+          .reduce((sum, s) => sum + Number(s.quantidade), 0)
 
-      // Estoque mínimo com margem de segurança
-      const estoque_minimo_com_margem = estoque_minimo_base * (1 + margem)
-
-      // Verificar se precisa repor
-      const repor_estoque = quantidade_estoque <= estoque_minimo_com_margem
-
-      // DIAS_ATE_RUPTURA = (estoque_atual / consumo_diario) - tempo_reposicao
-      const dias_ate_ruptura = consumo_medio_diario > 0
-        ? Math.floor((quantidade_estoque / consumo_medio_diario) - tempo_reposicao)
-        : 999
-
-      // DATA_PONTO_PEDIDO = HOJE() + DIAS_ATE_RUPTURA
-      const dataPontoPedido = new Date(hoje)
-      dataPontoPedido.setDate(dataPontoPedido.getDate() + Math.max(0, dias_ate_ruptura))
-      const data_ponto_pedido = dataPontoPedido.toISOString().split('T')[0]
-
-      // STATUS: ATRASADO se data_ponto_pedido < HOJE, EM TEMPO se próximo, OK se ok
-      let status_prazo: 'ATRASADO' | 'EM TEMPO' | 'OK' = 'OK'
-      if (dias_ate_ruptura < 0) {
-        status_prazo = 'ATRASADO'
-      } else if (dias_ate_ruptura <= tempo_reposicao) {
-        status_prazo = 'EM TEMPO'
-      }
-
-      // Sugestão de pedido: SE(REPOR="SIM", (ESTOQUE_MINIMO - ESTOQUE_ATUAL) + ESTOQUE_MINIMO, 0)
-      const sugestao_pedido = repor_estoque
-        ? Math.max(0, (estoque_minimo_com_margem - quantidade_estoque) + estoque_minimo_com_margem)
-        : 0
+      const semana1 = somarSemana(sem1Inicio, sem1Fim)
+      const semana2 = somarSemana(sem2Inicio, sem2Fim)
+      const semana3 = somarSemana(sem3Inicio, sem3Fim)
+      const media_semanas = (semana1 + semana2 + semana3) / 3
 
       return {
         produto_id: p.id,
-        categoria: (p.categoria as any)?.nome || '',
+        subgrupo: (p.subgrupo as any)?.nome || '',
         nome: p.nome,
-        quantidade_estoque,
         unidade: (p.unidade as any)?.sigla || '',
-        estoque_minimo: estoque_minimo_com_margem,
-        estoque_minimo_base,
-        margem_seguranca: Number(p.margem_seguranca || 0),
-        consumo_medio_semanal,
-        consumo_medio_diario,
-        tempo_reposicao,
-        repor_estoque,
-        dias_ate_ruptura,
-        data_ponto_pedido,
-        status_prazo,
-        dentro_prazo: status_prazo !== 'ATRASADO',
-        sugestao_pedido
+        quantidade_estoque,
+        semana1,
+        semana1_periodo: sem1Periodo,
+        semana2,
+        semana2_periodo: sem2Periodo,
+        semana3,
+        semana3_periodo: sem3Periodo,
+        media_semanas
       }
     }) || []
 
-    return resultado.filter(r => r.estoque_minimo_base > 0 || r.quantidade_estoque > 0)
+    return resultado.filter(r => r.quantidade_estoque > 0 || r.media_semanas > 0)
   }
 
   // ==========================================
@@ -807,14 +991,14 @@ export const useRelatorios = () => {
   // ==========================================
 
   const getVariacaoCusto = async (ano: number) => {
-    const { data: custos, error } = await client
+    const { data: custos, error } = await comEmpresa(client
       .from('custos_mensais')
       .select(`
         *,
         produto:produtos(id, nome, categoria:categorias(nome))
       `)
       .eq('ano', ano)
-      .order('mes')
+      .order('mes'))
 
     if (error) throw error
 
@@ -849,44 +1033,345 @@ export const useRelatorios = () => {
   }
 
   // ==========================================
+  // CMC SEMANAL
+  // ==========================================
+
+  /**
+   * Calcula as últimas N semanas (seg-dom) a partir da semana atual
+   */
+  const calcularSemanas = (qtdSemanas: number = 4) => {
+    const hoje = new Date()
+    const diaSemana = hoje.getDay() // 0=dom, 1=seg...
+    const segAtual = new Date(hoje)
+    segAtual.setDate(hoje.getDate() - ((diaSemana + 6) % 7))
+    segAtual.setHours(0, 0, 0, 0)
+
+    const semanas: { inicio: Date; fim: Date }[] = []
+    for (let i = 1; i <= qtdSemanas; i++) {
+      const inicio = new Date(segAtual)
+      inicio.setDate(segAtual.getDate() - (i * 7))
+      const fim = new Date(inicio)
+      fim.setDate(inicio.getDate() + 6)
+      semanas.push({ inicio, fim })
+    }
+    // Reverter para ficar da mais antiga para a mais recente
+    return semanas.reverse()
+  }
+
+  const formatDateISO = (d: Date) => d.toISOString().split('T')[0]
+  const formatDateBR = (d: Date) => `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`
+
+  /**
+   * Busca faturamentos semanais para as semanas informadas
+   */
+  const getFaturamentosSemanais = async (semanasInicio: string[]): Promise<FaturamentoSemanal[]> => {
+    if (!empresaId.value || semanasInicio.length === 0) return []
+
+    const { data, error } = await client
+      .from('faturamentos_semanais')
+      .select('*')
+      .eq('empresa_id', empresaId.value)
+      .in('semana_inicio', semanasInicio)
+
+    if (error) throw error
+    return (data || []) as FaturamentoSemanal[]
+  }
+
+  /**
+   * Salva (upsert) faturamento de uma semana
+   */
+  const upsertFaturamentoSemanal = async (semanaInicio: string, semanaFim: string, valor: number): Promise<void> => {
+    if (!empresaId.value) throw new Error('Empresa não selecionada')
+
+    const ano = new Date(semanaInicio).getFullYear()
+
+    const { error } = await client
+      .from('faturamentos_semanais')
+      .upsert({
+        empresa_id: empresaId.value,
+        ano,
+        semana_inicio: semanaInicio,
+        semana_fim: semanaFim,
+        valor
+      }, { onConflict: 'empresa_id,semana_inicio' })
+
+    if (error) throw error
+  }
+
+  /**
+   * CMC Semanal: entradas (compras) agrupadas por grupo/subgrupo,
+   * divididas por faturamento semanal
+   */
+  const getCmcSemanal = async (qtdSemanas: number = 4): Promise<CmcSemanalResumo> => {
+    const semanas = calcularSemanas(qtdSemanas)
+
+    const semanasFormatadas = semanas.map(s => ({
+      inicio: formatDateBR(s.inicio),
+      fim: formatDateBR(s.fim),
+      inicio_date: formatDateISO(s.inicio),
+      fim_date: formatDateISO(s.fim)
+    }))
+
+    // Data range total
+    const dataInicio = formatDateISO(semanas[0].inicio)
+    const dataFim = formatDateISO(semanas[semanas.length - 1].fim)
+
+    // Buscar entradas no período com produto → subgrupo → grupo
+    const { data: entradas, error } = await comEmpresa(client
+      .from('entradas')
+      .select(`
+        data,
+        valor_total,
+        produto:produtos(
+          id,
+          subgrupo:subgrupos(
+            id,
+            nome,
+            grupo:grupos(id, nome)
+          )
+        )
+      `)
+      .gte('data', dataInicio)
+      .lte('data', dataFim))
+
+    if (error) throw error
+
+    // Buscar faturamentos semanais
+    const semanasInicioList = semanasFormatadas.map(s => s.inicio_date)
+    const faturamentosData = await getFaturamentosSemanais(semanasInicioList)
+    const faturamentosMap = new Map<string, number>()
+    faturamentosData.forEach(f => {
+      faturamentosMap.set(f.semana_inicio, Number(f.valor || 0))
+    })
+
+    // Montar faturamentos na ordem das semanas
+    const faturamentos = semanasFormatadas.map(s => faturamentosMap.get(s.inicio_date) || 0)
+
+    // Agrupar entradas por grupo/subgrupo/semana
+    const gruposMap = new Map<string, {
+      grupo_id: string
+      grupo_nome: string
+      subgrupos: Map<string, {
+        subgrupo_id: string
+        subgrupo_nome: string
+        totais_semanas: number[]
+      }>
+      totais_semanas: number[]
+    }>()
+
+    entradas?.forEach(e => {
+      const produto = e.produto as any
+      const subgrupo = produto?.subgrupo
+      const grupo = subgrupo?.grupo
+
+      if (!grupo || !subgrupo) return
+
+      const grupoId = grupo.id
+      const subgrupoId = subgrupo.id
+      const dataEntrada = e.data
+
+      // Descobrir em qual semana cai essa entrada
+      const semanaIdx = semanas.findIndex(s =>
+        dataEntrada >= formatDateISO(s.inicio) && dataEntrada <= formatDateISO(s.fim)
+      )
+      if (semanaIdx === -1) return
+
+      // Inicializar grupo se não existir
+      if (!gruposMap.has(grupoId)) {
+        gruposMap.set(grupoId, {
+          grupo_id: grupoId,
+          grupo_nome: grupo.nome,
+          subgrupos: new Map(),
+          totais_semanas: new Array(semanas.length).fill(0)
+        })
+      }
+      const grupoData = gruposMap.get(grupoId)!
+
+      // Inicializar subgrupo se não existir
+      if (!grupoData.subgrupos.has(subgrupoId)) {
+        grupoData.subgrupos.set(subgrupoId, {
+          subgrupo_id: subgrupoId,
+          subgrupo_nome: subgrupo.nome,
+          totais_semanas: new Array(semanas.length).fill(0)
+        })
+      }
+      const subgrupoData = grupoData.subgrupos.get(subgrupoId)!
+
+      const valorTotal = Number(e.valor_total || 0)
+      subgrupoData.totais_semanas[semanaIdx] += valorTotal
+      grupoData.totais_semanas[semanaIdx] += valorTotal
+    })
+
+    // Converter Maps para arrays
+    const grupos: CmcSemanalGrupo[] = Array.from(gruposMap.values())
+      .map(g => ({
+        grupo_id: g.grupo_id,
+        grupo_nome: g.grupo_nome,
+        totais_semanas: g.totais_semanas,
+        subgrupos: Array.from(g.subgrupos.values())
+          .sort((a, b) => a.subgrupo_nome.localeCompare(b.subgrupo_nome)) as CmcSemanalSubgrupo[]
+      }))
+      .sort((a, b) => a.grupo_nome.localeCompare(b.grupo_nome))
+
+    // Calcular CMC % por semana
+    const cmc_percentuais = semanasFormatadas.map((_, idx) => {
+      const totalEntradas = grupos.reduce((sum, g) => sum + g.totais_semanas[idx], 0)
+      const fat = faturamentos[idx]
+      return fat > 0 ? (totalEntradas / fat) * 100 : 0
+    })
+
+    return {
+      semanas: semanasFormatadas,
+      grupos,
+      faturamentos,
+      cmc_percentuais
+    }
+  }
+
+  // ==========================================
+  // VARIAÇÃO DE CUSTO DIÁRIA (por mês)
+  // ==========================================
+
+  const getVariacaoCustoDiaria = async (ano: number, mes: number) => {
+    const dataInicio = `${ano}-${String(mes).padStart(2, '0')}-01`
+    const ultimoDia = new Date(ano, mes, 0).getDate()
+    const dataFim = `${ano}-${String(mes).padStart(2, '0')}-${ultimoDia}`
+
+    // Buscar entradas do mês com produto, subgrupo e unidade
+    const { data: entradas, error } = await comEmpresa(client
+      .from('entradas')
+      .select(`
+        data,
+        quantidade,
+        custo_unitario,
+        valor_total,
+        produto:produtos(
+          id,
+          nome,
+          subgrupo:subgrupos(nome),
+          unidade:unidades(sigla)
+        )
+      `)
+      .gte('data', dataInicio)
+      .lte('data', dataFim)
+      .order('data'))
+
+    if (error) throw error
+
+    // Coletar todos os dias únicos que tiveram entradas
+    const diasSet = new Set<string>()
+    entradas?.forEach(e => diasSet.add(e.data))
+    const dias = Array.from(diasSet).sort()
+
+    // Agrupar por produto
+    const produtosMap = new Map<string, {
+      produto_id: string
+      produto: string
+      subgrupo: string
+      unidade: string
+      custos_por_dia: Map<string, number>
+    }>()
+
+    entradas?.forEach(e => {
+      const produto = e.produto as any
+      if (!produto) return
+
+      const prodId = produto.id
+      if (!produtosMap.has(prodId)) {
+        produtosMap.set(prodId, {
+          produto_id: prodId,
+          produto: produto.nome,
+          subgrupo: produto.subgrupo?.nome || '',
+          unidade: produto.unidade?.sigla || '',
+          custos_por_dia: new Map()
+        })
+      }
+
+      const prod = produtosMap.get(prodId)!
+      prod.custos_por_dia.set(e.data, Number(e.custo_unitario))
+    })
+
+    // Converter para array
+    const produtos = Array.from(produtosMap.values()).map(p => {
+      const custos = dias.map(d => p.custos_por_dia.get(d) || 0)
+
+      // Calcular variações entre dias consecutivos com custo
+      const variacoes = custos.map((custo, idx) => {
+        if (idx === 0 || custo === 0) return null
+        let custoAnterior = 0
+        for (let i = idx - 1; i >= 0; i--) {
+          if (custos[i] > 0) {
+            custoAnterior = custos[i]
+            break
+          }
+        }
+        if (custoAnterior === 0) return null
+        return ((custo - custoAnterior) / custoAnterior) * 100
+      })
+
+      return {
+        produto_id: p.produto_id,
+        produto: p.produto,
+        subgrupo: p.subgrupo,
+        unidade: p.unidade,
+        custos,
+        variacoes
+      }
+    }).sort((a, b) => a.produto.localeCompare(b.produto))
+
+    return {
+      dias: dias.map(d => {
+        const date = new Date(d + 'T00:00:00')
+        return {
+          data: d,
+          label: `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}`
+        }
+      }),
+      produtos
+    }
+  }
+
+  // ==========================================
   // DASHBOARD
   // ==========================================
 
-  const getDashboardResumo = async () => {
+  const getDashboardResumo = async (estoqueMinData?: EstoqueMinimo[]) => {
+    const hoje = new Date()
+    const primeiroDia = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-01`
+
     // Total de produtos ativos
-    const { count: totalProdutos } = await client
+    let prodQuery = client
       .from('produtos')
       .select('*', { count: 'exact', head: true })
       .eq('ativo', true)
 
-    // Valor total do estoque
-    const { data: saldos } = await client
-      .from('v_saldo_estoque')
-      .select('valor_estoque')
+    if (empresaId.value) {
+      prodQuery = prodQuery.eq('empresa_id', empresaId.value)
+    }
+
+    // Fazer todas as queries em paralelo
+    const [
+      { count: totalProdutos },
+      { data: saldos },
+      { data: entradasMes },
+      { data: saidasMes }
+    ] = await Promise.all([
+      prodQuery,
+      client.from('v_saldo_estoque').select('valor_estoque'),
+      comEmpresa(client.from('entradas').select('valor_total').gte('data', primeiroDia)),
+      comEmpresa(client.from('saidas').select('custo_saida').gte('data', primeiroDia))
+    ])
 
     const valorEstoque = saldos?.reduce((sum, s) => sum + Number(s.valor_estoque || 0), 0) || 0
 
-    // Produtos abaixo do estoque mínimo
-    const estoqueMinimo = await getEstoqueMinimo()
-    const produtosAbaixoMinimo = estoqueMinimo.filter(e => e.repor_estoque).length
-
-    // Entradas do mês atual
-    const hoje = new Date()
-    const primeiroDia = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-01`
-
-    const { data: entradasMes } = await client
-      .from('entradas')
-      .select('valor_total')
-      .gte('data', primeiroDia)
+    // Reusar dados de estoque mínimo se fornecidos, senão buscar
+    const estoqueMinimo = estoqueMinData ?? await getEstoqueMinimo()
+    const produtosAbaixoMinimo = estoqueMinimo.filter(e => {
+      const pontoReposicao = e.media_semanas * 1.2
+      return e.quantidade_estoque < pontoReposicao && pontoReposicao > 0
+    }).length
 
     const totalEntradasMes = entradasMes?.reduce((sum, e) => sum + Number(e.valor_total || 0), 0) || 0
-
-    // Saídas do mês atual
-    const { data: saidasMes } = await client
-      .from('saidas')
-      .select('custo_saida')
-      .gte('data', primeiroDia)
-
     const totalSaidasMes = saidasMes?.reduce((sum, s) => sum + Number(s.custo_saida || 0), 0) || 0
 
     return {
@@ -898,6 +1383,125 @@ export const useRelatorios = () => {
     }
   }
 
+  // ==========================================
+  // GESTÃO DE INVENTÁRIO (EI e EF por produto)
+  // ==========================================
+
+  const getGestaoInventario = async (ano: number, mes: number): Promise<GestaoInventario[]> => {
+    const dataInicio = `${ano}-${String(mes).padStart(2, '0')}-01`
+    const ultimoDia = new Date(ano, mes, 0).getDate()
+    const dataFim = `${ano}-${String(mes).padStart(2, '0')}-${ultimoDia}`
+
+    // Data fim do mês anterior
+    const mesAnterior = mes === 1 ? 12 : mes - 1
+    const anoAnterior = mes === 1 ? ano - 1 : ano
+    const ultimoDiaAnterior = new Date(anoAnterior, mesAnterior, 0).getDate()
+    const dataFimAnterior = `${anoAnterior}-${String(mesAnterior).padStart(2, '0')}-${ultimoDiaAnterior}`
+
+    // Buscar produtos ativos
+    const { data: produtos, error: prodError } = await comEmpresa(client
+      .from('produtos')
+      .select(`
+        id,
+        nome,
+        estoque_inicial,
+        preco_inicial,
+        categoria:categorias(nome),
+        unidade:unidades(sigla)
+      `)
+      .eq('ativo', true)
+      .order('nome'))
+
+    if (prodError) throw prodError
+    if (!produtos || produtos.length === 0) return []
+
+    // Buscar todas as entradas até o fim do mês
+    const { data: entradasAte } = await comEmpresa(client
+      .from('entradas')
+      .select('produto_id, quantidade, valor_total, data')
+      .lte('data', dataFim))
+
+    // Buscar todas as saídas até o fim do mês
+    const { data: saidasAte } = await comEmpresa(client
+      .from('saidas')
+      .select('produto_id, quantidade, data')
+      .lte('data', dataFim))
+
+    // Buscar todos os ajustes até o fim do mês
+    const { data: ajustesAte } = await comEmpresa(client
+      .from('ajustes')
+      .select('produto_id, quantidade, data')
+      .lte('data', dataFim))
+
+    const resultado: GestaoInventario[] = produtos.map(p => {
+      const prodEntradas = entradasAte?.filter(e => e.produto_id === p.id) || []
+      const prodSaidas = saidasAte?.filter(s => s.produto_id === p.id) || []
+      const prodAjustes = ajustesAte?.filter(a => a.produto_id === p.id) || []
+
+      // Calcular EI: movimentos até o último dia do mês anterior
+      let ei_quantidade = Number(p.estoque_inicial || 0)
+      let valorEntradasEI = Number(p.estoque_inicial || 0) * Number(p.preco_inicial || 0)
+      let qtdEntradasEI = Number(p.estoque_inicial || 0)
+
+      prodEntradas.filter(e => e.data <= dataFimAnterior).forEach(e => {
+        ei_quantidade += Number(e.quantidade)
+        valorEntradasEI += Number(e.valor_total || 0)
+        qtdEntradasEI += Number(e.quantidade)
+      })
+      prodSaidas.filter(s => s.data <= dataFimAnterior).forEach(s => {
+        ei_quantidade -= Number(s.quantidade)
+      })
+      prodAjustes.filter(a => a.data <= dataFimAnterior).forEach(a => {
+        ei_quantidade += Number(a.quantidade)
+      })
+
+      const custoMedioEI = qtdEntradasEI > 0 ? valorEntradasEI / qtdEntradasEI : 0
+      const ei_valor = Math.max(0, ei_quantidade) * custoMedioEI
+
+      // Calcular EF: movimentos até o último dia do mês selecionado
+      let ef_quantidade = Number(p.estoque_inicial || 0)
+      let valorEntradasEF = Number(p.estoque_inicial || 0) * Number(p.preco_inicial || 0)
+      let qtdEntradasEF = Number(p.estoque_inicial || 0)
+
+      prodEntradas.filter(e => e.data <= dataFim).forEach(e => {
+        ef_quantidade += Number(e.quantidade)
+        valorEntradasEF += Number(e.valor_total || 0)
+        qtdEntradasEF += Number(e.quantidade)
+      })
+      prodSaidas.filter(s => s.data <= dataFim).forEach(s => {
+        ef_quantidade -= Number(s.quantidade)
+      })
+      prodAjustes.filter(a => a.data <= dataFim).forEach(a => {
+        ef_quantidade += Number(a.quantidade)
+      })
+
+      const custoMedioEF = qtdEntradasEF > 0 ? valorEntradasEF / qtdEntradasEF : 0
+      const ef_valor = Math.max(0, ef_quantidade) * custoMedioEF
+
+      const custo_medio = custoMedioEF > 0 ? custoMedioEF : custoMedioEI
+
+      return {
+        produto_id: p.id,
+        produto: p.nome,
+        categoria: (p.categoria as any)?.nome || '',
+        unidade: (p.unidade as any)?.sigla || '',
+        ei_quantidade,
+        ei_valor,
+        ef_quantidade,
+        ef_valor,
+        custo_medio,
+        variacao_quantidade: ef_quantidade - ei_quantidade,
+        variacao_valor: ef_valor - ei_valor
+      }
+    })
+
+    // Filtrar produtos sem movimentação
+    return resultado.filter(r =>
+      r.ei_quantidade !== 0 || r.ef_quantidade !== 0 ||
+      r.ei_valor !== 0 || r.ef_valor !== 0
+    )
+  }
+
   return {
     getPainelMes,
     getCurvaABC,
@@ -907,7 +1511,12 @@ export const useRelatorios = () => {
     getGiroEstoque,
     getCMV,
     getEstoqueMinimo,
+    getCmcSemanal,
+    getFaturamentosSemanais,
+    upsertFaturamentoSemanal,
     getVariacaoCusto,
-    getDashboardResumo
+    getVariacaoCustoDiaria,
+    getDashboardResumo,
+    getGestaoInventario
   }
 }

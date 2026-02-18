@@ -9,7 +9,21 @@
       "ListDirectory(path:*)",
       "ExecuteCommand(cmd:*)",
       "Bash(npm run build:*)",
-      "Bash(ls -la \"C:\\\\Users\\\\mario\\\\Desktop\\\\estoque-cd\\\\public\"\" 2>/dev/null || dir \"C:UsersmarioDesktopestoque-cdpublic \")"
+      "Bash(ls -la \"C:\\\\Users\\\\mario\\\\Desktop\\\\estoque-cd\\\\public\"\" 2>/dev/null || dir \"C:UsersmarioDesktopestoque-cdpublic \")",
+      "Bash(npx nuxi typecheck:*)",
+      "WebFetch(domain:alochefia.com.br)",
+      "WebFetch(domain:academy.alochefia.com.br)",
+      "Bash(npx nuxi build:*)",
+      "Bash(npm install:*)",
+      "Bash(git checkout:*)",
+      "Bash(npx nuxt build)",
+      "Bash(npm run dev:*)",
+      "Bash(timeout:*)",
+      "Bash(node -e:*)",
+      "Bash(powershell -Command \"Get-NetTCPConnection -LocalPort 3000,3001,3002 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_OwningProcess -Force -ErrorAction SilentlyContinue }\")",
+      "Bash(powershell -Command:*)",
+      "Bash(npx nuxt prepare:*)",
+      "Bash(npx nuxt dev:*)"
     ]
   }
 }

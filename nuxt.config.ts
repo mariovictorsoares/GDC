@@ -16,6 +16,10 @@ export default defineNuxtConfig({
     preference: 'light'
   },
 
+  experimental: {
+    appManifest: false
+  },
+
   app: {
     head: {
       title: 'Guardiao do Estoque',
@@ -23,6 +27,9 @@ export default defineNuxtConfig({
         { charset: 'utf-8' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
         { name: 'description', content: 'Sistema de Controle de Estoque para Centro de Distribuicao' }
+      ],
+      link: [
+        { rel: 'icon', type: 'image/png', href: '/favicon.png' }
       ]
     }
   }

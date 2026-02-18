@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 border-t border-gray-200 bg-white dark:bg-gray-800 dark:border-gray-700">
+  <div class="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 border-t border-gray-200 bg-white dark:bg-gray-800 dark:border-gray-700 rounded-b-lg">
     <!-- Esquerda: Seletor de linhas + Total de registros -->
     <div class="flex items-center gap-3">
       <USelect
