@@ -34,7 +34,7 @@
               class="rounded-r-none"
               @click="tipoVisualizacao = 'todos'; loadPainel()"
             >
-              Transf. + Consumo
+              Transf. + Definitiva
             </UButton>
             <UButton
               :color="tipoVisualizacao === 'transferencia' ? 'primary' : 'gray'"
@@ -49,10 +49,19 @@
               :color="tipoVisualizacao === 'definitiva' ? 'primary' : 'gray'"
               :variant="tipoVisualizacao === 'definitiva' ? 'solid' : 'outline'"
               size="sm"
-              class="rounded-l-none"
+              class="rounded-none border-r-0"
               @click="tipoVisualizacao = 'definitiva'; loadPainel()"
             >
-              Consumo Final
+              Definitiva
+            </UButton>
+            <UButton
+              :color="tipoVisualizacao === 'beneficiamento' ? 'primary' : 'gray'"
+              :variant="tipoVisualizacao === 'beneficiamento' ? 'solid' : 'outline'"
+              size="sm"
+              class="rounded-l-none"
+              @click="tipoVisualizacao = 'beneficiamento'; loadPainel()"
+            >
+              Produção
             </UButton>
           </div>
         </UFormGroup>
@@ -63,8 +72,18 @@
       </div>
     </UCard>
 
+    <!-- Resumo Skeleton -->
+    <div v-if="loading" class="grid grid-cols-1 gap-4" :class="showCmv ? 'md:grid-cols-4' : 'md:grid-cols-3'">
+      <div v-for="i in (showCmv ? 4 : 3)" :key="i" class="rounded-xl bg-white ring-1 ring-gray-100 shadow-sm p-5">
+        <div class="text-center space-y-2">
+          <USkeleton class="h-4 w-24 mx-auto" />
+          <USkeleton class="h-8 w-32 mx-auto" />
+        </div>
+      </div>
+    </div>
+
     <!-- Resumo Geral -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div v-if="!loading" class="grid grid-cols-1 gap-4" :class="showCmv ? 'md:grid-cols-4' : 'md:grid-cols-3'">
       <UCard>
         <div class="text-center">
           <p class="text-sm text-gray-500">Estoque Inicial</p>
@@ -79,11 +98,11 @@
       </UCard>
       <UCard>
         <div class="text-center">
-          <p class="text-sm text-gray-500">Estoque Final</p>
+          <p class="text-sm text-gray-500">Estoque Total</p>
           <p class="text-2xl font-bold text-blue-600">{{ formatCurrency(resumo.estoqueFinal) }}</p>
         </div>
       </UCard>
-      <UCard>
+      <UCard v-if="showCmv">
         <div class="text-center">
           <p class="text-sm text-gray-500">CMV (Saídas)</p>
           <p class="text-2xl font-bold text-orange-600">{{ formatCurrency(resumo.cmvTotal) }}</p>
@@ -131,20 +150,20 @@
               <th :colspan="semanas.length + 1" class="px-3 py-2 text-center text-xs font-medium text-red-600 uppercase tracking-wider border-r bg-red-50">Saídas</th>
               <th rowspan="2" class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-r">E.F.</th>
               <th rowspan="2" class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-r">C.Unit</th>
-              <th rowspan="2" class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-r">C.Total</th>
-              <th rowspan="2" class="px-3 py-3 text-center text-xs font-medium text-orange-600 uppercase tracking-wider bg-orange-50">CMV</th>
+              <th rowspan="2" class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-r">Est. Total</th>
+              <th v-if="showCmv" rowspan="2" class="px-3 py-3 text-center text-xs font-medium text-orange-600 uppercase tracking-wider bg-orange-50">CMV</th>
             </tr>
             <tr>
               <!-- Entradas por semana (dinâmico) -->
               <th v-for="sem in semanas" :key="'ent-' + sem.label" class="px-2 py-1 text-center text-xs font-medium text-green-500 bg-green-50">
-                <MiniCalendar :mes="selectedMes" :ano="selectedAno" :dia-inicio="getDiaFromISO(sem.inicio)" :dia-fim="getDiaFromISO(sem.fim)">
+                <MiniCalendar :mes="selectedMes" :ano="selectedAno" :data-inicio="sem.inicio" :data-fim="sem.fim">
                   {{ sem.label }}
                 </MiniCalendar>
               </th>
               <th class="px-2 py-1 text-center text-xs font-medium text-green-600 bg-green-50 border-r">Tot</th>
               <!-- Saídas por semana (dinâmico) -->
               <th v-for="sem in semanas" :key="'sai-' + sem.label" class="px-2 py-1 text-center text-xs font-medium text-red-500 bg-red-50">
-                <MiniCalendar :mes="selectedMes" :ano="selectedAno" :dia-inicio="getDiaFromISO(sem.inicio)" :dia-fim="getDiaFromISO(sem.fim)">
+                <MiniCalendar :mes="selectedMes" :ano="selectedAno" :data-inicio="sem.inicio" :data-fim="sem.fim">
                   {{ sem.label }}
                 </MiniCalendar>
               </th>
@@ -172,7 +191,7 @@
               <td class="px-2 py-2 text-xs text-center text-gray-600 border-r">{{ formatCurrencyShort(item.custo) }}</td>
               <td class="px-2 py-2 text-xs text-center font-medium text-gray-900 border-r">{{ formatCurrencyShort(item.valor_total) }}</td>
               <!-- CMV -->
-              <td class="px-2 py-2 text-xs text-center font-medium text-orange-600 bg-orange-50/50">{{ formatCurrencyShort(item.cmv || 0) }}</td>
+              <td v-if="showCmv" class="px-2 py-2 text-xs text-center font-medium text-orange-600 bg-orange-50/50">{{ formatCurrencyShort(item.cmv || 0) }}</td>
             </tr>
           </tbody>
           <tfoot class="bg-gray-100">
@@ -184,7 +203,7 @@
               <td class="px-3 py-2 text-xs text-center text-blue-700 border-r">-</td>
               <td class="px-3 py-2 text-xs text-center text-gray-700 border-r">-</td>
               <td class="px-3 py-2 text-xs text-center text-gray-900 border-r">{{ formatCurrencyShort(totais.valor) }}</td>
-              <td class="px-3 py-2 text-xs text-center text-orange-700 bg-orange-100">{{ formatCurrencyShort(totais.cmv) }}</td>
+              <td v-if="showCmv" class="px-3 py-2 text-xs text-center text-orange-700 bg-orange-100">{{ formatCurrencyShort(totais.cmv) }}</td>
             </tr>
           </tfoot>
         </table>
@@ -211,14 +230,16 @@ const painelData = ref<PainelMes[]>([])
 const semanas = ref<SemanaInfo[]>([])
 const loading = ref(false)
 const search = ref('')
-const tipoVisualizacao = ref<'todos' | 'transferencia' | 'definitiva'>('todos')
+const tipoVisualizacao = ref<'todos' | 'transferencia' | 'definitiva' | 'beneficiamento'>('todos')
 
 const hoje = new Date()
 const selectedMes = ref(hoje.getMonth() + 1)
 const selectedAno = ref(hoje.getFullYear())
 
-// Total de colunas: Cat + Produto + EI + (semanas * 2 entradas/saídas) + 2 totais + EF + CUnit + CTotal + CMV
-const totalColunas = computed(() => 3 + (semanas.value.length + 1) * 2 + 4)
+const showCmv = computed(() => tipoVisualizacao.value !== 'beneficiamento')
+
+// Total de colunas: Cat + Produto + EI + (semanas * 2 entradas/saídas) + 2 totais + EF + CUnit + CTotal + (CMV se não for produção)
+const totalColunas = computed(() => 3 + (semanas.value.length + 1) * 2 + 3 + (showCmv.value ? 1 : 0))
 
 const mesesOptions = [
   { label: 'Janeiro', value: 1 },
@@ -275,19 +296,23 @@ const totais = computed(() => {
   }
 })
 
+const truncate2 = (v: number) => Math.trunc((v || 0) * 100) / 100
+
 const formatQtd = (value: number | null | undefined) => {
   if (value === null || value === undefined || value === 0) return '-'
   return new Intl.NumberFormat('pt-BR', {
-    minimumFractionDigits: 0,
+    minimumFractionDigits: 2,
     maximumFractionDigits: 2
-  }).format(value)
+  }).format(truncate2(value))
 }
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
-    currency: 'BRL'
-  }).format(value || 0)
+    currency: 'BRL',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(truncate2(value))
 }
 
 const formatCurrencyShort = (value: number) => {
@@ -303,13 +328,9 @@ const formatCurrencyShort = (value: number) => {
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
     currency: 'BRL',
-    minimumFractionDigits: 0,
+    minimumFractionDigits: 2,
     maximumFractionDigits: 2
-  }).format(value)
-}
-
-const getDiaFromISO = (isoDate: string): number => {
-  return parseInt(isoDate.split('-')[2], 10)
+  }).format(truncate2(value))
 }
 
 const loadPainel = async () => {

@@ -10,6 +10,8 @@ import type {
   Ajuste,
   Faturamento,
   CustoMensal,
+  ProdutoBeneficiamento,
+  Beneficiamento,
 
   SaldoEstoque,
   FiltroData,
@@ -419,7 +421,8 @@ export const useEstoque = () => {
       .from('entradas')
       .select(`
         *,
-        produto:produtos(*, categoria:categorias(*), unidade:unidades(*))
+        produto:produtos(*, categoria:categorias(*), unidade:unidades(*)),
+        fornecedor:fornecedores(*)
       `)
       .order('data', { ascending: false })
       .order('created_at', { ascending: false })
@@ -447,7 +450,8 @@ export const useEstoque = () => {
       .insert({ ...entrada, empresa_id: empresaId.value })
       .select(`
         *,
-        produto:produtos(*, categoria:categorias(*), unidade:unidades(*))
+        produto:produtos(*, categoria:categorias(*), unidade:unidades(*)),
+        fornecedor:fornecedores(*)
       `)
       .single()
 
@@ -720,6 +724,172 @@ export const useEstoque = () => {
     }
   }
 
+  // ==========================================
+  // BENEFICIAMENTO - Produtos Vinculados
+  // ==========================================
+
+  const getProdutosBeneficiamento = async (produtoOrigemId: string) => {
+    const { data, error } = await client
+      .from('produtos_beneficiamento')
+      .select(`
+        *,
+        produto_final:produtos!produto_final_id(
+          id, nome,
+          unidade:unidades(sigla),
+          subgrupo:subgrupos(nome, grupo:grupos(nome))
+        )
+      `)
+      .eq('produto_origem_id', produtoOrigemId)
+
+    if (error) throw error
+    return data as ProdutoBeneficiamento[]
+  }
+
+  const createProdutoBeneficiamento = async (link: {
+    produto_origem_id: string
+    produto_final_id: string
+  }) => {
+    const { data, error } = await client
+      .from('produtos_beneficiamento')
+      .insert({ ...link, empresa_id: empresaId.value })
+      .select()
+      .single()
+
+    if (error) throw error
+    return data as ProdutoBeneficiamento
+  }
+
+  const deleteProdutoBeneficiamento = async (id: string) => {
+    const { error } = await client
+      .from('produtos_beneficiamento')
+      .delete()
+      .eq('id', id)
+
+    if (error) throw error
+  }
+
+  // ==========================================
+  // BENEFICIAMENTO - Controle de Pendentes
+  // ==========================================
+
+  const getBeneficiamentosPendentes = async () => {
+    let query = client
+      .from('beneficiamentos')
+      .select(`
+        *,
+        saida:saidas(
+          *,
+          produto:produtos(
+            *,
+            unidade:unidades(*),
+            subgrupo:subgrupos(nome, grupo:grupos(nome))
+          )
+        )
+      `)
+      .eq('status', 'pendente')
+      .order('created_at', { ascending: false })
+
+    if (empresaId.value) {
+      query = query.eq('empresa_id', empresaId.value)
+    }
+
+    const { data, error } = await query
+    if (error) throw error
+    return data as Beneficiamento[]
+  }
+
+  const countBeneficiamentosPendentes = async (): Promise<number> => {
+    let query = client
+      .from('beneficiamentos')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'pendente')
+
+    if (empresaId.value) {
+      query = query.eq('empresa_id', empresaId.value)
+    }
+
+    const { count, error } = await query
+    if (error) throw error
+    return count || 0
+  }
+
+  const createSaidaBeneficiamento = async (saida: Partial<Saida>) => {
+    // 1. Criar a saída normalmente com tipo beneficiamento
+    const saidaCriada = await createSaida({
+      ...saida,
+      tipo: 'beneficiamento'
+    })
+
+    // 2. Criar registro de beneficiamento pendente
+    const { error } = await client
+      .from('beneficiamentos')
+      .insert({
+        saida_id: saidaCriada.id,
+        status: 'pendente',
+        empresa_id: empresaId.value
+      })
+
+    if (error) throw error
+    return saidaCriada
+  }
+
+  const resolverBeneficiamento = async (
+    beneficiamentoId: string,
+    saida: Saida,
+    itens: Array<{ produto_final_id: string; quantidade: number }>
+  ) => {
+    // Custo: custo_saida (total do produto original) / soma de todas as quantidades finais
+    const totalQuantidadeFinal = itens.reduce((sum, i) => sum + i.quantidade, 0)
+    const custoUnitarioFinal = totalQuantidadeFinal > 0
+      ? Number(saida.custo_saida) / totalQuantidadeFinal
+      : 0
+
+    // 1. Criar entradas para cada produto final
+    const entradasCriadas: Entrada[] = []
+    for (const item of itens) {
+      if (item.quantidade <= 0) continue
+      const entrada = await createEntrada({
+        produto_id: item.produto_final_id,
+        data: new Date().toISOString().split('T')[0],
+        quantidade: item.quantidade,
+        custo_unitario: custoUnitarioFinal,
+        observacao: `Produção - beneficiamento`,
+        origem_beneficiamento: true
+      })
+      entradasCriadas.push(entrada)
+    }
+
+    // 2. Criar beneficiamento_itens vinculando cada entrada
+    for (let i = 0; i < entradasCriadas.length; i++) {
+      const itemOriginal = itens.filter(it => it.quantidade > 0)[i]
+      const { error } = await client
+        .from('beneficiamento_itens')
+        .insert({
+          beneficiamento_id: beneficiamentoId,
+          entrada_id: entradasCriadas[i].id,
+          produto_final_id: itemOriginal.produto_final_id,
+          quantidade: itemOriginal.quantidade
+        })
+      if (error) throw error
+    }
+
+    // 3. Atualizar status para resolvido (com check de concorrência)
+    const { data, error } = await client
+      .from('beneficiamentos')
+      .update({
+        status: 'resolvido',
+        data_resolucao: new Date().toISOString().split('T')[0]
+      })
+      .eq('id', beneficiamentoId)
+      .eq('status', 'pendente')
+      .select()
+      .single()
+
+    if (error || !data) {
+      throw new Error('Este beneficiamento já foi resolvido por outro usuário')
+    }
+  }
+
   return {
     // Grupos
     getGrupos,
@@ -778,6 +948,14 @@ export const useEstoque = () => {
     // Relatórios
     getSaldoEstoque,
     getSaldoProduto,
-    getSaldoDuplo
+    getSaldoDuplo,
+    // Beneficiamento
+    getProdutosBeneficiamento,
+    createProdutoBeneficiamento,
+    deleteProdutoBeneficiamento,
+    getBeneficiamentosPendentes,
+    countBeneficiamentosPendentes,
+    createSaidaBeneficiamento,
+    resolverBeneficiamento
   }
 }

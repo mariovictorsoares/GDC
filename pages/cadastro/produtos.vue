@@ -51,8 +51,23 @@
       </div>
     </UCard>
 
+    <!-- Tabela Skeleton -->
+    <UCard v-if="loading" :ui="{ body: { padding: '' } }">
+      <div class="p-5 space-y-4">
+        <div v-for="i in 8" :key="i" class="flex items-center gap-4">
+          <USkeleton class="h-4 w-32" />
+          <USkeleton class="h-4 w-24" />
+          <USkeleton class="h-4 w-16" />
+          <USkeleton class="h-4 w-20" />
+          <USkeleton class="h-4 w-20" />
+          <USkeleton class="h-4 w-16" />
+          <USkeleton class="h-4 w-16" />
+        </div>
+      </div>
+    </UCard>
+
     <!-- Tabela -->
-    <UCard :ui="{ body: { padding: '' } }">
+    <UCard v-if="!loading" :ui="{ body: { padding: '' } }">
       <UTable
         :columns="columns"
         :rows="paginatedItems"
@@ -131,7 +146,6 @@
     <!-- Modal de Cadastro/Edição -->
     <UModal
       v-model="modalOpen"
-      :prevent-close="unidadesModalOpen"
       :ui="{
         width: 'sm:max-w-2xl',
         overlay: { background: 'bg-gray-900/50 backdrop-blur-sm' },
@@ -218,30 +232,131 @@
               </div>
             </UFormGroup>
 
-            <UFormGroup label="Estoque Inicial">
-              <UInput
-                v-model.number="form.estoque_inicial"
-                type="number"
-                step="0.0001"
-                placeholder="0"
-              />
-            </UFormGroup>
-
-            <UFormGroup label="Preço Inicial">
-              <UInput
-                v-model.number="form.preco_inicial"
-                type="number"
-                step="0.01"
-                placeholder="0,00"
-              />
-            </UFormGroup>
-
             <UFormGroup label="Status">
               <div class="flex items-center gap-2">
                 <UToggle v-model="form.ativo" />
                 <span class="text-sm text-gray-600">{{ form.ativo ? 'Ativo' : 'Inativo' }}</span>
               </div>
             </UFormGroup>
+
+            <!-- Beneficiamento -->
+            <UFormGroup label="Esse produto vai ser beneficiado?" required>
+              <USelect
+                v-model="form.beneficiavel"
+                :options="[
+                  { label: 'Não', value: false },
+                  { label: 'Sim', value: true }
+                ]"
+                value-attribute="value"
+                option-attribute="label"
+              />
+            </UFormGroup>
+          </div>
+
+          <!-- Produtos Finais do Beneficiamento -->
+          <div v-if="form.beneficiavel === true || form.beneficiavel === 'true'" class="space-y-3 mt-2">
+            <div class="border-t border-gray-200 pt-4">
+              <div class="flex items-center justify-between mb-3">
+                <span class="text-sm font-medium text-gray-700">
+                  Produtos finais da produção
+                </span>
+                <UBadge
+                  v-if="produtosFinaisExistentes.length + produtosFinais.length > 0"
+                  color="purple" variant="subtle" size="xs"
+                >
+                  {{ produtosFinaisExistentes.length + produtosFinais.length }}
+                  {{ (produtosFinaisExistentes.length + produtosFinais.length) === 1 ? 'produto' : 'produtos' }}
+                </UBadge>
+              </div>
+
+              <!-- Loading -->
+              <div v-if="loadingProdutosFinais" class="flex items-center gap-2 py-4 justify-center text-gray-400">
+                <UIcon name="i-heroicons-arrow-path" class="w-4 h-4 animate-spin" />
+                <span class="text-sm">Carregando produtos finais...</span>
+              </div>
+
+              <!-- Produtos finais já vinculados (ao editar) -->
+              <div
+                v-for="(link, index) in produtosFinaisExistentes"
+                :key="'existing-' + link.id"
+                class="relative group rounded-xl border border-purple-200 bg-purple-50/50 p-4 mb-3"
+              >
+                <button
+                  type="button"
+                  @click="removerProdutoFinalExistente(link.id, index)"
+                  class="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-sm hover:bg-red-600 z-10"
+                  title="Remover produto final"
+                >
+                  <UIcon name="i-heroicons-x-mark" class="w-3.5 h-3.5" />
+                </button>
+
+                <div class="flex items-center gap-3">
+                  <UIcon name="i-heroicons-check-circle" class="w-5 h-5 text-purple-500 flex-shrink-0" />
+                  <div>
+                    <p class="font-medium text-gray-900">{{ link.produto_final.nome }}</p>
+                    <p class="text-xs text-gray-500">
+                      {{ link.produto_final.subgrupo?.grupo?.nome }} / {{ link.produto_final.subgrupo?.nome }}
+                      <span class="ml-1 text-gray-400">· {{ link.produto_final.unidade?.sigla }}</span>
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Novos produtos finais (formulário) -->
+              <div
+                v-for="(pf, index) in produtosFinais"
+                :key="'new-' + index"
+                class="relative group rounded-xl border border-gray-200 bg-gray-50/50 p-4 mb-3"
+              >
+                <button
+                  v-if="produtosFinais.length > 1 || produtosFinaisExistentes.length > 0"
+                  type="button"
+                  @click="produtosFinais.splice(index, 1)"
+                  class="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-sm hover:bg-red-600 z-10"
+                >
+                  <UIcon name="i-heroicons-x-mark" class="w-3.5 h-3.5" />
+                </button>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <UFormGroup label="Nome" required>
+                    <UInput v-model="pf.nome" placeholder="Nome do produto final" />
+                  </UFormGroup>
+                  <UFormGroup label="Grupo" required>
+                    <USelect
+                      v-model="pf.grupo_id"
+                      :options="gruposSelect"
+                      placeholder="Selecione o grupo"
+                      @change="pf.subgrupo_id = ''"
+                    />
+                  </UFormGroup>
+                  <UFormGroup label="Subgrupo" required>
+                    <USelect
+                      v-model="pf.subgrupo_id"
+                      :options="getSubgruposForPF(pf.grupo_id)"
+                      placeholder="Selecione o subgrupo"
+                      :disabled="!pf.grupo_id"
+                    />
+                  </UFormGroup>
+                  <UFormGroup label="Unidade" required>
+                    <USelect
+                      v-model="pf.unidade_id"
+                      :options="unidadesSelect"
+                      placeholder="Selecione a unidade"
+                    />
+                  </UFormGroup>
+                </div>
+              </div>
+
+              <!-- Botão adicionar produto final -->
+              <button
+                type="button"
+                @click="produtosFinais.push({ nome: '', grupo_id: '', subgrupo_id: '', unidade_id: '' })"
+                class="w-full py-3 border-2 border-dashed border-gray-300 rounded-xl text-sm text-gray-500 hover:border-purple-400 hover:text-purple-600 hover:bg-purple-50/50 transition-all flex items-center justify-center gap-2"
+              >
+                <UIcon name="i-heroicons-plus-circle" class="w-5 h-5" />
+                Adicionar produto final
+              </button>
+            </div>
           </div>
         </form>
 
@@ -365,6 +480,7 @@
         ring: 'ring-1 ring-gray-200 dark:ring-gray-700',
         shadow: 'shadow-2xl'
       }"
+      @after-leave="onUnidadesModalClose"
     >
       <UCard :ui="{ background: 'bg-transparent', ring: 'ring-0', shadow: '', divide: 'divide-gray-100 dark:divide-gray-700' }">
         <template #header>
@@ -517,7 +633,10 @@ const {
   updateUnidade,
   deleteUnidade: removeUnidade,
   getCustosMensais,
-  upsertCustoMensal
+  upsertCustoMensal,
+  createProdutoBeneficiamento,
+  getProdutosBeneficiamento,
+  deleteProdutoBeneficiamento
 } = useEstoque()
 const { empresaId } = useEmpresa()
 const toast = useToast()
@@ -549,6 +668,7 @@ const editingUnidade = ref<Unidade | null>(null)
 const deletingUnidade = ref<Unidade | null>(null)
 const savingUnidade = ref(false)
 const deletingUnidadeLoading = ref(false)
+const openedFromProdutoModal = ref(false)
 const unidadeForm = ref({
   sigla: '',
   descricao: ''
@@ -561,13 +681,57 @@ const form = ref({
   grupo_id: '',
   subgrupo_id: '',
   unidade_id: '',
-  estoque_inicial: 0,
-  preco_inicial: 0,
   estoque_minimo: 0,
   margem_seguranca: 0,
   tempo_reposicao: 0,
+  beneficiavel: false as boolean | string,
   ativo: true
 })
+
+// Beneficiamento - produtos finais
+const produtosFinais = ref<Array<{
+  nome: string
+  grupo_id: string
+  subgrupo_id: string
+  unidade_id: string
+}>>([])
+
+// Produtos finais já vinculados (ao editar)
+const produtosFinaisExistentes = ref<Array<{
+  id: string // id do vínculo (produtos_beneficiamento)
+  produto_final: {
+    id: string
+    nome: string
+    unidade?: { sigla: string }
+    subgrupo?: { nome: string; grupo?: { nome: string } }
+  }
+}>>([])
+const loadingProdutosFinais = ref(false)
+
+const removerProdutoFinalExistente = async (vinculoId: string, index: number) => {
+  try {
+    await deleteProdutoBeneficiamento(vinculoId)
+    produtosFinaisExistentes.value.splice(index, 1)
+    toast.add({
+      title: 'Sucesso',
+      description: 'Produto final removido',
+      color: 'green'
+    })
+  } catch (error: any) {
+    toast.add({
+      title: 'Erro',
+      description: error.message || 'Erro ao remover produto final',
+      color: 'red'
+    })
+  }
+}
+
+const getSubgruposForPF = (grupoId: string) => {
+  if (!grupoId) return []
+  return subgrupos.value
+    .filter(s => s.grupo_id === grupoId)
+    .map(s => ({ label: s.nome, value: s.id }))
+}
 
 const columns = [
   { key: 'nome', label: 'Nome', sortable: true },
@@ -631,7 +795,8 @@ const anosOptions = computed(() => {
 })
 
 const filteredProdutos = computed(() => {
-  let result = produtos.value
+  // Oculta produtos finais de beneficiamento da tabela principal
+  let result = produtos.value.filter(p => !p.is_produto_final)
 
   if (search.value) {
     const term = search.value.toLowerCase()
@@ -686,18 +851,22 @@ const formatarNome = (texto: string) => {
   return texto.charAt(0).toUpperCase() + texto.slice(1).toLowerCase()
 }
 
+const truncate2 = (v: number) => Math.trunc((v || 0) * 100) / 100
+
 const formatNumber = (value: number) => {
   return new Intl.NumberFormat('pt-BR', {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 4
-  }).format(value || 0)
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(truncate2(value))
 }
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
-    currency: 'BRL'
-  }).format(value || 0)
+    currency: 'BRL',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(truncate2(value))
 }
 
 const loadData = async () => {
@@ -724,7 +893,9 @@ const loadData = async () => {
   }
 }
 
-const openModal = (produto?: Produto) => {
+const openModal = async (produto?: Produto) => {
+  produtosFinais.value = []
+  produtosFinaisExistentes.value = []
   if (produto) {
     editingProduto.value = produto
     form.value = {
@@ -732,12 +903,23 @@ const openModal = (produto?: Produto) => {
       grupo_id: produto.subgrupo?.grupo_id || '',
       subgrupo_id: produto.subgrupo_id || '',
       unidade_id: produto.unidade_id,
-      estoque_inicial: produto.estoque_inicial,
-      preco_inicial: produto.preco_inicial,
       estoque_minimo: produto.estoque_minimo,
       margem_seguranca: produto.margem_seguranca,
       tempo_reposicao: produto.tempo_reposicao,
+      beneficiavel: produto.beneficiavel || false,
       ativo: produto.ativo
+    }
+    // Carrega produtos finais vinculados se for beneficiável
+    if (produto.beneficiavel) {
+      loadingProdutosFinais.value = true
+      try {
+        const links = await getProdutosBeneficiamento(produto.id)
+        produtosFinaisExistentes.value = links as any
+      } catch (e) {
+        console.error('Erro ao carregar produtos finais:', e)
+      } finally {
+        loadingProdutosFinais.value = false
+      }
     }
   } else {
     editingProduto.value = null
@@ -746,11 +928,10 @@ const openModal = (produto?: Produto) => {
       grupo_id: '',
       subgrupo_id: '',
       unidade_id: '',
-      estoque_inicial: 0,
-      preco_inicial: 0,
       estoque_minimo: 0,
       margem_seguranca: 0,
       tempo_reposicao: 0,
+      beneficiavel: false,
       ativo: true
     }
   }
@@ -821,6 +1002,32 @@ const saveProduto = async () => {
     return
   }
 
+  // Normaliza o valor do beneficiavel (USelect pode retornar string)
+  const isBeneficiavel = form.value.beneficiavel === true || form.value.beneficiavel === 'true'
+
+  // Validar produtos finais se beneficiável
+  if (isBeneficiavel) {
+    const totalFinais = produtosFinaisExistentes.value.length + produtosFinais.value.length
+    if (totalFinais === 0) {
+      toast.add({
+        title: 'Atenção',
+        description: 'Adicione pelo menos um produto final da produção',
+        color: 'amber'
+      })
+      return
+    }
+    for (const pf of produtosFinais.value) {
+      if (!pf.nome || !pf.subgrupo_id || !pf.unidade_id) {
+        toast.add({
+          title: 'Atenção',
+          description: 'Preencha todos os campos dos produtos finais (nome, grupo, subgrupo e unidade)',
+          color: 'amber'
+        })
+        return
+      }
+    }
+  }
+
   // Formata o nome antes de salvar
   form.value.nome = formatarNome(form.value.nome)
 
@@ -829,11 +1036,10 @@ const saveProduto = async () => {
     nome: form.value.nome,
     subgrupo_id: form.value.subgrupo_id,
     unidade_id: form.value.unidade_id,
-    estoque_inicial: form.value.estoque_inicial,
-    preco_inicial: form.value.preco_inicial,
     estoque_minimo: form.value.estoque_minimo,
     margem_seguranca: form.value.margem_seguranca,
     tempo_reposicao: form.value.tempo_reposicao,
+    beneficiavel: isBeneficiavel,
     ativo: form.value.ativo
   }
 
@@ -841,16 +1047,68 @@ const saveProduto = async () => {
     saving.value = true
     if (editingProduto.value) {
       await updateProduto(editingProduto.value.id, dadosProduto)
+
+      // Criar novos produtos finais adicionados durante edição
+      if (isBeneficiavel && produtosFinais.value.length > 0) {
+        for (const pf of produtosFinais.value) {
+          const produtoFinal = await createProduto({
+            nome: formatarNome(pf.nome),
+            subgrupo_id: pf.subgrupo_id,
+            unidade_id: pf.unidade_id,
+            estoque_inicial: 0,
+            preco_inicial: 0,
+            estoque_minimo: 0,
+            margem_seguranca: 0,
+            tempo_reposicao: 0,
+            beneficiavel: false,
+            is_produto_final: true,
+            ativo: true
+          })
+          await createProdutoBeneficiamento({
+            produto_origem_id: editingProduto.value.id,
+            produto_final_id: produtoFinal.id
+          })
+        }
+      }
+
       toast.add({
         title: 'Sucesso',
-        description: 'Produto atualizado com sucesso',
+        description: produtosFinais.value.length > 0
+          ? `Produto atualizado e ${produtosFinais.value.length} produto(s) final(is) adicionado(s)`
+          : 'Produto atualizado com sucesso',
         color: 'green'
       })
     } else {
-      await createProduto(dadosProduto)
+      const novoProduto = await createProduto(dadosProduto)
+
+      // Se beneficiável, criar produtos finais e vincular
+      if (isBeneficiavel) {
+        for (const pf of produtosFinais.value) {
+          const produtoFinal = await createProduto({
+            nome: formatarNome(pf.nome),
+            subgrupo_id: pf.subgrupo_id,
+            unidade_id: pf.unidade_id,
+            estoque_inicial: 0,
+            preco_inicial: 0,
+            estoque_minimo: 0,
+            margem_seguranca: 0,
+            tempo_reposicao: 0,
+            beneficiavel: false,
+            is_produto_final: true,
+            ativo: true
+          })
+          await createProdutoBeneficiamento({
+            produto_origem_id: novoProduto.id,
+            produto_final_id: produtoFinal.id
+          })
+        }
+      }
+
       toast.add({
         title: 'Sucesso',
-        description: 'Produto criado com sucesso',
+        description: isBeneficiavel
+          ? `Produto e ${produtosFinais.value.length} produto(s) final(is) criados com sucesso`
+          : 'Produto criado com sucesso',
         color: 'green'
       })
       // Volta para página 1 ao criar novo produto
@@ -905,7 +1163,30 @@ const deleteProduto = async () => {
 const openUnidadesModal = () => {
   editingUnidade.value = null
   unidadeForm.value = { sigla: '', descricao: '' }
-  unidadesModalOpen.value = true
+
+  // Se o modal de produtos está aberto, fecha ele antes de abrir o de unidades
+  // para evitar conflito de FocusTrap entre dois Dialogs irmãos (Headless UI)
+  if (modalOpen.value) {
+    openedFromProdutoModal.value = true
+    modalOpen.value = false
+    // Aguarda a transição de saída do modal de produtos (300ms) antes de abrir o de unidades
+    setTimeout(() => {
+      unidadesModalOpen.value = true
+    }, 350)
+  } else {
+    openedFromProdutoModal.value = false
+    unidadesModalOpen.value = true
+  }
+}
+
+const onUnidadesModalClose = () => {
+  // Se foi aberto a partir do modal de produtos, reabre ele
+  if (openedFromProdutoModal.value) {
+    openedFromProdutoModal.value = false
+    nextTick(() => {
+      modalOpen.value = true
+    })
+  }
 }
 
 const editUnidade = (unidade: Unidade) => {

@@ -25,8 +25,18 @@
       </div>
     </UCard>
 
+    <!-- Resumo Skeleton -->
+    <div v-if="loading" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div v-for="i in 2" :key="i" class="rounded-xl bg-white ring-1 ring-gray-100 shadow-sm p-5">
+        <div class="text-center space-y-2">
+          <USkeleton class="h-4 w-28 mx-auto" />
+          <USkeleton class="h-8 w-32 mx-auto" />
+        </div>
+      </div>
+    </div>
+
     <!-- Resumo Anual -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div v-if="!loading" class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <UCard>
         <div class="text-center">
           <p class="text-sm text-gray-500">CMV Total</p>
@@ -135,18 +145,22 @@ const getGiroClass = (dias: number) => {
   return 'text-red-600 font-medium'                        // Atenção
 }
 
+const truncate2 = (v: number) => Math.trunc((v || 0) * 100) / 100
+
 const formatNumber = (value: number) => {
   return new Intl.NumberFormat('pt-BR', {
-    minimumFractionDigits: 0,
+    minimumFractionDigits: 2,
     maximumFractionDigits: 2
-  }).format(value || 0)
+  }).format(truncate2(value))
 }
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
-    currency: 'BRL'
-  }).format(value || 0)
+    currency: 'BRL',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(truncate2(value))
 }
 
 const loadGiro = async () => {

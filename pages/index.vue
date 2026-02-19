@@ -396,8 +396,10 @@ const user = useSupabaseUser()
 
 // ======================== FORMATAÇÃO ========================
 
+const truncate2 = (v: number) => Math.trunc((v || 0) * 100) / 100
+
 const formatCurrency = (value: number) => {
-  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value || 0)
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(truncate2(value))
 }
 
 const formatCurrencyCompact = (value: number) => {
@@ -407,7 +409,7 @@ const formatCurrencyCompact = (value: number) => {
 }
 
 const formatNumber = (value: number) => {
-  return new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(value || 0)
+  return new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(truncate2(value))
 }
 
 // ======================== HEADER ========================

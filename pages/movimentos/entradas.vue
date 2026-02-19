@@ -12,6 +12,65 @@
       </UButton>
     </div>
 
+    <!-- Banner de Produções Pendentes -->
+    <div
+      v-if="pendentesCount > 0"
+      class="p-4 bg-purple-50 border border-purple-200 rounded-xl cursor-pointer hover:bg-purple-100 transition-colors"
+      @click="showPendentes = !showPendentes"
+    >
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="p-2 bg-purple-100 rounded-lg">
+            <UIcon name="i-heroicons-beaker" class="w-5 h-5 text-purple-600" />
+          </div>
+          <div>
+            <p class="text-sm font-medium text-purple-700">
+              {{ pendentesCount }} {{ pendentesCount === 1 ? 'saída de produção pendente' : 'saídas de produção pendentes' }}
+            </p>
+            <p class="text-xs text-purple-500">Clique para ver e informar os rendimentos</p>
+          </div>
+        </div>
+        <UIcon
+          :name="showPendentes ? 'i-heroicons-chevron-up' : 'i-heroicons-chevron-down'"
+          class="w-5 h-5 text-purple-500"
+        />
+      </div>
+    </div>
+
+    <!-- Lista de Produções Pendentes -->
+    <UCard v-if="showPendentes && pendentes.length > 0" class="border-purple-200">
+      <template #header>
+        <div class="flex items-center gap-2">
+          <UIcon name="i-heroicons-beaker" class="w-4 h-4 text-purple-600" />
+          <span class="text-sm font-medium text-purple-700">Produções Pendentes</span>
+        </div>
+      </template>
+      <div class="space-y-3">
+        <div
+          v-for="benef in pendentes"
+          :key="benef.id"
+          class="p-4 border border-gray-200 rounded-lg hover:border-purple-300 transition-colors"
+        >
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="font-medium text-gray-900">{{ benef.saida?.produto?.nome }}</p>
+              <p class="text-sm text-gray-500">
+                Saída em {{ formatDate(benef.saida?.data) }} —
+                {{ formatNumber(benef.saida?.quantidade) }} {{ benef.saida?.produto?.unidade?.sigla }}
+              </p>
+              <p class="text-xs text-gray-400 mt-0.5">
+                Custo total da saída: {{ formatCurrency(benef.saida?.custo_saida) }}
+              </p>
+            </div>
+            <UButton color="purple" size="sm" @click.stop="openResolucao(benef)">
+              <UIcon name="i-heroicons-check-circle" class="w-4 h-4 mr-1" />
+              Informar Rendimento
+            </UButton>
+          </div>
+        </div>
+      </div>
+    </UCard>
+
     <!-- Filtros -->
     <UCard>
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -36,8 +95,21 @@
       </div>
     </UCard>
 
+    <!-- Resumo Skeleton -->
+    <div v-if="loading" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div v-for="i in 3" :key="i" class="rounded-xl bg-white ring-1 ring-gray-100 shadow-sm p-5">
+        <div class="flex items-center gap-4">
+          <USkeleton class="h-12 w-12 rounded-lg" />
+          <div class="space-y-2">
+            <USkeleton class="h-4 w-24" />
+            <USkeleton class="h-7 w-20" />
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Resumo -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div v-if="!loading" class="grid grid-cols-1 md:grid-cols-3 gap-4">
       <UCard>
         <div class="flex items-center gap-4">
           <div class="p-3 bg-green-100 rounded-lg">
@@ -73,8 +145,25 @@
       </UCard>
     </div>
 
+    <!-- Tabela Skeleton -->
+    <UCard v-if="loading" :ui="{ body: { padding: '' } }">
+      <div class="p-5 space-y-4">
+        <div v-for="i in 8" :key="i" class="flex items-center gap-4">
+          <USkeleton class="h-4 w-20" />
+          <USkeleton class="h-4 w-32" />
+          <USkeleton class="h-4 w-28" />
+          <USkeleton class="h-4 w-16" />
+          <USkeleton class="h-4 w-20" />
+          <USkeleton class="h-4 w-20" />
+          <USkeleton class="h-4 w-24" />
+          <USkeleton class="h-4 w-12" />
+          <USkeleton class="h-4 w-16" />
+        </div>
+      </div>
+    </UCard>
+
     <!-- Tabela -->
-    <UCard :ui="{ body: { padding: '' } }">
+    <UCard v-if="!loading" :ui="{ body: { padding: '' } }">
       <UTable
         :columns="columns"
         :rows="paginatedItems"
@@ -385,11 +474,115 @@
         </template>
       </UCard>
     </UModal>
+
+    <!-- Modal de Resolução de Produção -->
+    <UModal
+      v-model="resolucaoModalOpen"
+      :ui="{
+        width: 'sm:max-w-2xl',
+        overlay: { background: 'bg-gray-900/50 backdrop-blur-sm' },
+        background: 'bg-white dark:bg-gray-800',
+        ring: 'ring-1 ring-gray-200 dark:ring-gray-700',
+        shadow: 'shadow-2xl'
+      }"
+    >
+      <UCard :ui="{ background: 'bg-transparent', ring: 'ring-0', shadow: '', divide: 'divide-gray-100 dark:divide-gray-700' }">
+        <template #header>
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="p-2 bg-purple-100 rounded-lg">
+                <UIcon name="i-heroicons-beaker" class="w-5 h-5 text-purple-600" />
+              </div>
+              <div>
+                <h3 class="text-lg font-semibold text-gray-900">Informar Rendimento</h3>
+                <p class="text-sm text-gray-500">
+                  {{ resolvingBeneficiamento?.saida?.produto?.nome }} —
+                  {{ formatNumber(resolvingBeneficiamento?.saida?.quantidade) }}
+                  {{ resolvingBeneficiamento?.saida?.produto?.unidade?.sigla }}
+                </p>
+              </div>
+            </div>
+            <UButton
+              color="gray"
+              variant="ghost"
+              icon="i-heroicons-x-mark"
+              @click="resolucaoModalOpen = false"
+            />
+          </div>
+        </template>
+
+        <div class="space-y-4">
+          <!-- Info de custo -->
+          <div class="p-3 bg-purple-50 border border-purple-200 rounded-lg">
+            <div class="flex items-center justify-between text-sm">
+              <span class="text-purple-700">Custo total da saída:</span>
+              <span class="font-semibold text-purple-900">{{ formatCurrency(resolvingBeneficiamento?.saida?.custo_saida) }}</span>
+            </div>
+            <div class="flex items-center justify-between text-sm mt-1">
+              <span class="text-purple-700">Custo unitário resultante:</span>
+              <span class="font-semibold text-purple-900">{{ formatCurrency(custoUnitarioResolucao) }}</span>
+            </div>
+            <p class="text-xs text-purple-500 mt-1">O custo é distribuído proporcionalmente pela quantidade total</p>
+          </div>
+
+          <!-- Lista de produtos finais -->
+          <div class="space-y-3">
+            <span class="text-sm font-medium text-gray-700">Produtos finais obtidos:</span>
+            <div
+              v-for="(item, index) in itensResolucao"
+              :key="index"
+              class="p-4 border border-gray-200 rounded-lg bg-gray-50/50"
+            >
+              <div class="flex items-center gap-4">
+                <div class="flex-1">
+                  <p class="text-sm font-medium text-gray-900">{{ item.produto_nome }}</p>
+                  <p class="text-xs text-gray-500">Unidade: {{ item.unidade_sigla }}</p>
+                </div>
+                <div class="w-48">
+                  <label class="block text-xs font-medium text-gray-500 mb-1">Quantidade obtida</label>
+                  <UInput
+                    v-model.number="item.quantidade"
+                    type="number"
+                    step="0.0001"
+                    min="0"
+                    placeholder="0"
+                    size="md"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div v-if="itensResolucao.length === 0" class="text-center py-4 text-gray-500">
+            <UIcon name="i-heroicons-exclamation-triangle" class="w-6 h-6 mx-auto mb-2" />
+            <p class="text-sm">Nenhum produto final vinculado a este produto.</p>
+          </div>
+        </div>
+
+        <template #footer>
+          <div class="flex flex-col-reverse sm:flex-row justify-end gap-3">
+            <UButton color="gray" variant="ghost" class="w-full sm:w-auto" @click="resolucaoModalOpen = false">
+              Cancelar
+            </UButton>
+            <UButton
+              color="purple"
+              class="w-full sm:w-auto"
+              :loading="resolvendo"
+              :disabled="itensResolucao.length === 0"
+              @click="confirmarResolucao"
+            >
+              <UIcon name="i-heroicons-check" class="w-4 h-4 mr-1.5" />
+              Confirmar Rendimento
+            </UButton>
+          </div>
+        </template>
+      </UCard>
+    </UModal>
   </div>
 </template>
 
 <script setup lang="ts">
-import type { Entrada, Produto } from '~/types'
+import type { Entrada, Produto, Beneficiamento } from '~/types'
 
 interface ItemEntrada {
   produto_id: string
@@ -399,7 +592,17 @@ interface ItemEntrada {
   showObs: boolean
 }
 
-const { getEntradas, createEntrada, updateEntrada, deleteEntrada: removeEntrada, getProdutos } = useEstoque()
+const {
+  getEntradas,
+  createEntrada,
+  updateEntrada,
+  deleteEntrada: removeEntrada,
+  getProdutos,
+  getBeneficiamentosPendentes,
+  countBeneficiamentosPendentes,
+  resolverBeneficiamento,
+  getProdutosBeneficiamento
+} = useEstoque()
 const { empresaId } = useEmpresa()
 const toast = useToast()
 
@@ -415,6 +618,20 @@ const modalOpen = ref(false)
 const deleteModalOpen = ref(false)
 const editingEntrada = ref<Entrada | null>(null)
 const deletingEntrada = ref<Entrada | null>(null)
+
+// Beneficiamento
+const showPendentes = ref(false)
+const pendentes = ref<Beneficiamento[]>([])
+const pendentesCount = ref(0)
+const resolucaoModalOpen = ref(false)
+const resolvingBeneficiamento = ref<Beneficiamento | null>(null)
+const itensResolucao = ref<Array<{
+  produto_final_id: string
+  produto_nome: string
+  unidade_sigla: string
+  quantidade: number
+}>>([])
+const resolvendo = ref(false)
 
 // Campos compartilhados do modal
 const formData = ref(new Date().toISOString().split('T')[0])
@@ -708,6 +925,94 @@ const deleteEntrada = async () => {
   }
 }
 
+// ==========================================
+// Beneficiamento - Resolução
+// ==========================================
+
+const custoUnitarioResolucao = computed(() => {
+  const totalQtd = itensResolucao.value.reduce((sum, i) => sum + (i.quantidade || 0), 0)
+  if (totalQtd <= 0 || !resolvingBeneficiamento.value?.saida?.custo_saida) return 0
+  return Number(resolvingBeneficiamento.value.saida.custo_saida) / totalQtd
+})
+
+const loadPendentes = async () => {
+  try {
+    pendentesCount.value = await countBeneficiamentosPendentes()
+    if (pendentesCount.value > 0) {
+      pendentes.value = await getBeneficiamentosPendentes()
+    } else {
+      pendentes.value = []
+    }
+  } catch (error) {
+    console.error('Erro ao carregar beneficiamentos pendentes:', error)
+  }
+}
+
+const openResolucao = async (benef: Beneficiamento) => {
+  resolvingBeneficiamento.value = benef
+
+  // Buscar produtos finais vinculados ao produto de origem
+  try {
+    const produtoOrigemId = benef.saida?.produto_id
+    if (!produtoOrigemId) return
+
+    const vinculos = await getProdutosBeneficiamento(produtoOrigemId)
+    itensResolucao.value = vinculos.map((v: any) => ({
+      produto_final_id: v.produto_final?.id || v.produto_final_id,
+      produto_nome: v.produto_final?.nome || 'Produto',
+      unidade_sigla: v.produto_final?.unidade?.sigla || '',
+      quantidade: 0
+    }))
+  } catch (error) {
+    console.error('Erro ao carregar produtos finais:', error)
+    itensResolucao.value = []
+  }
+
+  resolucaoModalOpen.value = true
+}
+
+const confirmarResolucao = async () => {
+  if (!resolvingBeneficiamento.value) return
+
+  const itensValidos = itensResolucao.value.filter(i => i.quantidade > 0)
+  if (itensValidos.length === 0) {
+    toast.add({
+      title: 'Atenção',
+      description: 'Informe a quantidade de pelo menos um produto final',
+      color: 'amber'
+    })
+    return
+  }
+
+  try {
+    resolvendo.value = true
+    await resolverBeneficiamento(
+      resolvingBeneficiamento.value.id,
+      resolvingBeneficiamento.value.saida!,
+      itensValidos.map(i => ({
+        produto_final_id: i.produto_final_id,
+        quantidade: i.quantidade
+      }))
+    )
+    toast.add({
+      title: 'Sucesso',
+      description: 'Produção resolvida! Entradas dos produtos finais criadas com sucesso.',
+      color: 'green'
+    })
+    resolucaoModalOpen.value = false
+    await loadPendentes()
+    await loadEntradas()
+  } catch (error: any) {
+    toast.add({
+      title: 'Erro',
+      description: error.message || 'Erro ao resolver produção',
+      color: 'red'
+    })
+  } finally {
+    resolvendo.value = false
+  }
+}
+
 watch([filtroDataInicio, filtroDataFim], () => {
   loadEntradas()
 })
@@ -716,6 +1021,7 @@ watch(empresaId, () => {
   if (empresaId.value) {
     loadEntradas()
     loadProdutos()
+    loadPendentes()
   }
 }, { immediate: true })
 </script>

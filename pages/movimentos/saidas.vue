@@ -43,8 +43,21 @@
       </div>
     </UCard>
 
+    <!-- Resumo Skeleton -->
+    <div v-if="loading" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div v-for="i in 3" :key="i" class="rounded-xl bg-white ring-1 ring-gray-100 shadow-sm p-5">
+        <div class="flex items-center gap-4">
+          <USkeleton class="h-12 w-12 rounded-lg" />
+          <div class="space-y-2">
+            <USkeleton class="h-4 w-24" />
+            <USkeleton class="h-7 w-20" />
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Resumo -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div v-if="!loading" class="grid grid-cols-1 md:grid-cols-3 gap-4">
       <UCard>
         <div class="flex items-center gap-4">
           <div class="p-3 bg-red-100 rounded-lg">
@@ -80,8 +93,23 @@
       </UCard>
     </div>
 
+    <!-- Tabela Skeleton -->
+    <UCard v-if="loading" :ui="{ body: { padding: '' } }">
+      <div class="p-5 space-y-4">
+        <div v-for="i in 8" :key="i" class="flex items-center gap-4">
+          <USkeleton class="h-4 w-20" />
+          <USkeleton class="h-4 w-32" />
+          <USkeleton class="h-4 w-20" />
+          <USkeleton class="h-4 w-16" />
+          <USkeleton class="h-4 w-20" />
+          <USkeleton class="h-4 w-24" />
+          <USkeleton class="h-4 w-16" />
+        </div>
+      </div>
+    </UCard>
+
     <!-- Tabela -->
-    <UCard :ui="{ body: { padding: '' } }">
+    <UCard v-if="!loading" :ui="{ body: { padding: '' } }">
       <UTable
         :columns="columns"
         :rows="paginatedItems"
@@ -111,8 +139,8 @@
         </template>
 
         <template #tipo-data="{ row }">
-          <UBadge :color="row.tipo === 'transferencia' ? 'blue' : 'red'" variant="soft">
-            {{ row.tipo === 'transferencia' ? 'Transferência' : 'Saída Definitiva' }}
+          <UBadge :color="row.tipo === 'transferencia' ? 'blue' : row.tipo === 'beneficiamento' ? 'purple' : 'red'" variant="soft">
+            {{ row.tipo === 'transferencia' ? 'Transferência' : row.tipo === 'beneficiamento' ? 'Produção' : 'Definitiva' }}
           </UBadge>
         </template>
 
@@ -166,11 +194,11 @@
         <template #header>
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
-              <div class="p-2 rounded-lg" :class="tipoSaida === 'transferencia' ? 'bg-blue-100' : 'bg-red-100'">
+              <div class="p-2 rounded-lg" :class="tipoSaida === 'transferencia' ? 'bg-blue-100' : tipoSaida === 'beneficiamento' ? 'bg-purple-100' : 'bg-red-100'">
                 <UIcon
-                  :name="tipoSaida === 'transferencia' ? 'i-heroicons-arrows-right-left' : 'i-heroicons-arrow-up-tray'"
+                  :name="tipoSaida === 'transferencia' ? 'i-heroicons-arrows-right-left' : tipoSaida === 'beneficiamento' ? 'i-heroicons-beaker' : 'i-heroicons-arrow-up-tray'"
                   class="w-5 h-5"
-                  :class="tipoSaida === 'transferencia' ? 'text-blue-600' : 'text-red-600'"
+                  :class="tipoSaida === 'transferencia' ? 'text-blue-600' : tipoSaida === 'beneficiamento' ? 'text-purple-600' : 'text-red-600'"
                 />
               </div>
               <div>
@@ -193,42 +221,55 @@
 
         <div class="space-y-5">
           <!-- Campos compartilhados -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="space-y-4">
             <!-- Tipo de Saída -->
             <UFormGroup label="Tipo de Saída" required>
-              <div class="flex gap-2">
+              <div class="grid grid-cols-3 gap-2">
                 <button
                   type="button"
                   @click="tipoSaida = 'transferencia'"
-                  class="flex-1 px-4 py-2.5 rounded-lg border-2 text-sm font-medium transition-all flex items-center justify-center gap-2"
+                  class="px-3 py-2.5 rounded-lg border-2 text-sm font-medium transition-all flex items-center justify-center gap-2"
                   :class="tipoSaida === 'transferencia'
                     ? 'border-blue-500 bg-blue-50 text-blue-700'
                     : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300'"
                 >
-                  <UIcon name="i-heroicons-arrows-right-left" class="w-4 h-4" />
-                  Transferência
+                  <UIcon name="i-heroicons-arrows-right-left" class="w-4 h-4 flex-shrink-0" />
+                  <span class="truncate">Transferência</span>
                 </button>
                 <button
                   type="button"
                   @click="tipoSaida = 'definitiva'"
-                  class="flex-1 px-4 py-2.5 rounded-lg border-2 text-sm font-medium transition-all flex items-center justify-center gap-2"
+                  class="px-3 py-2.5 rounded-lg border-2 text-sm font-medium transition-all flex items-center justify-center gap-2"
                   :class="tipoSaida === 'definitiva'
                     ? 'border-red-500 bg-red-50 text-red-700'
                     : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300'"
                 >
-                  <UIcon name="i-heroicons-arrow-up-tray" class="w-4 h-4" />
-                  Definitiva
+                  <UIcon name="i-heroicons-arrow-up-tray" class="w-4 h-4 flex-shrink-0" />
+                  <span class="truncate">Definitiva</span>
+                </button>
+                <button
+                  type="button"
+                  @click="tipoSaida = 'beneficiamento'"
+                  class="px-3 py-2.5 rounded-lg border-2 text-sm font-medium transition-all flex items-center justify-center gap-2"
+                  :class="tipoSaida === 'beneficiamento'
+                    ? 'border-purple-500 bg-purple-50 text-purple-700'
+                    : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300'"
+                >
+                  <UIcon name="i-heroicons-beaker" class="w-4 h-4 flex-shrink-0" />
+                  <span class="truncate">Produção</span>
                 </button>
               </div>
               <p class="text-xs text-gray-500 mt-1">
                 {{ tipoSaida === 'transferencia'
                   ? 'Move do Estoque Principal para o Estoque de Apoio'
+                  : tipoSaida === 'beneficiamento'
+                  ? 'Envia produto para produção'
                   : 'Saída definitiva do sistema (consumo/venda)' }}
               </p>
             </UFormGroup>
 
             <UFormGroup label="Data" required>
-              <UInput v-model="formData" type="date" />
+              <UInput v-model="formData" type="date" class="max-w-xs" />
             </UFormGroup>
           </div>
 
@@ -241,7 +282,7 @@
               <span class="text-sm font-medium text-gray-700">
                 Itens da saída
               </span>
-              <UBadge :color="tipoSaida === 'transferencia' ? 'blue' : 'red'" variant="subtle" size="xs" v-if="itens.length > 0">
+              <UBadge :color="tipoSaida === 'transferencia' ? 'blue' : tipoSaida === 'beneficiamento' ? 'purple' : 'red'" variant="subtle" size="xs" v-if="itens.length > 0">
                 {{ itens.length }} {{ itens.length === 1 ? 'item' : 'itens' }}
               </UBadge>
             </div>
@@ -252,7 +293,7 @@
                 v-for="(item, index) in itens"
                 :key="index"
                 class="relative group rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/30 p-4 transition-all"
-                :class="tipoSaida === 'transferencia' ? 'hover:border-blue-300 hover:shadow-sm' : 'hover:border-red-300 hover:shadow-sm'"
+                :class="tipoSaida === 'transferencia' ? 'hover:border-blue-300 hover:shadow-sm' : tipoSaida === 'beneficiamento' ? 'hover:border-purple-300 hover:shadow-sm' : 'hover:border-red-300 hover:shadow-sm'"
               >
                 <!-- Botão remover (só se multi-item e não editando) -->
                 <button
@@ -267,7 +308,7 @@
                 <div class="mb-3">
                   <USelectMenu
                     v-model="item.produto_id"
-                    :options="produtosSelect"
+                    :options="produtosSelectAtual"
                     placeholder="Buscar produto..."
                     searchable
                     searchable-placeholder="Digite para buscar..."
@@ -423,7 +464,7 @@
         <p>Tem certeza que deseja excluir esta saída?</p>
         <div class="mt-2 p-3 bg-gray-50 rounded-lg">
           <p><strong>Produto:</strong> {{ deletingSaida?.produto?.nome }}</p>
-          <p><strong>Tipo:</strong> {{ deletingSaida?.tipo === 'transferencia' ? 'Transferência' : 'Saída Definitiva' }}</p>
+          <p><strong>Tipo:</strong> {{ deletingSaida?.tipo === 'transferencia' ? 'Transferência' : deletingSaida?.tipo === 'beneficiamento' ? 'Produção' : 'Definitiva' }}</p>
           <p><strong>Data:</strong> {{ formatDate(deletingSaida?.data) }}</p>
           <p><strong>Quantidade:</strong> {{ formatNumber(deletingSaida?.quantidade) }}</p>
         </div>
@@ -460,7 +501,8 @@ const {
   updateSaida,
   deleteSaida: removeSaida,
   getProdutos,
-  getSaldoProduto
+  getSaldoProduto,
+  createSaidaBeneficiamento
 } = useEstoque()
 const { empresaId } = useEmpresa()
 const toast = useToast()
@@ -502,7 +544,8 @@ const columns = [
 const tipoFilterOptions = [
   { label: 'Todos', value: '' },
   { label: 'Transferência', value: 'transferencia' },
-  { label: 'Saída Definitiva', value: 'definitiva' }
+  { label: 'Definitiva', value: 'definitiva' },
+  { label: 'Produção', value: 'beneficiamento' }
 ]
 
 // Opções de produtos para o select
@@ -511,6 +554,21 @@ const produtosSelect = computed(() =>
     label: `${p.nome} ${p.unidade?.sigla ? `(${p.unidade.sigla})` : ''}`,
     value: p.id
   }))
+)
+
+// Produtos beneficiáveis (apenas para saídas de beneficiamento)
+const produtosSelectBeneficiamento = computed(() =>
+  produtos.value
+    .filter(p => p.beneficiavel)
+    .map(p => ({
+      label: `${p.nome} ${p.unidade?.sigla ? `(${p.unidade.sigla})` : ''}`,
+      value: p.id
+    }))
+)
+
+// Opções do select baseadas no tipo de saída
+const produtosSelectAtual = computed(() =>
+  tipoSaida.value === 'beneficiamento' ? produtosSelectBeneficiamento.value : produtosSelect.value
 )
 
 const filteredSaidas = computed(() => {
@@ -606,18 +664,22 @@ const formatDate = (date: string | undefined) => {
   return new Date(date + 'T00:00:00').toLocaleDateString('pt-BR')
 }
 
+const truncate2 = (v: number) => Math.trunc((v || 0) * 100) / 100
+
 const formatNumber = (value: number | undefined) => {
   return new Intl.NumberFormat('pt-BR', {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 4
-  }).format(value || 0)
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(truncate2(value || 0))
 }
 
 const formatCurrency = (value: number | undefined) => {
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
-    currency: 'BRL'
-  }).format(value || 0)
+    currency: 'BRL',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(truncate2(value || 0))
 }
 
 const loadSaidas = async () => {
@@ -736,18 +798,30 @@ const saveSaida = async () => {
     } else {
       // Criação: salva todos os itens
       for (const item of itensValidos) {
-        await createSaida({
-          produto_id: item.produto_id,
-          tipo: tipoSaida.value,
-          data: formData.value,
-          quantidade: item.quantidade,
-          observacao: item.observacao || null
-        })
+        if (tipoSaida.value === 'beneficiamento') {
+          await createSaidaBeneficiamento({
+            produto_id: item.produto_id,
+            tipo: 'beneficiamento',
+            data: formData.value,
+            quantidade: item.quantidade,
+            observacao: item.observacao || null
+          })
+        } else {
+          await createSaida({
+            produto_id: item.produto_id,
+            tipo: tipoSaida.value,
+            data: formData.value,
+            quantidade: item.quantidade,
+            observacao: item.observacao || null
+          })
+        }
       }
       toast.add({
         title: 'Sucesso',
         description: itensValidos.length > 1
           ? `${itensValidos.length} saídas registradas com sucesso`
+          : tipoSaida.value === 'beneficiamento'
+          ? 'Saída de produção registrada. Informe o rendimento na página de Entradas.'
           : 'Saída registrada com sucesso',
         color: 'green'
       })

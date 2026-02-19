@@ -86,6 +86,8 @@ export interface Produto {
   estoque_minimo: number
   margem_seguranca: number
   tempo_reposicao: number
+  beneficiavel: boolean
+  is_produto_final: boolean
   ativo: boolean
   created_at?: string
   // Relacionamentos
@@ -105,6 +107,7 @@ export interface CustoMensal {
 export interface Entrada {
   id: string
   produto_id: string
+  fornecedor_id?: string
   data: string
   semana: string
   quantidade: number
@@ -112,12 +115,14 @@ export interface Entrada {
   valor_total: number
   numero_nf?: string
   observacao?: string
+  origem_beneficiamento?: boolean
   created_at?: string
   // Relacionamentos
   produto?: Produto
+  fornecedor?: Fornecedor
 }
 
-export type TipoSaida = 'transferencia' | 'definitiva'
+export type TipoSaida = 'transferencia' | 'definitiva' | 'beneficiamento'
 
 export interface Saida {
   id: string
@@ -140,6 +145,40 @@ export interface ItemSaida {
   quantidade: number
   observacao: string
   showObs: boolean
+}
+
+export interface ProdutoBeneficiamento {
+  id: string
+  produto_origem_id: string
+  produto_final_id: string
+  empresa_id?: string
+  created_at?: string
+  // Relacionamentos
+  produto_final?: Produto
+  produto_origem?: Produto
+}
+
+export interface Beneficiamento {
+  id: string
+  saida_id: string
+  status: 'pendente' | 'resolvido'
+  data_resolucao?: string
+  empresa_id?: string
+  created_at?: string
+  // Relacionamentos
+  saida?: Saida
+}
+
+export interface BeneficiamentoItem {
+  id: string
+  beneficiamento_id: string
+  entrada_id: string
+  produto_final_id: string
+  quantidade: number
+  created_at?: string
+  // Relacionamentos
+  produto_final?: Produto
+  entrada?: Entrada
 }
 
 export interface Ajuste {

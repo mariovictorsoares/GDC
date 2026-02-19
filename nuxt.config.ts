@@ -9,7 +9,13 @@ export default defineNuxtConfig({
   ],
 
   supabase: {
-    redirect: false
+    redirect: false,
+    cookieName: 'sb-estoque',
+    cookieOptions: {
+      maxAge: 60 * 60 * 8,
+      sameSite: 'lax',
+      secure: false
+    }
   },
 
   colorMode: {
@@ -22,11 +28,11 @@ export default defineNuxtConfig({
 
   app: {
     head: {
-      title: 'Guardiao do Estoque',
+      title: 'Guardião do Estoque',
       meta: [
         { charset: 'utf-8' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-        { name: 'description', content: 'Sistema de Controle de Estoque para Centro de Distribuicao' }
+        { name: 'description', content: 'Sistema de Controle de Estoque para Centro de Distribuição' }
       ],
       link: [
         { rel: 'icon', type: 'image/png', href: '/favicon.png' }

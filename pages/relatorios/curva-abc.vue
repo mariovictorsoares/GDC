@@ -19,8 +19,25 @@
 
     <!-- Tab: ABC de Estoque -->
     <template v-if="activeTab === 0">
+      <!-- Resumo Skeleton -->
+      <div v-if="loading" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div v-for="i in 4" :key="i" class="rounded-xl bg-white ring-1 ring-gray-100 shadow-sm border-l-4 border-gray-200 p-5">
+          <div class="flex items-center justify-between">
+            <div class="space-y-2">
+              <USkeleton class="h-4 w-16" />
+              <USkeleton class="h-8 w-12" />
+              <USkeleton class="h-3 w-20" />
+            </div>
+            <div class="space-y-2">
+              <USkeleton class="h-4 w-20" />
+              <USkeleton class="h-3 w-16" />
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Resumo por Classe - Estoque -->
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div v-if="!loading" class="grid grid-cols-1 md:grid-cols-4 gap-4">
         <UCard class="border-l-4 border-green-500">
           <div class="flex items-center justify-between">
             <div>
@@ -137,8 +154,25 @@
 
     <!-- Tab: ABC de CMV -->
     <template v-if="activeTab === 1">
+      <!-- Resumo Skeleton -->
+      <div v-if="loading" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div v-for="i in 4" :key="i" class="rounded-xl bg-white ring-1 ring-gray-100 shadow-sm border-l-4 border-gray-200 p-5">
+          <div class="flex items-center justify-between">
+            <div class="space-y-2">
+              <USkeleton class="h-4 w-16" />
+              <USkeleton class="h-8 w-12" />
+              <USkeleton class="h-3 w-20" />
+            </div>
+            <div class="space-y-2">
+              <USkeleton class="h-4 w-20" />
+              <USkeleton class="h-3 w-16" />
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Resumo por Classe - CMV -->
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div v-if="!loading" class="grid grid-cols-1 md:grid-cols-4 gap-4">
         <UCard class="border-l-4 border-green-500">
           <div class="flex items-center justify-between">
             <div>
@@ -252,8 +286,19 @@
 
     <!-- Tab: Comparativo ABC -->
     <template v-if="activeTab === 2">
+      <!-- Resumo Skeleton -->
+      <div v-if="loading" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div v-for="i in 4" :key="i" class="rounded-xl bg-white ring-1 ring-gray-100 shadow-sm border-l-4 border-gray-200 p-5">
+          <div class="text-center space-y-2">
+            <USkeleton class="h-4 w-24 mx-auto" />
+            <USkeleton class="h-10 w-14 mx-auto" />
+            <USkeleton class="h-3 w-32 mx-auto" />
+          </div>
+        </div>
+      </div>
+
       <!-- Resumo do Comparativo -->
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div v-if="!loading" class="grid grid-cols-1 md:grid-cols-4 gap-4">
         <UCard class="border-l-4 border-green-500">
           <div class="text-center">
             <p class="text-sm text-gray-500">Equilibrado</p>
@@ -621,18 +666,22 @@ const formatStatus = (status: string) => {
   return map[status] || status
 }
 
+const truncate2 = (v: number) => Math.trunc((v || 0) * 100) / 100
+
 const formatNumber = (value: number) => {
   return new Intl.NumberFormat('pt-BR', {
-    minimumFractionDigits: 0,
+    minimumFractionDigits: 2,
     maximumFractionDigits: 2
-  }).format(value || 0)
+  }).format(truncate2(value))
 }
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
-    currency: 'BRL'
-  }).format(value || 0)
+    currency: 'BRL',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(truncate2(value))
 }
 
 // Carregamento

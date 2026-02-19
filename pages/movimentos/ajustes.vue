@@ -40,8 +40,21 @@
         </div>
       </UCard>
 
+      <!-- Resumo Skeleton -->
+      <div v-if="loadingHistorico" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div v-for="i in 3" :key="i" class="rounded-xl bg-white ring-1 ring-gray-100 shadow-sm p-5">
+          <div class="flex items-center gap-4">
+            <USkeleton class="h-12 w-12 rounded-lg" />
+            <div class="space-y-2">
+              <USkeleton class="h-4 w-24" />
+              <USkeleton class="h-7 w-20" />
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Resumo geral -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div v-if="!loadingHistorico" class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <UCard>
           <div class="flex items-center gap-4">
             <div class="p-3 bg-blue-100 rounded-lg">
@@ -83,9 +96,21 @@
           <h3 class="text-lg font-semibold text-gray-900">Histórico de Contagens</h3>
         </template>
 
-        <div v-if="loadingHistorico" class="flex items-center justify-center py-12">
-          <UIcon name="i-heroicons-arrow-path" class="w-6 h-6 text-gray-400 animate-spin" />
-          <span class="ml-2 text-gray-500">Carregando...</span>
+        <div v-if="loadingHistorico" class="p-5 space-y-4">
+          <div v-for="i in 5" :key="i" class="flex items-center justify-between py-3">
+            <div class="flex items-center gap-4">
+              <USkeleton class="h-10 w-10 rounded-lg" />
+              <div class="space-y-2">
+                <USkeleton class="h-4 w-40" />
+                <USkeleton class="h-3 w-28" />
+              </div>
+            </div>
+            <div class="flex items-center gap-3">
+              <USkeleton class="h-4 w-16" />
+              <USkeleton class="h-4 w-16" />
+              <USkeleton class="h-5 w-5 rounded-full" />
+            </div>
+          </div>
         </div>
 
         <div v-else-if="contagensAgrupadas.length === 0" class="flex flex-col items-center justify-center py-12 text-gray-500">
@@ -1149,11 +1174,13 @@ const formatDate = (date: string | undefined) => {
   return new Date(date + 'T00:00:00').toLocaleDateString('pt-BR')
 }
 
+const truncate2 = (v: number) => Math.trunc((v || 0) * 100) / 100
+
 const formatNumber = (value: number | undefined | null) => {
   return new Intl.NumberFormat('pt-BR', {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 4
-  }).format(value || 0)
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(truncate2(value || 0))
 }
 
 // ==========================================

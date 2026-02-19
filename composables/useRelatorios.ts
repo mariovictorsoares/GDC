@@ -31,77 +31,91 @@ export const useRelatorios = () => {
   // ==========================================
 
   /**
-   * Calcula as semanas Seg-Dom reais de um mês.
-   * Ex: Fev/2025 → S1 (03/02 - 09/02), S2 (10/02 - 16/02), ...
-   * Dias do mês que caem antes da 1ª segunda ficam na S1 (junto com ela).
-   * Dias após o último domingo ficam na última semana.
+   * Calcula as semanas Seg-Dom que cobrem um mês.
+   * Sempre Seg-Dom completas, podendo cruzar para o mês anterior/próximo.
+   * Cada semana pertence ao mês que contém a maioria dos seus dias (4+),
+   * evitando que a mesma semana apareça em dois meses.
+   * Ex: Fev/2026 (dia 1 = dom) → S1 (26/01 - 01/02) fica em Janeiro (6 dias de jan, 1 de fev)
    */
-  const calcularSemanasDoMes = (ano: number, mes: number): SemanaInfo[] => {
+  const calcularSemanasDoMes = (_ano: number, _mes: number): SemanaInfo[] => {
+    // Garantir que são números (USelect pode enviar strings)
+    const ano = Number(_ano)
+    const mes = Number(_mes)
+
+    const formatDiaMes = (d: Date) =>
+      `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`
+    const formatISO = (d: Date) => {
+      const y = d.getFullYear()
+      const m = String(d.getMonth() + 1).padStart(2, '0')
+      const day = String(d.getDate()).padStart(2, '0')
+      return `${y}-${m}-${day}`
+    }
+
     const primeiroDia = new Date(ano, mes - 1, 1)
     const ultimoDia = new Date(ano, mes, 0)
-    const totalDias = ultimoDia.getDate()
-    const mesStr = String(mes).padStart(2, '0')
 
-    const formatDia = (d: Date) => `${String(d.getDate()).padStart(2, '0')}/${mesStr}`
-    const formatISO = (d: Date) => `${ano}-${mesStr}-${String(d.getDate()).padStart(2, '0')}`
+    // Encontrar a segunda-feira da semana que contém o dia 1
+    const diaSem1 = primeiroDia.getDay() // 0=dom, 1=seg...
+    const offsetParaSeg = diaSem1 === 0 ? 6 : diaSem1 - 1
+    const primeiraSegunda = new Date(primeiroDia)
+    primeiraSegunda.setDate(primeiroDia.getDate() - offsetParaSeg)
 
-    // Encontrar a 1ª segunda-feira do mês (ou depois)
-    const diaSem1 = primeiroDia.getDay() // 0=dom, 1=seg
-    // Dias antes da 1ª segunda: pertencem à semana 1
-    // 1ª segunda do mês: se dia 1 é seg (1), é dia 1. Se dom (0), é dia 2. Se sab (6), é dia 3, etc.
-    let primeiraSegunda = 1
-    if (diaSem1 !== 1) {
-      // Avançar até a próxima segunda
-      primeiraSegunda = diaSem1 === 0 ? 2 : 1 + (8 - diaSem1)
+    // Encontrar o domingo da semana que contém o último dia do mês
+    const diaSemUlt = ultimoDia.getDay()
+    const offsetParaDom = diaSemUlt === 0 ? 0 : 7 - diaSemUlt
+    const ultimoDomingo = new Date(ultimoDia)
+    ultimoDomingo.setDate(ultimoDia.getDate() + offsetParaDom)
+
+    // Contar quantos dias de uma semana (seg-dom) pertencem ao mês
+    const diasNoMes = (seg: Date, dom: Date): number => {
+      let count = 0
+      const d = new Date(seg)
+      while (d <= dom) {
+        if (d.getMonth() + 1 === mes && d.getFullYear() === ano) count++
+        d.setDate(d.getDate() + 1)
+      }
+      return count
     }
 
     const semanas: SemanaInfo[] = []
     let semanaNum = 1
+    const seg = new Date(primeiraSegunda)
 
-    // Cada semana começa na segunda e termina no domingo
-    let inicioSemana = 1 // sempre começa do dia 1
-    let seg = primeiraSegunda
+    while (seg <= ultimoDomingo) {
+      const dom = new Date(seg)
+      dom.setDate(seg.getDate() + 6)
 
-    while (inicioSemana <= totalDias) {
-      let fimSemana: number
-
-      if (semanaNum === 1) {
-        // Primeira semana: do dia 1 até o domingo após a 1ª segunda
-        const domAposSeg = seg + 6
-        fimSemana = Math.min(domAposSeg, totalDias)
-      } else {
-        // Semanas seguintes: seg a dom
-        fimSemana = Math.min(seg + 6, totalDias)
+      // Só incluir a semana se a maioria dos dias (4+) pertence a este mês
+      if (diasNoMes(seg, dom) >= 4) {
+        semanas.push({
+          label: `S${semanaNum}`,
+          tooltip: `${formatDiaMes(seg)} - ${formatDiaMes(dom)}`,
+          inicio: formatISO(seg),
+          fim: formatISO(dom)
+        })
+        semanaNum++
       }
 
-      const dInicio = new Date(ano, mes - 1, inicioSemana)
-      const dFim = new Date(ano, mes - 1, fimSemana)
-
-      semanas.push({
-        label: `S${semanaNum}`,
-        tooltip: `${formatDia(dInicio)} - ${formatDia(dFim)}`,
-        inicio: formatISO(dInicio),
-        fim: formatISO(dFim)
-      })
-
-      inicioSemana = fimSemana + 1
-      seg = fimSemana + 1 // próxima segunda
-      semanaNum++
+      seg.setDate(seg.getDate() + 7)
     }
 
     return semanas
   }
 
-  const getPainelMes = async (ano: number, mes: number, tipoSaida: 'todos' | 'transferencia' | 'definitiva' = 'todos'): Promise<{ semanas: SemanaInfo[], itens: PainelMes[] }> => {
+  const getPainelMes = async (ano: number, mes: number, tipoSaida: 'todos' | 'transferencia' | 'definitiva' | 'beneficiamento' = 'todos'): Promise<{ semanas: SemanaInfo[], itens: PainelMes[] }> => {
     // Calcular semanas Seg-Dom reais do mês
     const semanasDoMes = calcularSemanasDoMes(ano, mes)
     const qtdSemanas = semanasDoMes.length
 
-    // Primeiro dia do mês
-    const dataInicio = `${ano}-${String(mes).padStart(2, '0')}-01`
-    // Último dia do mês
+    if (qtdSemanas === 0) return { semanas: [], itens: [] }
+
+    // Range real das semanas (pode cruzar meses)
+    const dataInicio = semanasDoMes[0].inicio
+    const dataFim = semanasDoMes[semanasDoMes.length - 1].fim
+    // Datas do mês em si (para cálculo de estoque inicial)
+    const dataInicioMes = `${ano}-${String(mes).padStart(2, '0')}-01`
     const ultimoDia = new Date(ano, mes, 0).getDate()
-    const dataFim = `${ano}-${String(mes).padStart(2, '0')}-${ultimoDia}`
+    const dataFimMes = `${ano}-${String(mes).padStart(2, '0')}-${ultimoDia}`
 
     // Buscar produtos ativos com categoria
     const { data: produtos, error: prodError } = await comEmpresa(client
@@ -119,7 +133,7 @@ export const useRelatorios = () => {
 
     if (prodError) throw prodError
 
-    // Buscar entradas do mês (com data para agrupar por semana real)
+    // Buscar entradas do range das semanas (pode incluir dias fora do mês)
     const { data: entradas, error: entError } = await comEmpresa(client
       .from('entradas')
       .select('produto_id, quantidade, data, valor_total')
@@ -128,7 +142,7 @@ export const useRelatorios = () => {
 
     if (entError) throw entError
 
-    // Buscar saídas do mês com custo e tipo (com data)
+    // Buscar saídas do range das semanas com custo e tipo (com data)
     const { data: saidas, error: saiError } = await comEmpresa(client
       .from('saidas')
       .select('produto_id, quantidade, data, custo_saida, tipo')
@@ -137,7 +151,7 @@ export const useRelatorios = () => {
 
     if (saiError) throw saiError
 
-    // Buscar ajustes do mês (com data)
+    // Buscar ajustes do range das semanas (com data)
     const { data: ajustes, error: ajuError } = await comEmpresa(client
       .from('ajustes')
       .select('produto_id, quantidade, data')
@@ -165,7 +179,7 @@ export const useRelatorios = () => {
       }
     })
 
-    // Calcular estoque inicial do mês (movimentos até o mês anterior)
+    // Calcular estoque inicial do mês (movimentos até o dia anterior ao 1º dia do mês)
     const mesAnterior = mes === 1 ? 12 : mes - 1
     const anoAnterior = mes === 1 ? ano - 1 : ano
     const dataFimAnterior = `${anoAnterior}-${String(mesAnterior).padStart(2, '0')}-${new Date(anoAnterior, mesAnterior, 0).getDate()}`
@@ -217,7 +231,7 @@ export const useRelatorios = () => {
       const prodEntradas = entradas?.filter(e => e.produto_id === p.id) || []
       const prodSaidasAll = saidas?.filter(s => s.produto_id === p.id) || []
       const prodSaidas = tipoSaida === 'todos'
-        ? prodSaidasAll
+        ? prodSaidasAll.filter(s => s.tipo === 'transferencia' || s.tipo === 'definitiva')
         : prodSaidasAll.filter(s => s.tipo === tipoSaida)
       const prodAjustes = ajustes?.filter(a => a.produto_id === p.id) || []
       const prodCusto = ultimaEntradaPorProduto.get(p.id) || p.preco_inicial || 0
@@ -241,19 +255,24 @@ export const useRelatorios = () => {
       const total_entradas = entradas_por_semana.reduce((sum, v) => sum + v, 0)
       const total_saidas = saidas_por_semana.reduce((sum, v) => sum + v, 0)
 
-      const total_ajustes = prodAjustes.reduce((sum, a) => sum + Number(a.quantidade), 0)
+      const total_ajustes = prodAjustes
+        .filter(a => a.data >= dataInicioMes && a.data <= dataFimMes)
+        .reduce((sum, a) => sum + Number(a.quantidade), 0)
 
-      // Estoque final sempre considera TODAS as saídas (independente do filtro de visualização)
-      const totalSaidasAll = prodSaidasAll.reduce((sum, s) => sum + Number(s.quantidade), 0)
-      const estoque_final = estoqueInicial + total_entradas - totalSaidasAll + total_ajustes
+      // Estoque final considera movimentos APENAS do mês real (não do range estendido das semanas)
+      const entradasDoMes = prodEntradas
+        .filter(e => e.data >= dataInicioMes && e.data <= dataFimMes)
+        .reduce((sum, e) => sum + Number(e.quantidade), 0)
+      const totalSaidasAll = prodSaidasAll
+        .filter(s => s.data >= dataInicioMes && s.data <= dataFimMes)
+        .reduce((sum, s) => sum + Number(s.quantidade), 0)
+      const estoque_final = estoqueInicial + entradasDoMes - totalSaidasAll + total_ajustes
       const valor_total = estoque_final * Number(prodCusto)
 
-      // CMV do produto (soma dos custo_saida) - EXCLUINDO MTP e transferências
-      const cmvProduto = categoriaNome.toUpperCase() === 'MTP' || tipoSaida === 'transferencia'
+      // CMV do produto = total_saidas * C.Unit (custo da última entrada) - EXCLUINDO MTP
+      const cmvProduto = categoriaNome.toUpperCase() === 'MTP'
         ? 0
-        : prodSaidas
-            .filter((s: any) => tipoSaida === 'definitiva' || s.tipo === 'definitiva')
-            .reduce((sum: number, s: any) => sum + Number(s.custo_saida || 0), 0)
+        : total_saidas * Number(prodCusto)
 
       // Giro em dias - Fórmula especial para MTP
       let giro_dias = 0
@@ -589,11 +608,11 @@ export const useRelatorios = () => {
       .select('produto_id, quantidade, valor_total')
       .lte('data', dataLimite))
 
-    // Buscar saídas definitivas até a data (transferências não saem do sistema)
+    // Buscar saídas que reduzem estoque (definitiva + beneficiamento) até a data
     const { data: saidas } = await comEmpresa(client
       .from('saidas')
       .select('produto_id, quantidade')
-      .eq('tipo', 'definitiva')
+      .neq('tipo', 'transferencia')
       .lte('data', dataLimite))
 
     // Buscar ajustes até a data
@@ -707,7 +726,7 @@ export const useRelatorios = () => {
           qtdEntradas += Number(e.quantidade)
         })
 
-        todasSaidas?.filter(s => s.produto_id === produto.id && s.tipo === 'definitiva' && s.data <= dataLimite).forEach(s => {
+        todasSaidas?.filter(s => s.produto_id === produto.id && s.tipo !== 'transferencia' && s.data <= dataLimite).forEach(s => {
           quantidade -= Number(s.quantidade)
         })
 
@@ -799,7 +818,7 @@ export const useRelatorios = () => {
         .eq('ativo', true)),
       comEmpresa(client
         .from('entradas')
-        .select('produto_id, quantidade, valor_total, data')
+        .select('produto_id, quantidade, valor_total, data, origem_beneficiamento')
         .lte('data', dataFimTotal)),
       comEmpresa(client
         .from('saidas')
@@ -835,7 +854,7 @@ export const useRelatorios = () => {
           qtdEntradas += Number(e.quantidade)
         })
 
-        todasSaidas?.filter(s => s.produto_id === produto.id && s.tipo === 'definitiva' && s.data <= dataLimite).forEach(s => {
+        todasSaidas?.filter(s => s.produto_id === produto.id && s.tipo !== 'transferencia' && s.data <= dataLimite).forEach(s => {
           quantidade -= Number(s.quantidade)
         })
 
@@ -862,9 +881,9 @@ export const useRelatorios = () => {
       const ultimoDiaAnterior = new Date(anoAnterior, mesAnterior, 0).getDate()
       const dataFimAnterior = `${anoAnterior}-${String(mesAnterior).padStart(2, '0')}-${ultimoDiaAnterior}`
 
-      // Compras do mês (excluindo MTP) - filtrado em memória
+      // Compras do mês (excluindo MTP e entradas de beneficiamento) - filtrado em memória
       const compras = todasEntradas
-        ?.filter(e => e.data >= dataInicio && e.data <= dataFim && idsNaoMTP.has(e.produto_id))
+        ?.filter(e => e.data >= dataInicio && e.data <= dataFim && idsNaoMTP.has(e.produto_id) && !(e as any).origem_beneficiamento)
         .reduce((sum, e) => sum + Number(e.valor_total || 0), 0) || 0
 
       // Estoques calculados em memória (sem queries adicionais)
@@ -1116,7 +1135,7 @@ export const useRelatorios = () => {
     const dataInicio = formatDateISO(semanas[0].inicio)
     const dataFim = formatDateISO(semanas[semanas.length - 1].fim)
 
-    // Buscar entradas no período com produto → subgrupo → grupo
+    // Buscar entradas no período com produto → subgrupo → grupo (excluindo beneficiamento)
     const { data: entradas, error } = await comEmpresa(client
       .from('entradas')
       .select(`
@@ -1131,6 +1150,7 @@ export const useRelatorios = () => {
           )
         )
       `)
+      .eq('origem_beneficiamento', false)
       .gte('data', dataInicio)
       .lte('data', dataFim))
 

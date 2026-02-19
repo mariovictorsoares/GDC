@@ -134,9 +134,13 @@
         </table>
       </div>
 
-      <!-- Loading -->
-      <div v-if="loading" class="flex justify-center py-12">
-        <UIcon name="i-heroicons-arrow-path" class="w-8 h-8 animate-spin text-primary-500" />
+      <!-- Loading Skeleton -->
+      <div v-if="loading" class="p-5 space-y-3">
+        <div v-for="i in 5" :key="i" class="flex items-center gap-4 py-2">
+          <USkeleton class="h-5 w-36" />
+          <USkeleton class="h-4 w-28" />
+          <USkeleton class="h-4 w-16 ml-auto" />
+        </div>
       </div>
     </UCard>
 

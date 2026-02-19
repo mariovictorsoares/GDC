@@ -32,8 +32,21 @@
       </div>
     </UCard>
 
+    <!-- Tabela Skeleton -->
+    <UCard v-if="loading" :ui="{ body: { padding: '' } }">
+      <div class="p-5 space-y-4">
+        <div v-for="i in 8" :key="i" class="flex items-center gap-4">
+          <USkeleton class="h-4 w-40" />
+          <USkeleton class="h-4 w-32" />
+          <USkeleton class="h-4 w-48" />
+          <USkeleton class="h-4 w-16" />
+          <USkeleton class="h-4 w-16" />
+        </div>
+      </div>
+    </UCard>
+
     <!-- Tabela -->
-    <UCard :ui="{ body: { padding: '' } }">
+    <UCard v-if="!loading" :ui="{ body: { padding: '' } }">
       <UTable
         :columns="columns"
         :rows="paginatedItems"
@@ -96,7 +109,7 @@
       />
     </UCard>
 
-    <!-- Modal de Cadastro/Edicao -->
+    <!-- Modal de Cadastro/Edição -->
     <UModal
       v-model="modalOpen"
       :ui="{
@@ -134,9 +147,9 @@
             </UFormGroup>
           </div>
 
-          <!-- Endereco -->
+          <!-- Endereço -->
           <div class="border-t border-gray-200 pt-4">
-            <p class="text-sm font-medium text-gray-700 mb-3">Endereco</p>
+            <p class="text-sm font-medium text-gray-700 mb-3">Endereço</p>
 
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <UFormGroup label="CEP">
@@ -164,8 +177,8 @@
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
-              <UFormGroup label="Numero">
-                <UInput v-model="form.numero" placeholder="Numero" />
+              <UFormGroup label="Número">
+                <UInput v-model="form.numero" placeholder="Número" />
               </UFormGroup>
 
               <UFormGroup label="Complemento" class="sm:col-span-2">
@@ -207,7 +220,7 @@
       </UCard>
     </UModal>
 
-    <!-- Modal de Confirmacao de Exclusao -->
+    <!-- Modal de Confirmação de Exclusão -->
     <UModal
       v-model="deleteModalOpen"
       :ui="{
@@ -219,11 +232,11 @@
     >
       <UCard :ui="{ background: 'bg-transparent', ring: 'ring-0', shadow: '', divide: 'divide-gray-100 dark:divide-gray-700' }">
         <template #header>
-          <h3 class="text-lg font-semibold text-red-600">Confirmar Exclusao</h3>
+          <h3 class="text-lg font-semibold text-red-600">Confirmar Exclusão</h3>
         </template>
 
         <p>Tem certeza que deseja excluir o fornecedor <strong>{{ deletingFornecedor?.nome_empresa }}</strong>?</p>
-        <p class="text-sm text-gray-500 mt-2">Esta acao nao pode ser desfeita.</p>
+        <p class="text-sm text-gray-500 mt-2">Esta ação não pode ser desfeita.</p>
 
         <template #footer>
           <div class="flex flex-col-reverse sm:flex-row justify-end gap-3">
@@ -275,9 +288,9 @@ const form = ref({
 const columns = [
   { key: 'nome_empresa', label: 'Nome da Empresa', sortable: true },
   { key: 'cnpj', label: 'CNPJ', sortable: true },
-  { key: 'endereco', label: 'Endereco' },
+  { key: 'endereco', label: 'Endereço' },
   { key: 'ativo', label: 'Status', sortable: true },
-  { key: 'actions', label: 'Acoes', class: 'text-right', rowClass: 'text-right' }
+  { key: 'actions', label: 'Ações', class: 'text-right', rowClass: 'text-right' }
 ]
 
 const statusOptions = [
@@ -299,7 +312,7 @@ const estadosOptions = [
   { label: 'SP', value: 'SP' }, { label: 'SE', value: 'SE' }, { label: 'TO', value: 'TO' }
 ]
 
-// Formata CNPJ para exibicao na tabela
+// Formata CNPJ para exibição na tabela
 const formatarCnpjExibicao = (cnpj: string) => {
   if (!cnpj) return '-'
   const numeros = cnpj.replace(/\D/g, '')
@@ -307,7 +320,7 @@ const formatarCnpjExibicao = (cnpj: string) => {
   return numeros.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5')
 }
 
-// Formata endereco para exibicao na tabela
+// Formata endereço para exibição na tabela
 const formatarEnderecoExibicao = (row: Fornecedor) => {
   const partes = []
   if (row.logradouro) {
@@ -347,7 +360,7 @@ const filteredFornecedores = computed(() => {
 
 const { page, pageSize, paginatedItems } = usePagination(filteredFornecedores)
 
-// Mascara CNPJ reativa
+// Máscara CNPJ reativa
 watch(() => form.value.cnpj, (novo, antigo) => {
   let numeros = novo.replace(/\D/g, '')
   if (numeros.length > 14) numeros = numeros.slice(0, 14)
@@ -368,7 +381,7 @@ watch(() => form.value.cnpj, (novo, antigo) => {
   }
 })
 
-// Mascara CEP reativa + busca automatica ao completar 8 digitos
+// Máscara CEP reativa + busca automática ao completar 8 dígitos
 watch(() => form.value.cep, (novo) => {
   let numeros = novo.replace(/\D/g, '')
   if (numeros.length > 8) numeros = numeros.slice(0, 8)
@@ -385,7 +398,7 @@ watch(() => form.value.cep, (novo) => {
   }
 })
 
-// Busca endereco pelo CEP via ViaCEP
+// Busca endereço pelo CEP via ViaCEP
 const buscarCep = async () => {
   const cepNumeros = form.value.cep.replace(/\D/g, '')
   if (cepNumeros.length !== 8) return
@@ -396,7 +409,7 @@ const buscarCep = async () => {
 
     if (response.erro) {
       toast.add({
-        title: 'CEP nao encontrado',
+        title: 'CEP não encontrado',
         description: 'Verifique o CEP informado e tente novamente',
         color: 'yellow'
       })
@@ -410,7 +423,7 @@ const buscarCep = async () => {
     form.value.complemento = response.complemento || form.value.complemento
 
     toast.add({
-      title: 'Endereco encontrado',
+      title: 'Endereço encontrado',
       description: `${response.logradouro}, ${response.localidade}/${response.uf}`,
       color: 'green'
     })
@@ -485,7 +498,7 @@ const saveFornecedor = async () => {
   if (!form.value.nome_empresa) {
     toast.add({
       title: 'Erro',
-      description: 'O nome da empresa e obrigatorio',
+      description: 'O nome da empresa é obrigatório',
       color: 'red'
     })
     return
@@ -494,7 +507,7 @@ const saveFornecedor = async () => {
   if (!form.value.cnpj || !validarCnpj(form.value.cnpj)) {
     toast.add({
       title: 'Erro',
-      description: 'Informe um CNPJ valido com 14 digitos',
+      description: 'Informe um CNPJ válido com 14 dígitos',
       color: 'red'
     })
     return
@@ -537,7 +550,7 @@ const saveFornecedor = async () => {
     let mensagem = 'Erro ao salvar fornecedor'
 
     if (error.message?.includes('fornecedores_cnpj_key') || error.code === '23505') {
-      mensagem = 'Ja existe um fornecedor com esse CNPJ'
+      mensagem = 'Já existe um fornecedor com esse CNPJ'
     }
 
     toast.add({
@@ -563,7 +576,7 @@ const deleteFornecedor = async () => {
     await removeFornecedor(deletingFornecedor.value.id)
     toast.add({
       title: 'Sucesso',
-      description: 'Fornecedor excluido com sucesso',
+      description: 'Fornecedor excluído com sucesso',
       color: 'green'
     })
     deleteModalOpen.value = false

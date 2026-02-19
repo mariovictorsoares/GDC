@@ -152,35 +152,6 @@
           </div>
         </div>
 
-        <!-- Configurações -->
-        <div :class="sidebarCollapsed ? 'mt-3' : 'mt-5'">
-          <p v-if="!sidebarCollapsed" class="px-3 mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Configurações</p>
-          <div v-else class="mb-2 mx-3 border-t border-gray-100" />
-          <div :class="sidebarCollapsed ? 'flex flex-col items-center space-y-0.5' : 'space-y-0.5'">
-            <div v-for="item in menuConfig" :key="item.to">
-              <div v-if="sidebarCollapsed" class="flex justify-center">
-                <UTooltip :text="item.label" :popper="{ placement: 'right' }">
-                  <NuxtLink
-                    :to="item.to"
-                    class="flex items-center justify-center w-10 h-10 rounded-lg transition-colors"
-                    :class="isActive(item.to) ? 'bg-guardian-50 text-guardian-700' : 'text-gray-500 hover:bg-gray-100'"
-                  >
-                    <UIcon :name="item.icon" class="w-5 h-5" />
-                  </NuxtLink>
-                </UTooltip>
-              </div>
-              <NuxtLink
-                v-else
-                :to="item.to"
-                class="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-colors"
-                :class="isActive(item.to) ? 'bg-guardian-50 text-guardian-700' : 'text-gray-700 hover:bg-gray-100'"
-              >
-                <UIcon :name="item.icon" class="w-5 h-5 flex-shrink-0" />
-                <span>{{ item.label }}</span>
-              </NuxtLink>
-            </div>
-          </div>
-        </div>
 
       </nav>
 
@@ -188,7 +159,7 @@
       <div class="border-t border-gray-100 flex-shrink-0">
         <!-- Seletor de Empresa -->
         <div :class="sidebarCollapsed ? 'p-1.5 flex justify-center' : 'px-2.5 pt-2.5 pb-2'">
-          <UPopover :popper="{ placement: 'top-start' }">
+          <UPopover v-model:open="empresaPopoverOpen" :popper="{ placement: 'top-start' }">
             <button
               :class="[
                 'group flex items-center rounded-lg transition-colors duration-150',
@@ -590,6 +561,7 @@ const {
   criarEmpresa
 } = useEmpresa()
 
+const empresaPopoverOpen = ref(false)
 const showNovaEmpresa = ref(false)
 const novaEmpresaNome = ref('')
 const novaEmpresaCnpj = ref('')
@@ -759,10 +731,6 @@ const menuRelatorios = [
   { to: '/relatorios/cmv', icon: 'i-heroicons-currency-dollar', label: 'CMV' }
 ]
 
-const menuConfig = [
-  { to: '/configuracoes/empresa', icon: 'i-heroicons-cog-6-tooth', label: 'Configurações' },
-  { to: '/configuracoes/faturamentos', icon: 'i-heroicons-banknotes', label: 'Faturamentos' }
-]
 
 const toggleCollapse = () => {
   sidebarCollapsed.value = !sidebarCollapsed.value
@@ -781,14 +749,16 @@ const formatarCnpjInput = () => {
   novaEmpresaCnpj.value = v
 }
 
-const trocarEmpresa = (emp: Empresa) => {
+const trocarEmpresa = async (emp: Empresa) => {
+  empresaPopoverOpen.value = false
   setEmpresaAtiva(emp)
   toast.add({
     title: 'Empresa alterada',
     description: `Agora você está usando "${emp.nome}"`,
     color: 'green'
   })
-  window.location.reload()
+  // Recarregar lista de empresas do banco para garantir dados atualizados (ex: logo)
+  await carregarEmpresaAtiva()
 }
 
 const criarNovaEmpresa = async () => {

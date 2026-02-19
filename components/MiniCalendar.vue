@@ -20,7 +20,7 @@
           <div class="bg-white rounded-lg shadow-lg border border-gray-200 p-2.5 w-[196px]">
             <!-- Mês / Ano -->
             <div class="text-center text-[10px] font-semibold text-gray-700 mb-1.5">
-              {{ nomeMes }} {{ ano }}
+              {{ nomeMes }} {{ anoExibicao }}
             </div>
             <!-- Dias da semana header -->
             <div class="grid grid-cols-7 gap-0">
@@ -38,7 +38,7 @@
                 class="text-[10px] text-center leading-5 rounded"
                 :class="cellClass(cell)"
               >
-                {{ cell.dia || '' }}
+                {{ cell.dia }}
               </div>
             </div>
           </div>
@@ -54,8 +54,8 @@
 interface Props {
   mes: number
   ano: number
-  diaInicio: number
-  diaFim: number
+  dataInicio: string  // ISO: "2026-01-26"
+  dataFim: string     // ISO: "2026-02-01"
 }
 
 const props = defineProps<Props>()
@@ -68,7 +68,6 @@ const updatePosition = () => {
   const rect = triggerRef.value.getBoundingClientRect()
   const calWidth = 196
   let left = rect.left + rect.width / 2 - calWidth / 2
-  // Evitar sair da tela pela esquerda/direita
   if (left < 8) left = 8
   if (left + calWidth > window.innerWidth - 8) left = window.innerWidth - calWidth - 8
   floatingStyle.value = {
@@ -87,6 +86,7 @@ const onLeave = () => {
   show.value = false
 }
 
+const anoExibicao = computed(() => props.ano)
 const nomeMes = computed(() => {
   const nomes = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
   return nomes[props.mes - 1]
@@ -94,10 +94,19 @@ const nomeMes = computed(() => {
 
 const diasSemanaHeader = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
 
+const toISO = (d: Date): string => {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
 interface CalendarCell {
-  dia: number | null
+  dia: number
+  iso: string
   highlighted: boolean
   today: boolean
+  outOfMonth: boolean  // dia pertence a outro mês
 }
 
 const calendarCells = computed((): CalendarCell[] => {
@@ -109,33 +118,67 @@ const calendarCells = computed((): CalendarCell[] => {
   if (startOffset < 0) startOffset = 6
 
   const hoje = new Date()
-  const isCurrentMonth = hoje.getFullYear() === props.ano && hoje.getMonth() + 1 === props.mes
-  const diaHoje = hoje.getDate()
+  const hojeISO = toISO(hoje)
+
+  const inicioISO = props.dataInicio
+  const fimISO = props.dataFim
 
   const cells: CalendarCell[] = []
 
-  // Células vazias antes do dia 1
-  for (let i = 0; i < startOffset; i++) {
-    cells.push({ dia: null, highlighted: false, today: false })
-  }
-
-  // Dias do mês
-  for (let d = 1; d <= totalDias; d++) {
+  // Dias do mês anterior para preencher o início
+  const diasMesAnterior = new Date(props.ano, props.mes - 1, 0).getDate()
+  for (let i = startOffset - 1; i >= 0; i--) {
+    const d = diasMesAnterior - i
+    const date = new Date(props.ano, props.mes - 2, d)
+    const iso = toISO(date)
     cells.push({
       dia: d,
-      highlighted: d >= props.diaInicio && d <= props.diaFim,
-      today: isCurrentMonth && d === diaHoje
+      iso,
+      highlighted: iso >= inicioISO && iso <= fimISO,
+      today: iso === hojeISO,
+      outOfMonth: true
     })
+  }
+
+  // Dias do mês atual
+  for (let d = 1; d <= totalDias; d++) {
+    const iso = `${props.ano}-${String(props.mes).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+    cells.push({
+      dia: d,
+      iso,
+      highlighted: iso >= inicioISO && iso <= fimISO,
+      today: iso === hojeISO,
+      outOfMonth: false
+    })
+  }
+
+  // Dias do próximo mês para completar a última linha
+  const totalCells = cells.length
+  const remainder = totalCells % 7
+  if (remainder > 0) {
+    const diasParaCompletar = 7 - remainder
+    for (let d = 1; d <= diasParaCompletar; d++) {
+      const date = new Date(props.ano, props.mes, d)
+      const iso = toISO(date)
+      cells.push({
+        dia: d,
+        iso,
+        highlighted: iso >= inicioISO && iso <= fimISO,
+        today: iso === hojeISO,
+        outOfMonth: true
+      })
+    }
   }
 
   return cells
 })
 
 const cellClass = (cell: CalendarCell) => {
-  if (!cell.dia) return ''
   if (cell.today && cell.highlighted) return 'bg-primary-600 text-white font-bold ring-1 ring-primary-400'
+  if (cell.highlighted && cell.outOfMonth) return 'bg-primary-50 text-primary-400 font-medium'
   if (cell.highlighted) return 'bg-primary-100 text-primary-700 font-semibold'
   if (cell.today) return 'font-bold text-primary-600 ring-1 ring-primary-300 rounded-full'
+  if (cell.outOfMonth) return 'text-gray-300'
   return 'text-gray-500'
 }
 </script>

@@ -625,19 +625,22 @@ watch(vcMesSelecionado, () => {
 // ==========================================
 // FORMATAÇÃO
 // ==========================================
+const truncate2 = (v: number) => Math.trunc((v || 0) * 100) / 100
+
 const formatNumber = (value: number) => {
   return new Intl.NumberFormat('pt-BR', {
-    minimumFractionDigits: 0,
+    minimumFractionDigits: 2,
     maximumFractionDigits: 2
-  }).format(value || 0)
+  }).format(truncate2(value))
 }
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
     currency: 'BRL',
-    minimumFractionDigits: 2
-  }).format(value || 0)
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(truncate2(value))
 }
 
 const formatPercent = (value: number) => {

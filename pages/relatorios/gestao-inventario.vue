@@ -12,8 +12,22 @@
       </UButton>
     </div>
 
+    <!-- Cards Resumo Skeleton -->
+    <div v-if="loading" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div v-for="i in 4" :key="i" class="rounded-xl bg-white ring-1 ring-gray-100 shadow-sm border-l-4 border-gray-200 p-5">
+        <div class="flex items-center justify-between">
+          <div class="space-y-2">
+            <USkeleton class="h-4 w-24" />
+            <USkeleton class="h-8 w-28" />
+            <USkeleton class="h-3 w-20" />
+          </div>
+          <USkeleton class="h-12 w-12 rounded-lg" />
+        </div>
+      </div>
+    </div>
+
     <!-- Cards Resumo -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div v-if="!loading" class="grid grid-cols-1 md:grid-cols-4 gap-4">
       <UCard class="border-l-4 border-blue-500">
         <div class="flex items-center justify-between">
           <div>
@@ -260,18 +274,22 @@ const totais = computed(() => {
 })
 
 // Helpers
+const truncate2 = (v: number) => Math.trunc((v || 0) * 100) / 100
+
 const formatNumber = (value: number) => {
   return new Intl.NumberFormat('pt-BR', {
-    minimumFractionDigits: 0,
+    minimumFractionDigits: 2,
     maximumFractionDigits: 2
-  }).format(value || 0)
+  }).format(truncate2(value))
 }
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
-    currency: 'BRL'
-  }).format(value || 0)
+    currency: 'BRL',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(truncate2(value))
 }
 
 // Carregamento
