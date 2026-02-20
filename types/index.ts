@@ -87,6 +87,7 @@ export interface Produto {
   margem_seguranca: number
   tempo_reposicao: number
   beneficiavel: boolean
+  eficiencia_beneficiamento: number | null
   is_produto_final: boolean
   ativo: boolean
   created_at?: string
@@ -116,6 +117,7 @@ export interface Entrada {
   numero_nf?: string
   observacao?: string
   origem_beneficiamento?: boolean
+  gramatura?: number | null
   created_at?: string
   // Relacionamentos
   produto?: Produto

@@ -251,6 +251,26 @@
                 option-attribute="label"
               />
             </UFormGroup>
+
+            <!-- Eficiência do Beneficiamento -->
+            <UFormGroup
+              v-if="form.beneficiavel === true || form.beneficiavel === 'true'"
+              label="Eficiência do beneficiamento (%)"
+            >
+              <UInput
+                v-model.number="form.eficiencia_beneficiamento"
+                type="number"
+                min="1"
+                max="100"
+                step="0.1"
+                placeholder="Ex: 90"
+                :ui="{ icon: { trailing: { pointer: '' } } }"
+              >
+                <template #trailing>
+                  <span class="text-gray-400 text-xs">%</span>
+                </template>
+              </UInput>
+            </UFormGroup>
           </div>
 
           <!-- Produtos Finais do Beneficiamento -->
@@ -337,12 +357,10 @@
                       :disabled="!pf.grupo_id"
                     />
                   </UFormGroup>
-                  <UFormGroup label="Unidade" required>
-                    <USelect
-                      v-model="pf.unidade_id"
-                      :options="unidadesSelect"
-                      placeholder="Selecione a unidade"
-                    />
+                  <UFormGroup label="Unidade">
+                    <div class="h-[38px] flex items-center px-3 bg-gray-100 border border-gray-300 rounded-md">
+                      <span class="text-sm text-gray-600">UN - Unidade</span>
+                    </div>
                   </UFormGroup>
                 </div>
               </div>
@@ -350,7 +368,7 @@
               <!-- Botão adicionar produto final -->
               <button
                 type="button"
-                @click="produtosFinais.push({ nome: '', grupo_id: '', subgrupo_id: '', unidade_id: '' })"
+                @click="produtosFinais.push({ nome: '', grupo_id: '', subgrupo_id: '' })"
                 class="w-full py-3 border-2 border-dashed border-gray-300 rounded-xl text-sm text-gray-500 hover:border-purple-400 hover:text-purple-600 hover:bg-purple-50/50 transition-all flex items-center justify-center gap-2"
               >
                 <UIcon name="i-heroicons-plus-circle" class="w-5 h-5" />
@@ -685,6 +703,7 @@ const form = ref({
   margem_seguranca: 0,
   tempo_reposicao: 0,
   beneficiavel: false as boolean | string,
+  eficiencia_beneficiamento: null as number | null,
   ativo: true
 })
 
@@ -693,7 +712,6 @@ const produtosFinais = ref<Array<{
   nome: string
   grupo_id: string
   subgrupo_id: string
-  unidade_id: string
 }>>([])
 
 // Produtos finais já vinculados (ao editar)
@@ -785,6 +803,11 @@ const subgruposSelectFiltered = computed(() => {
 const unidadesSelect = computed(() =>
   unidades.value.map(u => ({ label: `${u.sigla} - ${u.descricao || u.sigla}`, value: u.id }))
 )
+
+const unidadeUNId = computed(() => {
+  const un = unidades.value.find(u => u.sigla.toUpperCase() === 'UN')
+  return un?.id || ''
+})
 
 const anosOptions = computed(() => {
   const currentYear = new Date().getFullYear()
@@ -907,6 +930,7 @@ const openModal = async (produto?: Produto) => {
       margem_seguranca: produto.margem_seguranca,
       tempo_reposicao: produto.tempo_reposicao,
       beneficiavel: produto.beneficiavel || false,
+      eficiencia_beneficiamento: produto.eficiencia_beneficiamento ?? null,
       ativo: produto.ativo
     }
     // Carrega produtos finais vinculados se for beneficiável
@@ -932,6 +956,7 @@ const openModal = async (produto?: Produto) => {
       margem_seguranca: 0,
       tempo_reposicao: 0,
       beneficiavel: false,
+      eficiencia_beneficiamento: null,
       ativo: true
     }
   }
@@ -1017,10 +1042,10 @@ const saveProduto = async () => {
       return
     }
     for (const pf of produtosFinais.value) {
-      if (!pf.nome || !pf.subgrupo_id || !pf.unidade_id) {
+      if (!pf.nome || !pf.subgrupo_id) {
         toast.add({
           title: 'Atenção',
-          description: 'Preencha todos os campos dos produtos finais (nome, grupo, subgrupo e unidade)',
+          description: 'Preencha todos os campos dos produtos finais (nome, grupo e subgrupo)',
           color: 'amber'
         })
         return
@@ -1040,6 +1065,7 @@ const saveProduto = async () => {
     margem_seguranca: form.value.margem_seguranca,
     tempo_reposicao: form.value.tempo_reposicao,
     beneficiavel: isBeneficiavel,
+    eficiencia_beneficiamento: isBeneficiavel ? (form.value.eficiencia_beneficiamento || null) : null,
     ativo: form.value.ativo
   }
 
@@ -1054,7 +1080,7 @@ const saveProduto = async () => {
           const produtoFinal = await createProduto({
             nome: formatarNome(pf.nome),
             subgrupo_id: pf.subgrupo_id,
-            unidade_id: pf.unidade_id,
+            unidade_id: unidadeUNId.value,
             estoque_inicial: 0,
             preco_inicial: 0,
             estoque_minimo: 0,
@@ -1087,7 +1113,7 @@ const saveProduto = async () => {
           const produtoFinal = await createProduto({
             nome: formatarNome(pf.nome),
             subgrupo_id: pf.subgrupo_id,
-            unidade_id: pf.unidade_id,
+            unidade_id: unidadeUNId.value,
             estoque_inicial: 0,
             preco_inicial: 0,
             estoque_minimo: 0,

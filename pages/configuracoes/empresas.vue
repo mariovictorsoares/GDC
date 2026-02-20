@@ -124,7 +124,7 @@
         <template #header>
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
-              <div class="p-2 bg-guardian-100 rounded-lg">
+              <div class="p-2 bg-guardian-100 rounded-lg flex items-center justify-center">
                 <UIcon name="i-heroicons-building-storefront" class="w-5 h-5 text-guardian-600" />
               </div>
               <div>
@@ -249,7 +249,7 @@
         <template #header>
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
-              <div class="p-2 bg-red-100 rounded-lg">
+              <div class="p-2 bg-red-100 rounded-lg flex items-center justify-center">
                 <UIcon name="i-heroicons-trash" class="w-5 h-5 text-red-600" />
               </div>
               <div>

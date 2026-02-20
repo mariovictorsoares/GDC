@@ -836,25 +836,22 @@ export const useEstoque = () => {
   const resolverBeneficiamento = async (
     beneficiamentoId: string,
     saida: Saida,
-    itens: Array<{ produto_final_id: string; quantidade: number }>
+    itens: Array<{ produto_final_id: string; quantidade: number; gramatura?: number; custo_unitario?: number }>
   ) => {
-    // Custo: custo_saida (total do produto original) / soma de todas as quantidades finais
-    const totalQuantidadeFinal = itens.reduce((sum, i) => sum + i.quantidade, 0)
-    const custoUnitarioFinal = totalQuantidadeFinal > 0
-      ? Number(saida.custo_saida) / totalQuantidadeFinal
-      : 0
-
     // 1. Criar entradas para cada produto final
     const entradasCriadas: Entrada[] = []
     for (const item of itens) {
       if (item.quantidade <= 0) continue
+      const custoUnit = item.custo_unitario || 0
       const entrada = await createEntrada({
         produto_id: item.produto_final_id,
         data: new Date().toISOString().split('T')[0],
         quantidade: item.quantidade,
-        custo_unitario: custoUnitarioFinal,
+        custo_unitario: custoUnit,
+        valor_total: custoUnit * item.quantidade,
         observacao: `Produção - beneficiamento`,
-        origem_beneficiamento: true
+        origem_beneficiamento: true,
+        gramatura: item.gramatura || undefined
       })
       entradasCriadas.push(entrada)
     }

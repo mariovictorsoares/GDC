@@ -6,70 +6,26 @@
         <h1 class="text-2xl font-bold text-gray-900">Entradas</h1>
         <p class="text-sm text-gray-500">Registre as compras e entradas de produtos</p>
       </div>
-      <UButton color="primary" class="w-full sm:w-auto" @click="openModal()">
-        <UIcon name="i-heroicons-plus" class="w-4 h-4 mr-2" />
-        Nova Entrada
-      </UButton>
-    </div>
-
-    <!-- Banner de Produções Pendentes -->
-    <div
-      v-if="pendentesCount > 0"
-      class="p-4 bg-purple-50 border border-purple-200 rounded-xl cursor-pointer hover:bg-purple-100 transition-colors"
-      @click="showPendentes = !showPendentes"
-    >
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-3">
-          <div class="p-2 bg-purple-100 rounded-lg">
-            <UIcon name="i-heroicons-beaker" class="w-5 h-5 text-purple-600" />
-          </div>
-          <div>
-            <p class="text-sm font-medium text-purple-700">
-              {{ pendentesCount }} {{ pendentesCount === 1 ? 'saída de produção pendente' : 'saídas de produção pendentes' }}
-            </p>
-            <p class="text-xs text-purple-500">Clique para ver e informar os rendimentos</p>
-          </div>
-        </div>
-        <UIcon
-          :name="showPendentes ? 'i-heroicons-chevron-up' : 'i-heroicons-chevron-down'"
-          class="w-5 h-5 text-purple-500"
-        />
-      </div>
-    </div>
-
-    <!-- Lista de Produções Pendentes -->
-    <UCard v-if="showPendentes && pendentes.length > 0" class="border-purple-200">
-      <template #header>
-        <div class="flex items-center gap-2">
-          <UIcon name="i-heroicons-beaker" class="w-4 h-4 text-purple-600" />
-          <span class="text-sm font-medium text-purple-700">Produções Pendentes</span>
-        </div>
-      </template>
-      <div class="space-y-3">
-        <div
-          v-for="benef in pendentes"
-          :key="benef.id"
-          class="p-4 border border-gray-200 rounded-lg hover:border-purple-300 transition-colors"
+      <div class="flex gap-2">
+        <UButton
+          v-if="pendentesCount > 0"
+          color="purple"
+          variant="soft"
+          class="w-full sm:w-auto"
+          @click="showPendentes = true"
         >
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="font-medium text-gray-900">{{ benef.saida?.produto?.nome }}</p>
-              <p class="text-sm text-gray-500">
-                Saída em {{ formatDate(benef.saida?.data) }} —
-                {{ formatNumber(benef.saida?.quantidade) }} {{ benef.saida?.produto?.unidade?.sigla }}
-              </p>
-              <p class="text-xs text-gray-400 mt-0.5">
-                Custo total da saída: {{ formatCurrency(benef.saida?.custo_saida) }}
-              </p>
-            </div>
-            <UButton color="purple" size="sm" @click.stop="openResolucao(benef)">
-              <UIcon name="i-heroicons-check-circle" class="w-4 h-4 mr-1" />
-              Informar Rendimento
-            </UButton>
-          </div>
-        </div>
+          <UIcon name="i-heroicons-beaker" class="w-4 h-4 mr-2" />
+          Produções Pendentes
+          <UBadge color="purple" variant="solid" size="xs" class="ml-1.5">
+            {{ pendentesCount }}
+          </UBadge>
+        </UButton>
+        <UButton color="primary" class="w-full sm:w-auto" @click="openModal()">
+          <UIcon name="i-heroicons-plus" class="w-4 h-4 mr-2" />
+          Nova Entrada
+        </UButton>
       </div>
-    </UCard>
+    </div>
 
     <!-- Filtros -->
     <UCard>
@@ -112,7 +68,7 @@
     <div v-if="!loading" class="grid grid-cols-1 md:grid-cols-3 gap-4">
       <UCard>
         <div class="flex items-center gap-4">
-          <div class="p-3 bg-green-100 rounded-lg">
+          <div class="p-3 bg-green-100 rounded-lg flex items-center justify-center">
             <UIcon name="i-heroicons-arrow-down-tray" class="w-6 h-6 text-green-600" />
           </div>
           <div>
@@ -123,7 +79,7 @@
       </UCard>
       <UCard>
         <div class="flex items-center gap-4">
-          <div class="p-3 bg-blue-100 rounded-lg">
+          <div class="p-3 bg-blue-100 rounded-lg flex items-center justify-center">
             <UIcon name="i-heroicons-cube" class="w-6 h-6 text-blue-600" />
           </div>
           <div>
@@ -134,7 +90,7 @@
       </UCard>
       <UCard>
         <div class="flex items-center gap-4">
-          <div class="p-3 bg-purple-100 rounded-lg">
+          <div class="p-3 bg-purple-100 rounded-lg flex items-center justify-center">
             <UIcon name="i-heroicons-currency-dollar" class="w-6 h-6 text-purple-600" />
           </div>
           <div>
@@ -246,7 +202,7 @@
         <template #header>
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
-              <div class="p-2 bg-green-100 rounded-lg">
+              <div class="p-2 bg-green-100 rounded-lg flex items-center justify-center">
                 <UIcon name="i-heroicons-arrow-down-tray" class="w-5 h-5 text-green-600" />
               </div>
               <div>
@@ -308,8 +264,8 @@
                   <UIcon name="i-heroicons-x-mark" class="w-3.5 h-3.5" />
                 </button>
 
-                <!-- Linha 1: Produto -->
-                <div class="mb-3">
+                <!-- Linha 1: Produto + Fornecedor -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
                   <USelectMenu
                     v-model="item.produto_id"
                     :options="produtosSelect"
@@ -330,6 +286,28 @@
                         {{ getProdutoNome(item.produto_id) }}
                       </span>
                       <span v-else class="text-gray-400">Buscar produto...</span>
+                    </template>
+                  </USelectMenu>
+
+                  <USelectMenu
+                    v-model="item.fornecedor_id"
+                    :options="fornecedoresSelect"
+                    placeholder="Fornecedor (opcional)"
+                    searchable
+                    searchable-placeholder="Buscar fornecedor..."
+                    value-attribute="value"
+                    option-attribute="label"
+                    size="md"
+                    :ui="{ trigger: { base: 'w-full' } }"
+                  >
+                    <template #leading>
+                      <UIcon name="i-heroicons-building-storefront" class="w-4 h-4 text-gray-400" />
+                    </template>
+                    <template #label>
+                      <span v-if="item.fornecedor_id" class="truncate">
+                        {{ fornecedoresSelect.find(f => f.value === item.fornecedor_id)?.label }}
+                      </span>
+                      <span v-else class="text-gray-400">Fornecedor (opcional)</span>
                     </template>
                   </USelectMenu>
                 </div>
@@ -475,6 +453,74 @@
       </UCard>
     </UModal>
 
+    <!-- Slideover de Produções Pendentes -->
+    <USlideover
+      v-model="showPendentes"
+      :ui="{
+        width: 'max-w-md',
+        overlay: { background: 'bg-gray-900/50 backdrop-blur-sm' },
+        background: 'bg-white dark:bg-gray-800'
+      }"
+    >
+      <div class="flex flex-col h-full">
+        <!-- Header -->
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+          <div class="flex items-center gap-3">
+            <div class="p-2 bg-purple-100 rounded-lg">
+              <UIcon name="i-heroicons-beaker" class="w-5 h-5 text-purple-600" />
+            </div>
+            <div>
+              <h3 class="text-lg font-semibold text-gray-900">Produções Pendentes</h3>
+              <p class="text-xs text-gray-500">
+                {{ pendentesCount }} {{ pendentesCount === 1 ? 'produção aguardando' : 'produções aguardando' }} rendimento
+              </p>
+            </div>
+          </div>
+          <UButton
+            color="gray"
+            variant="ghost"
+            icon="i-heroicons-x-mark"
+            @click="showPendentes = false"
+          />
+        </div>
+
+        <!-- Lista -->
+        <div class="flex-1 overflow-y-auto px-6 py-4 space-y-3">
+          <div
+            v-for="benef in pendentes"
+            :key="benef.id"
+            class="p-4 rounded-xl border border-gray-200 hover:border-purple-300 bg-white hover:bg-purple-50/30 transition-all cursor-pointer group"
+            @click="openResolucaoFromSlideover(benef)"
+          >
+            <div class="flex items-start justify-between gap-3">
+              <div class="flex-1 min-w-0">
+                <p class="font-medium text-gray-900 truncate">{{ benef.saida?.produto?.nome }}</p>
+                <div class="flex items-center gap-2 mt-1">
+                  <UBadge color="purple" variant="subtle" size="xs">
+                    {{ formatNumber(benef.saida?.quantidade) }} {{ benef.saida?.produto?.unidade?.sigla }}
+                  </UBadge>
+                  <span class="text-xs text-gray-400">{{ formatDate(benef.saida?.data) }}</span>
+                </div>
+                <p class="text-xs text-gray-500 mt-1.5">
+                  Custo: {{ formatCurrency(benef.saida?.custo_saida) }}
+                </p>
+              </div>
+              <UIcon
+                name="i-heroicons-chevron-right"
+                class="w-5 h-5 text-gray-300 group-hover:text-purple-500 transition-colors flex-shrink-0 mt-1"
+              />
+            </div>
+          </div>
+
+          <div v-if="pendentes.length === 0" class="flex flex-col items-center justify-center py-12 text-gray-400">
+            <UIcon name="i-heroicons-check-circle" class="w-10 h-10 mb-3 text-green-400" />
+            <p class="text-sm font-medium text-gray-500">Tudo resolvido!</p>
+            <p class="text-xs text-gray-400">Nenhuma produção pendente</p>
+          </div>
+        </div>
+      </div>
+    </USlideover>
+
     <!-- Modal de Resolução de Produção -->
     <UModal
       v-model="resolucaoModalOpen"
@@ -490,7 +536,7 @@
         <template #header>
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
-              <div class="p-2 bg-purple-100 rounded-lg">
+              <div class="p-2 bg-purple-100 rounded-lg flex items-center justify-center">
                 <UIcon name="i-heroicons-beaker" class="w-5 h-5 text-purple-600" />
               </div>
               <div>
@@ -516,13 +562,12 @@
           <div class="p-3 bg-purple-50 border border-purple-200 rounded-lg">
             <div class="flex items-center justify-between text-sm">
               <span class="text-purple-700">Custo total da saída:</span>
-              <span class="font-semibold text-purple-900">{{ formatCurrency(resolvingBeneficiamento?.saida?.custo_saida) }}</span>
+              <span class="font-semibold text-purple-900">{{ formatCurrency(custoRealSaida) }}</span>
             </div>
-            <div class="flex items-center justify-between text-sm mt-1">
-              <span class="text-purple-700">Custo unitário resultante:</span>
-              <span class="font-semibold text-purple-900">{{ formatCurrency(custoUnitarioResolucao) }}</span>
-            </div>
-            <p class="text-xs text-purple-500 mt-1">O custo é distribuído proporcionalmente pela quantidade total</p>
+            <p v-if="eficienciaProdutoOrigem && eficienciaProdutoOrigem < 100" class="text-xs text-purple-500 mt-1">
+              Custo original {{ formatCurrency(resolvingBeneficiamento?.saida?.custo_saida) }}
+              ajustado pela eficiência de {{ eficienciaProdutoOrigem }}%
+            </p>
           </div>
 
           <!-- Lista de produtos finais -->
@@ -533,13 +578,16 @@
               :key="index"
               class="p-4 border border-gray-200 rounded-lg bg-gray-50/50"
             >
-              <div class="flex items-center gap-4">
-                <div class="flex-1">
+              <div class="flex items-center gap-3 mb-3">
+                <UIcon name="i-heroicons-cube" class="w-4 h-4 text-purple-500 flex-shrink-0" />
+                <div>
                   <p class="text-sm font-medium text-gray-900">{{ item.produto_nome }}</p>
                   <p class="text-xs text-gray-500">Unidade: {{ item.unidade_sigla }}</p>
                 </div>
-                <div class="w-48">
-                  <label class="block text-xs font-medium text-gray-500 mb-1">Quantidade obtida</label>
+              </div>
+              <div class="grid grid-cols-3 gap-3">
+                <div>
+                  <label class="block text-xs font-medium text-gray-500 mb-1">Quantidade</label>
                   <UInput
                     v-model.number="item.quantidade"
                     type="number"
@@ -549,6 +597,50 @@
                     size="md"
                   />
                 </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-500 mb-1">Peso por un. (kg)</label>
+                  <UInput
+                    :model-value="formatGramatura(item.gramatura)"
+                    @update:model-value="item.gramatura = parseGramatura($event)"
+                    placeholder="Ex: 0,150"
+                    size="md"
+                    inputmode="decimal"
+                    :ui="{ icon: { trailing: { pointer: '' } } }"
+                  >
+                    <template #trailing>
+                      <span class="text-gray-400 text-xs">kg</span>
+                    </template>
+                  </UInput>
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-500 mb-1">Custo unit.</label>
+                  <div class="h-[38px] flex items-center px-3 bg-purple-50 border border-purple-200 rounded-md">
+                    <span class="text-xs font-semibold text-purple-700">
+                      {{ formatCurrency(calcCustoUnitarioResolucao(index)) }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Resumo -->
+          <div
+            v-if="itensResolucao.some(i => i.quantidade > 0)"
+            class="p-3 bg-gray-50 border border-gray-200 rounded-lg"
+          >
+            <div class="grid grid-cols-3 gap-3 text-center">
+              <div>
+                <p class="text-xs text-gray-500">Qtd. total</p>
+                <p class="text-sm font-semibold text-gray-900">{{ resumoResolucao.qtdTotal }} un</p>
+              </div>
+              <div>
+                <p class="text-xs text-gray-500">Peso total</p>
+                <p class="text-sm font-semibold text-gray-900">{{ formatNumber(resumoResolucao.pesoTotal) }} kg</p>
+              </div>
+              <div>
+                <p class="text-xs text-gray-500">Valor total</p>
+                <p class="text-sm font-semibold text-purple-700">{{ formatCurrency(resumoResolucao.valorTotal) }}</p>
               </div>
             </div>
           </div>
@@ -582,10 +674,11 @@
 </template>
 
 <script setup lang="ts">
-import type { Entrada, Produto, Beneficiamento } from '~/types'
+import type { Entrada, Produto, Beneficiamento, Fornecedor } from '~/types'
 
 interface ItemEntrada {
   produto_id: string
+  fornecedor_id: string
   quantidade: number
   valor_total: number
   observacao: string
@@ -598,6 +691,7 @@ const {
   updateEntrada,
   deleteEntrada: removeEntrada,
   getProdutos,
+  getFornecedores,
   getBeneficiamentosPendentes,
   countBeneficiamentosPendentes,
   resolverBeneficiamento,
@@ -608,6 +702,7 @@ const toast = useToast()
 
 const entradas = ref<Entrada[]>([])
 const produtos = ref<Produto[]>([])
+const fornecedores = ref<Fornecedor[]>([])
 const loading = ref(true)
 const saving = ref(false)
 const deleting = ref(false)
@@ -630,6 +725,7 @@ const itensResolucao = ref<Array<{
   produto_nome: string
   unidade_sigla: string
   quantidade: number
+  gramatura: number
 }>>([])
 const resolvendo = ref(false)
 
@@ -656,6 +752,14 @@ const produtosSelect = computed(() =>
   produtos.value.map(p => ({
     label: `${p.nome} ${p.unidade?.sigla ? `(${p.unidade.sigla})` : ''}`,
     value: p.id
+  }))
+)
+
+// Opções de fornecedores para o select
+const fornecedoresSelect = computed(() =>
+  fornecedores.value.map(f => ({
+    label: f.nome_empresa,
+    value: f.id
   }))
 )
 
@@ -717,6 +821,7 @@ const calcCustoUnitario = (item: ItemEntrada) => {
 
 const createEmptyItem = (): ItemEntrada => ({
   produto_id: '',
+  fornecedor_id: '',
   quantidade: 0,
   valor_total: 0,
   observacao: '',
@@ -729,6 +834,18 @@ const addItem = () => {
 
 const removeItem = (index: number) => {
   itens.value.splice(index, 1)
+}
+
+const formatGramatura = (value: number) => {
+  if (!value) return ''
+  return String(value).replace('.', ',')
+}
+
+const parseGramatura = (value: string): number => {
+  if (!value) return 0
+  const cleaned = value.replace(',', '.')
+  const num = parseFloat(cleaned)
+  return isNaN(num) ? 0 : num
 }
 
 const formatDate = (date: string | undefined) => {
@@ -776,6 +893,14 @@ const loadProdutos = async () => {
   }
 }
 
+const loadFornecedores = async () => {
+  try {
+    fornecedores.value = await getFornecedores(true)
+  } catch (error) {
+    console.error('Erro ao carregar fornecedores:', error)
+  }
+}
+
 const openModal = (entrada?: Entrada) => {
   if (entrada) {
     editingEntrada.value = entrada
@@ -783,6 +908,7 @@ const openModal = (entrada?: Entrada) => {
     formNf.value = entrada.numero_nf || ''
     itens.value = [{
       produto_id: entrada.produto_id,
+      fornecedor_id: entrada.fornecedor_id || '',
       quantidade: entrada.quantidade,
       valor_total: entrada.valor_total,
       observacao: entrada.observacao || '',
@@ -848,6 +974,7 @@ const saveEntrada = async () => {
       const item = itensValidos[0]
       await updateEntrada(editingEntrada.value.id, {
         produto_id: item.produto_id,
+        fornecedor_id: item.fornecedor_id || undefined,
         data: formData.value,
         quantidade: item.quantidade,
         custo_unitario: calcCustoUnitario(item),
@@ -865,6 +992,7 @@ const saveEntrada = async () => {
       for (const item of itensValidos) {
         await createEntrada({
           produto_id: item.produto_id,
+          fornecedor_id: item.fornecedor_id || undefined,
           data: formData.value,
           quantidade: item.quantidade,
           custo_unitario: calcCustoUnitario(item),
@@ -929,11 +1057,39 @@ const deleteEntrada = async () => {
 // Beneficiamento - Resolução
 // ==========================================
 
-const custoUnitarioResolucao = computed(() => {
-  const totalQtd = itensResolucao.value.reduce((sum, i) => sum + (i.quantidade || 0), 0)
-  if (totalQtd <= 0 || !resolvingBeneficiamento.value?.saida?.custo_saida) return 0
-  return Number(resolvingBeneficiamento.value.saida.custo_saida) / totalQtd
+const eficienciaProdutoOrigem = computed(() => {
+  return resolvingBeneficiamento.value?.saida?.produto?.eficiencia_beneficiamento || null
 })
+
+const custoRealSaida = computed(() => {
+  const custoOriginal = Number(resolvingBeneficiamento.value?.saida?.custo_saida) || 0
+  const eficiencia = eficienciaProdutoOrigem.value
+  if (!eficiencia || eficiencia >= 100) return custoOriginal
+  return custoOriginal / (eficiencia / 100)
+})
+
+// Custo por kg = custoReal / quantidade original da saída (kg)
+const custoPorKg = computed(() => {
+  const qtdSaida = Number(resolvingBeneficiamento.value?.saida?.quantidade) || 0
+  if (qtdSaida <= 0) return 0
+  return custoRealSaida.value / qtdSaida
+})
+
+const resumoResolucao = computed(() => {
+  const qtdTotal = itensResolucao.value.reduce((sum, i) => sum + (i.quantidade || 0), 0)
+  const pesoTotal = itensResolucao.value.reduce((sum, i) => sum + ((i.gramatura || 0) * (i.quantidade || 0)), 0)
+  const valorTotal = itensResolucao.value.reduce((sum, i, idx) => {
+    return sum + (calcCustoUnitarioResolucao(idx) * (i.quantidade || 0))
+  }, 0)
+  return { qtdTotal, pesoTotal, valorTotal }
+})
+
+// Custo unitário = custo por kg * gramatura da unidade
+const calcCustoUnitarioResolucao = (index: number) => {
+  const item = itensResolucao.value[index]
+  if (!item || !item.gramatura) return 0
+  return custoPorKg.value * item.gramatura
+}
 
 const loadPendentes = async () => {
   try {
@@ -946,6 +1102,14 @@ const loadPendentes = async () => {
   } catch (error) {
     console.error('Erro ao carregar beneficiamentos pendentes:', error)
   }
+}
+
+const openResolucaoFromSlideover = (benef: Beneficiamento) => {
+  showPendentes.value = false
+  // Aguarda transição do slideover fechar antes de abrir o modal
+  setTimeout(() => {
+    openResolucao(benef)
+  }, 300)
 }
 
 const openResolucao = async (benef: Beneficiamento) => {
@@ -961,7 +1125,8 @@ const openResolucao = async (benef: Beneficiamento) => {
       produto_final_id: v.produto_final?.id || v.produto_final_id,
       produto_nome: v.produto_final?.nome || 'Produto',
       unidade_sigla: v.produto_final?.unidade?.sigla || '',
-      quantidade: 0
+      quantidade: 0,
+      gramatura: 0
     }))
   } catch (error) {
     console.error('Erro ao carregar produtos finais:', error)
@@ -989,10 +1154,15 @@ const confirmarResolucao = async () => {
     await resolverBeneficiamento(
       resolvingBeneficiamento.value.id,
       resolvingBeneficiamento.value.saida!,
-      itensValidos.map(i => ({
-        produto_final_id: i.produto_final_id,
-        quantidade: i.quantidade
-      }))
+      itensValidos.map((i, idx) => {
+        const originalIndex = itensResolucao.value.findIndex(ir => ir.produto_final_id === i.produto_final_id)
+        return {
+          produto_final_id: i.produto_final_id,
+          quantidade: i.quantidade,
+          gramatura: i.gramatura || undefined,
+          custo_unitario: calcCustoUnitarioResolucao(originalIndex >= 0 ? originalIndex : idx)
+        }
+      })
     )
     toast.add({
       title: 'Sucesso',
@@ -1021,6 +1191,7 @@ watch(empresaId, () => {
   if (empresaId.value) {
     loadEntradas()
     loadProdutos()
+    loadFornecedores()
     loadPendentes()
   }
 }, { immediate: true })

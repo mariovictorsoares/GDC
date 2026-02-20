@@ -57,7 +57,7 @@
       <div v-if="!loadingHistorico" class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <UCard>
           <div class="flex items-center gap-4">
-            <div class="p-3 bg-blue-100 rounded-lg">
+            <div class="p-3 bg-blue-100 rounded-lg flex items-center justify-center">
               <UIcon name="i-heroicons-clipboard-document-list" class="w-6 h-6 text-blue-600" />
             </div>
             <div>
@@ -68,7 +68,7 @@
         </UCard>
         <UCard>
           <div class="flex items-center gap-4">
-            <div class="p-3 bg-green-100 rounded-lg">
+            <div class="p-3 bg-green-100 rounded-lg flex items-center justify-center">
               <UIcon name="i-heroicons-arrow-trending-up" class="w-6 h-6 text-green-600" />
             </div>
             <div>
@@ -79,7 +79,7 @@
         </UCard>
         <UCard>
           <div class="flex items-center gap-4">
-            <div class="p-3 bg-red-100 rounded-lg">
+            <div class="p-3 bg-red-100 rounded-lg flex items-center justify-center">
               <UIcon name="i-heroicons-arrow-trending-down" class="w-6 h-6 text-red-600" />
             </div>
             <div>
@@ -537,7 +537,7 @@
         <template #header>
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
-              <div class="p-2 bg-blue-100 rounded-lg">
+              <div class="p-2 bg-blue-100 rounded-lg flex items-center justify-center">
                 <UIcon name="i-heroicons-clipboard-document-check" class="w-5 h-5 text-blue-600" />
               </div>
               <div>
@@ -652,7 +652,7 @@
       <UCard :ui="{ background: 'bg-transparent', ring: 'ring-0', shadow: '', divide: 'divide-gray-100 dark:divide-gray-700' }">
         <template #header>
           <div class="flex items-center gap-3">
-            <div class="p-2 bg-green-100 rounded-lg">
+            <div class="p-2 bg-green-100 rounded-lg flex items-center justify-center">
               <UIcon name="i-heroicons-check-circle" class="w-6 h-6 text-green-600" />
             </div>
             <h3 class="text-lg font-semibold">Contagem salva!</h3>

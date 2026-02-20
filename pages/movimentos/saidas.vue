@@ -60,7 +60,7 @@
     <div v-if="!loading" class="grid grid-cols-1 md:grid-cols-3 gap-4">
       <UCard>
         <div class="flex items-center gap-4">
-          <div class="p-3 bg-red-100 rounded-lg">
+          <div class="p-3 bg-red-100 rounded-lg flex items-center justify-center">
             <UIcon name="i-heroicons-arrow-up-tray" class="w-6 h-6 text-red-600" />
           </div>
           <div>
@@ -71,7 +71,7 @@
       </UCard>
       <UCard>
         <div class="flex items-center gap-4">
-          <div class="p-3 bg-blue-100 rounded-lg">
+          <div class="p-3 bg-blue-100 rounded-lg flex items-center justify-center">
             <UIcon name="i-heroicons-cube" class="w-6 h-6 text-blue-600" />
           </div>
           <div>
@@ -82,7 +82,7 @@
       </UCard>
       <UCard>
         <div class="flex items-center gap-4">
-          <div class="p-3 bg-purple-100 rounded-lg">
+          <div class="p-3 bg-purple-100 rounded-lg flex items-center justify-center">
             <UIcon name="i-heroicons-currency-dollar" class="w-6 h-6 text-purple-600" />
           </div>
           <div>
@@ -194,7 +194,7 @@
         <template #header>
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
-              <div class="p-2 rounded-lg" :class="tipoSaida === 'transferencia' ? 'bg-blue-100' : tipoSaida === 'beneficiamento' ? 'bg-purple-100' : 'bg-red-100'">
+              <div class="p-2 rounded-lg flex items-center justify-center" :class="tipoSaida === 'transferencia' ? 'bg-blue-100' : tipoSaida === 'beneficiamento' ? 'bg-purple-100' : 'bg-red-100'">
                 <UIcon
                   :name="tipoSaida === 'transferencia' ? 'i-heroicons-arrows-right-left' : tipoSaida === 'beneficiamento' ? 'i-heroicons-beaker' : 'i-heroicons-arrow-up-tray'"
                   class="w-5 h-5"
@@ -420,11 +420,6 @@
               Adicionar outro produto
             </button>
           </div>
-
-          <!-- Info custo automático -->
-          <div class="p-3 bg-gray-50 rounded-lg">
-            <p class="text-xs text-gray-500">O custo de saída será calculado automaticamente com base no custo médio do produto.</p>
-          </div>
         </div>
 
         <template #footer>
@@ -440,6 +435,64 @@
             >
               <UIcon name="i-heroicons-check" class="w-4 h-4 mr-1.5" />
               {{ editingSaida ? 'Salvar Alterações' : `Registrar ${itens.length > 1 ? itens.length + ' Saídas' : 'Saída'}` }}
+            </UButton>
+          </div>
+        </template>
+      </UCard>
+    </UModal>
+
+    <!-- Modal de Confirmação de Saída Definitiva -->
+    <UModal
+      v-model="confirmDefinitivaOpen"
+      prevent-close
+      :ui="{
+        overlay: { background: 'bg-gray-900/50 backdrop-blur-sm' },
+        background: 'bg-white dark:bg-gray-800',
+        ring: 'ring-1 ring-gray-200 dark:ring-gray-700',
+        shadow: 'shadow-2xl'
+      }"
+    >
+      <UCard :ui="{ background: 'bg-transparent', ring: 'ring-0', shadow: '', divide: 'divide-gray-100 dark:divide-gray-700' }">
+        <template #header>
+          <div class="flex items-center gap-3">
+            <div class="p-2 bg-red-100 rounded-lg flex items-center justify-center">
+              <UIcon name="i-heroicons-exclamation-triangle" class="w-5 h-5 text-red-600" />
+            </div>
+            <h3 class="text-lg font-semibold text-red-600">Confirmar Saída Definitiva</h3>
+          </div>
+        </template>
+
+        <div class="space-y-3">
+          <p class="text-gray-700">Você está registrando uma <strong>saída definitiva</strong>. Os produtos abaixo serão removidos permanentemente do estoque:</p>
+          <div class="space-y-2">
+            <div
+              v-for="(item, index) in itensValidosConfirmacao"
+              :key="index"
+              class="p-3 bg-red-50 border border-red-200 rounded-lg flex items-center justify-between"
+            >
+              <div>
+                <p class="font-medium text-gray-900">{{ getProdutoNome(item.produto_id) }}</p>
+                <p class="text-xs text-gray-500">{{ formatDate(formData) }}</p>
+              </div>
+              <span class="font-semibold text-red-700">
+                {{ formatNumber(item.quantidade) }} {{ getProdutoUnidade(item.produto_id) }}
+              </span>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+            <UIcon name="i-heroicons-exclamation-triangle" class="w-5 h-5 text-amber-600 flex-shrink-0" />
+            <p class="text-sm text-amber-800 font-medium">Esta ação não pode ser desfeita.</p>
+          </div>
+        </div>
+
+        <template #footer>
+          <div class="flex flex-col-reverse sm:flex-row justify-end gap-3">
+            <UButton color="gray" variant="ghost" class="w-full sm:w-auto" @click="cancelarConfirmacao">
+              Voltar
+            </UButton>
+            <UButton color="red" class="w-full sm:w-auto" :loading="saving" @click="executeSaveSaida">
+              <UIcon name="i-heroicons-arrow-up-tray" class="w-4 h-4 mr-1.5" />
+              Confirmar Saída Definitiva
             </UButton>
           </div>
         </template>
@@ -518,6 +571,7 @@ const filtroDataFim = ref('')
 const filtroTipo = ref('')
 const modalOpen = ref(false)
 const deleteModalOpen = ref(false)
+const confirmDefinitivaOpen = ref(false)
 const editingSaida = ref<Saida | null>(null)
 const deletingSaida = ref<Saida | null>(null)
 
@@ -732,9 +786,13 @@ const openModal = async (saida?: Saida) => {
   modalOpen.value = true
 }
 
-const saveSaida = async () => {
-  // Validar itens
-  const itensValidos = itens.value.filter(item => item.produto_id)
+// Computed para itens válidos (usado no modal de confirmação)
+const itensValidosConfirmacao = computed(() =>
+  itens.value.filter(item => item.produto_id)
+)
+
+const validarItens = (): boolean => {
+  const itensValidos = itensValidosConfirmacao.value
 
   if (itensValidos.length === 0) {
     toast.add({
@@ -742,7 +800,7 @@ const saveSaida = async () => {
       description: 'Selecione pelo menos um produto',
       color: 'amber'
     })
-    return
+    return false
   }
 
   for (const item of itensValidos) {
@@ -753,9 +811,8 @@ const saveSaida = async () => {
         description: `Informe a quantidade para "${nome}"`,
         color: 'amber'
       })
-      return
+      return false
     }
-    // Validar estoque
     if (isEstoqueInsuficiente(item)) {
       const nome = getProdutoNome(item.produto_id)
       const saldo = getSaldoItem(item)
@@ -764,7 +821,7 @@ const saveSaida = async () => {
         description: `"${nome}" - Estoque disponível: ${formatNumber(saldo)}. Solicitado: ${formatNumber(item.quantidade)}.`,
         color: 'red'
       })
-      return
+      return false
     }
   }
 
@@ -774,14 +831,37 @@ const saveSaida = async () => {
       description: 'Informe a data da saída',
       color: 'amber'
     })
+    return false
+  }
+
+  return true
+}
+
+const saveSaida = async () => {
+  if (!validarItens()) return
+
+  // Se for saída definitiva, fechar modal principal e mostrar confirmação
+  if (tipoSaida.value === 'definitiva') {
+    modalOpen.value = false
+    confirmDefinitivaOpen.value = true
     return
   }
+
+  await executeSaveSaida()
+}
+
+const cancelarConfirmacao = () => {
+  confirmDefinitivaOpen.value = false
+  modalOpen.value = true
+}
+
+const executeSaveSaida = async () => {
+  const itensValidos = itensValidosConfirmacao.value
 
   try {
     saving.value = true
 
     if (editingSaida.value) {
-      // Edição: salva apenas o primeiro item
       const item = itensValidos[0]
       await updateSaida(editingSaida.value.id, {
         produto_id: item.produto_id,
@@ -796,7 +876,6 @@ const saveSaida = async () => {
         color: 'green'
       })
     } else {
-      // Criação: salva todos os itens
       for (const item of itensValidos) {
         if (tipoSaida.value === 'beneficiamento') {
           await createSaidaBeneficiamento({
@@ -827,6 +906,7 @@ const saveSaida = async () => {
       })
     }
 
+    confirmDefinitivaOpen.value = false
     modalOpen.value = false
     await loadSaidas()
   } catch (error: any) {

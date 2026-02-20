@@ -187,7 +187,7 @@
           <!-- Center text -->
           <div v-if="abcData.length > 0" class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none" style="padding-bottom: 40px">
             <span class="text-[10px] text-gray-400 uppercase tracking-wide">Total</span>
-            <span class="text-sm font-bold text-gray-900">{{ formatCurrencyCompact(abcTotal) }}</span>
+            <span class="text-sm font-bold text-gray-900">{{ formatCurrency(abcTotal) }}</span>
           </div>
         </div>
       </UCard>
@@ -266,8 +266,8 @@
               <span class="text-xs text-gray-500">{{ mesAtual }}</span>
             </div>
             <div class="flex items-center gap-4 text-xs">
-              <span class="text-controle-600 font-medium">{{ formatCurrencyCompact(resumo.totalEntradasMes) }} ent.</span>
-              <span class="text-red-500 font-medium">{{ formatCurrencyCompact(resumo.totalSaidasMes) }} saí.</span>
+              <span class="text-controle-600 font-medium">{{ formatCurrency(resumo.totalEntradasMes) }} ent.</span>
+              <span class="text-red-500 font-medium">{{ formatCurrency(resumo.totalSaidasMes) }} saí.</span>
             </div>
           </div>
         </div>
@@ -370,7 +370,7 @@
 
     <!-- Empty state: Tudo OK -->
     <div v-if="!loading && lowStockWithDays.length === 0 && resumo.totalProdutos > 0" class="rounded-xl bg-green-50 ring-1 ring-green-100 p-6 flex items-center gap-4">
-      <div class="p-3 bg-green-100 rounded-lg">
+      <div class="p-3 bg-green-100 rounded-lg flex items-center justify-center">
         <UIcon name="i-heroicons-check-badge" class="w-6 h-6 text-green-600" />
       </div>
       <div>
@@ -402,11 +402,6 @@ const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(truncate2(value))
 }
 
-const formatCurrencyCompact = (value: number) => {
-  if (value >= 1000000) return 'R$ ' + (value / 1000000).toFixed(1) + 'M'
-  if (value >= 1000) return 'R$ ' + (value / 1000).toFixed(1) + 'k'
-  return formatCurrency(value)
-}
 
 const formatNumber = (value: number) => {
   return new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(truncate2(value))

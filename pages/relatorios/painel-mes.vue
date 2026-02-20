@@ -25,45 +25,44 @@
             class="w-32"
           />
         </UFormGroup>
-        <UFormGroup label="Visualização">
-          <div class="flex rounded-md shadow-sm">
-            <UButton
-              :color="tipoVisualizacao === 'todos' ? 'primary' : 'gray'"
-              :variant="tipoVisualizacao === 'todos' ? 'solid' : 'outline'"
-              size="sm"
-              class="rounded-r-none"
-              @click="tipoVisualizacao = 'todos'; loadPainel()"
-            >
-              Transf. + Definitiva
-            </UButton>
-            <UButton
-              :color="tipoVisualizacao === 'transferencia' ? 'primary' : 'gray'"
-              :variant="tipoVisualizacao === 'transferencia' ? 'solid' : 'outline'"
-              size="sm"
-              class="rounded-none border-x-0"
-              @click="tipoVisualizacao = 'transferencia'; loadPainel()"
-            >
-              Transferência
-            </UButton>
-            <UButton
-              :color="tipoVisualizacao === 'definitiva' ? 'primary' : 'gray'"
-              :variant="tipoVisualizacao === 'definitiva' ? 'solid' : 'outline'"
-              size="sm"
-              class="rounded-none border-r-0"
-              @click="tipoVisualizacao = 'definitiva'; loadPainel()"
-            >
-              Definitiva
-            </UButton>
-            <UButton
-              :color="tipoVisualizacao === 'beneficiamento' ? 'primary' : 'gray'"
-              :variant="tipoVisualizacao === 'beneficiamento' ? 'solid' : 'outline'"
-              size="sm"
-              class="rounded-l-none"
-              @click="tipoVisualizacao = 'beneficiamento'; loadPainel()"
-            >
-              Produção
-            </UButton>
-          </div>
+        <UFormGroup>
+          <template #label>
+            <div class="flex items-center gap-1">
+              <span>Visualização</span>
+              <UPopover :popper="{ placement: 'top', offsetDistance: 8 }" mode="hover" :open-delay="200" :close-delay="100">
+                <UIcon
+                  name="i-heroicons-question-mark-circle"
+                  class="w-3.5 h-3.5 text-gray-400 hover:text-primary-500 cursor-help transition-colors"
+                />
+                <template #panel>
+                  <div class="p-3 text-xs space-y-2 max-w-[280px]">
+                    <p class="font-semibold text-gray-900 border-b border-gray-200 pb-1.5">Modos de Visualização</p>
+                    <div class="flex gap-2">
+                      <span class="inline-block w-1.5 h-1.5 rounded-full bg-primary-500 mt-1.5 shrink-0" />
+                      <div><span class="font-medium text-gray-800">CMV Consumo:</span> <span class="text-gray-500">Transf. + Definitiva — custo total das saídas (exceto produção)</span></div>
+                    </div>
+                    <div class="flex gap-2">
+                      <span class="inline-block w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 shrink-0" />
+                      <div><span class="font-medium text-gray-800">Transferência:</span> <span class="text-gray-500">Apenas movimentações para o estoque de apoio</span></div>
+                    </div>
+                    <div class="flex gap-2">
+                      <span class="inline-block w-1.5 h-1.5 rounded-full bg-red-500 mt-1.5 shrink-0" />
+                      <div><span class="font-medium text-gray-800">Definitiva:</span> <span class="text-gray-500">Apenas saídas finais (consumo, venda, perda)</span></div>
+                    </div>
+                    <div class="flex gap-2">
+                      <span class="inline-block w-1.5 h-1.5 rounded-full bg-purple-500 mt-1.5 shrink-0" />
+                      <div><span class="font-medium text-gray-800">Produção:</span> <span class="text-gray-500">Saídas para beneficiamento / industrialização</span></div>
+                    </div>
+                  </div>
+                </template>
+              </UPopover>
+            </div>
+          </template>
+          <USelect
+            v-model="tipoVisualizacao"
+            :options="visualizacaoOptions"
+            class="w-48"
+          />
         </UFormGroup>
         <UButton color="primary" @click="loadPainel" :loading="loading">
           <UIcon name="i-heroicons-arrow-path" class="w-4 h-4 mr-2" />
@@ -104,7 +103,7 @@
       </UCard>
       <UCard v-if="showCmv">
         <div class="text-center">
-          <p class="text-sm text-gray-500">CMV (Saídas)</p>
+          <p class="text-sm text-gray-500">{{ labelCmv }}</p>
           <p class="text-2xl font-bold text-orange-600">{{ formatCurrency(resumo.cmvTotal) }}</p>
         </div>
       </UCard>
@@ -151,7 +150,7 @@
               <th rowspan="2" class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-r">E.F.</th>
               <th rowspan="2" class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-r">C.Unit</th>
               <th rowspan="2" class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-r">Est. Total</th>
-              <th v-if="showCmv" rowspan="2" class="px-3 py-3 text-center text-xs font-medium text-orange-600 uppercase tracking-wider bg-orange-50">CMV</th>
+              <th v-if="showCmv" rowspan="2" class="px-3 py-3 text-center text-xs font-medium text-orange-600 uppercase tracking-wider bg-orange-50">{{ labelCmv }}</th>
             </tr>
             <tr>
               <!-- Entradas por semana (dinâmico) -->
@@ -236,7 +235,22 @@ const hoje = new Date()
 const selectedMes = ref(hoje.getMonth() + 1)
 const selectedAno = ref(hoje.getFullYear())
 
+const visualizacaoOptions = [
+  { label: 'CMV Consumo', value: 'todos' },
+  { label: 'Transferência', value: 'transferencia' },
+  { label: 'Definitiva', value: 'definitiva' },
+  { label: 'Produção', value: 'beneficiamento' }
+]
+
 const showCmv = computed(() => tipoVisualizacao.value !== 'beneficiamento')
+
+const labelCmv = computed(() => {
+  switch (tipoVisualizacao.value) {
+    case 'transferencia': return 'Valor Transferência'
+    case 'definitiva': return 'Valor Definitiva'
+    default: return 'CMV Consumo'
+  }
+})
 
 // Total de colunas: Cat + Produto + EI + (semanas * 2 entradas/saídas) + 2 totais + EF + CUnit + CTotal + (CMV se não for produção)
 const totalColunas = computed(() => 3 + (semanas.value.length + 1) * 2 + 3 + (showCmv.value ? 1 : 0))
@@ -317,20 +331,7 @@ const formatCurrency = (value: number) => {
 
 const formatCurrencyShort = (value: number) => {
   if (!value || value === 0) return '-'
-  if (value >= 1000) {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-      notation: 'compact',
-      maximumFractionDigits: 1
-    }).format(value)
-  }
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(truncate2(value))
+  return formatCurrency(value)
 }
 
 const loadPainel = async () => {
@@ -349,6 +350,10 @@ const loadPainel = async () => {
     loading.value = false
   }
 }
+
+watch(tipoVisualizacao, () => {
+  loadPainel()
+})
 
 watch(empresaId, () => {
   if (empresaId.value) {
