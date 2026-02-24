@@ -23,7 +23,10 @@
       "Bash(powershell -Command \"Get-NetTCPConnection -LocalPort 3000,3001,3002 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_OwningProcess -Force -ErrorAction SilentlyContinue }\")",
       "Bash(powershell -Command:*)",
       "Bash(npx nuxt prepare:*)",
-      "Bash(npx nuxt dev:*)"
+      "Bash(npx nuxt dev:*)",
+      "Bash(git -C /c/Users/mario/Desktop/estoque-cd ls-files)",
+      "Bash(echo:*)",
+      "Bash(git -C /c/Users/mario/Desktop/estoque-cd status)"
     ]
   }
 }

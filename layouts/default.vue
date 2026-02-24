@@ -89,6 +89,62 @@
                 <span>{{ item.label }}</span>
               </NuxtLink>
             </div>
+
+            <!-- Faturamento (accordion) -->
+            <div v-if="sidebarCollapsed">
+              <UTooltip text="Faturamento" :popper="{ placement: 'right' }">
+                <button
+                  class="flex items-center justify-center w-10 h-10 rounded-lg transition-colors"
+                  :class="isFaturamentoActive ? 'bg-guardian-50 text-guardian-700' : 'text-gray-500 hover:bg-gray-100'"
+                  @click="faturamentoOpen = !faturamentoOpen"
+                >
+                  <UIcon name="i-heroicons-banknotes" class="w-5 h-5" />
+                </button>
+              </UTooltip>
+              <div v-if="faturamentoOpen" class="flex flex-col items-center space-y-0.5 mt-0.5">
+                <div v-for="sub in menuFaturamento" :key="sub.to" class="flex justify-center">
+                  <UTooltip :text="sub.label" :popper="{ placement: 'right' }">
+                    <NuxtLink
+                      :to="sub.to"
+                      class="flex items-center justify-center w-8 h-8 rounded-lg transition-colors"
+                      :class="isActive(sub.to) ? 'bg-guardian-50 text-guardian-700' : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600'"
+                    >
+                      <UIcon :name="sub.icon" class="w-4 h-4" />
+                    </NuxtLink>
+                  </UTooltip>
+                </div>
+              </div>
+            </div>
+            <div v-else>
+              <button
+                class="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-colors w-full"
+                :class="isFaturamentoActive ? 'bg-guardian-50 text-guardian-700' : 'text-gray-700 hover:bg-gray-100'"
+                @click="faturamentoOpen = !faturamentoOpen"
+              >
+                <UIcon name="i-heroicons-banknotes" class="w-5 h-5 flex-shrink-0" />
+                <span class="flex-1 text-left">Faturamento</span>
+                <UIcon
+                  name="i-heroicons-chevron-right-20-solid"
+                  class="w-4 h-4 transition-transform duration-200"
+                  :class="faturamentoOpen ? 'rotate-90' : ''"
+                />
+              </button>
+              <div
+                v-if="faturamentoOpen"
+                class="ml-4 pl-3 border-l border-gray-200 space-y-0.5 mt-0.5"
+              >
+                <NuxtLink
+                  v-for="sub in menuFaturamento"
+                  :key="sub.to"
+                  :to="sub.to"
+                  class="flex items-center gap-3 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors"
+                  :class="isActive(sub.to) ? 'bg-guardian-50 text-guardian-700' : 'text-gray-600 hover:bg-gray-100'"
+                >
+                  <UIcon :name="sub.icon" class="w-4 h-4 flex-shrink-0" />
+                  <span>{{ sub.label }}</span>
+                </NuxtLink>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -119,6 +175,62 @@
                 <span>{{ item.label }}</span>
               </NuxtLink>
             </div>
+
+            <!-- Planej. Inventário (accordion) -->
+            <div v-if="sidebarCollapsed">
+              <UTooltip text="Planej. Inventário" :popper="{ placement: 'right' }">
+                <button
+                  class="flex items-center justify-center w-10 h-10 rounded-lg transition-colors"
+                  :class="isPlanejInventarioActive ? 'bg-guardian-50 text-guardian-700' : 'text-gray-500 hover:bg-gray-100'"
+                  @click="planejInventarioOpen = !planejInventarioOpen"
+                >
+                  <UIcon name="i-heroicons-clipboard-document-list" class="w-5 h-5" />
+                </button>
+              </UTooltip>
+              <div v-if="planejInventarioOpen" class="flex flex-col items-center space-y-0.5 mt-0.5">
+                <div v-for="sub in menuPlanejInventario" :key="sub.to" class="flex justify-center">
+                  <UTooltip :text="sub.label" :popper="{ placement: 'right' }">
+                    <NuxtLink
+                      :to="sub.to"
+                      class="flex items-center justify-center w-8 h-8 rounded-lg transition-colors"
+                      :class="isActive(sub.to) ? 'bg-guardian-50 text-guardian-700' : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600'"
+                    >
+                      <UIcon :name="sub.icon" class="w-4 h-4" />
+                    </NuxtLink>
+                  </UTooltip>
+                </div>
+              </div>
+            </div>
+            <div v-else>
+              <button
+                class="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-colors w-full"
+                :class="isPlanejInventarioActive ? 'bg-guardian-50 text-guardian-700' : 'text-gray-700 hover:bg-gray-100'"
+                @click="planejInventarioOpen = !planejInventarioOpen"
+              >
+                <UIcon name="i-heroicons-clipboard-document-list" class="w-5 h-5 flex-shrink-0" />
+                <span class="flex-1 text-left">Planej. Inventário</span>
+                <UIcon
+                  name="i-heroicons-chevron-right-20-solid"
+                  class="w-4 h-4 transition-transform duration-200"
+                  :class="planejInventarioOpen ? 'rotate-90' : ''"
+                />
+              </button>
+              <div
+                v-if="planejInventarioOpen"
+                class="ml-4 pl-3 border-l border-gray-200 space-y-0.5 mt-0.5"
+              >
+                <NuxtLink
+                  v-for="sub in menuPlanejInventario"
+                  :key="sub.to"
+                  :to="sub.to"
+                  class="flex items-center gap-3 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors"
+                  :class="isActive(sub.to) ? 'bg-guardian-50 text-guardian-700' : 'text-gray-600 hover:bg-gray-100'"
+                >
+                  <UIcon :name="sub.icon" class="w-4 h-4 flex-shrink-0" />
+                  <span>{{ sub.label }}</span>
+                </NuxtLink>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -127,27 +239,117 @@
           <p v-if="!sidebarCollapsed" class="px-3 mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Relatórios</p>
           <div v-else class="mb-2 mx-3 border-t border-gray-100" />
           <div :class="sidebarCollapsed ? 'flex flex-col items-center space-y-0.5' : 'space-y-0.5'">
-            <div v-for="item in menuRelatorios" :key="item.to">
-              <div v-if="sidebarCollapsed" class="flex justify-center">
-                <UTooltip :text="item.label" :popper="{ placement: 'right' }">
-                  <NuxtLink
-                    :to="item.to"
-                    class="flex items-center justify-center w-10 h-10 rounded-lg transition-colors"
-                    :class="isActive(item.to) ? 'bg-guardian-50 text-guardian-700' : 'text-gray-500 hover:bg-gray-100'"
-                  >
-                    <UIcon :name="item.icon" class="w-5 h-5" />
-                  </NuxtLink>
-                </UTooltip>
+
+            <!-- Planejamento de Estoque (accordion) -->
+            <div v-if="sidebarCollapsed">
+              <UTooltip text="Planejamento de Estoque" :popper="{ placement: 'right' }">
+                <button
+                  class="flex items-center justify-center w-10 h-10 rounded-lg transition-colors"
+                  :class="isPlanejamentoActive ? 'bg-guardian-50 text-guardian-700' : 'text-gray-500 hover:bg-gray-100'"
+                  @click="planejamentoOpen = !planejamentoOpen"
+                >
+                  <UIcon name="i-heroicons-chart-bar-square" class="w-5 h-5" />
+                </button>
+              </UTooltip>
+              <div v-if="planejamentoOpen" class="flex flex-col items-center space-y-0.5 mt-0.5">
+                <div v-for="sub in menuPlanejamentoEstoque" :key="sub.to" class="flex justify-center">
+                  <UTooltip :text="sub.label" :popper="{ placement: 'right' }">
+                    <NuxtLink
+                      :to="sub.to"
+                      class="flex items-center justify-center w-8 h-8 rounded-lg transition-colors"
+                      :class="isActive(sub.to) ? 'bg-guardian-50 text-guardian-700' : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600'"
+                    >
+                      <UIcon :name="sub.icon" class="w-4 h-4" />
+                    </NuxtLink>
+                  </UTooltip>
+                </div>
               </div>
-              <NuxtLink
-                v-else
-                :to="item.to"
-                class="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-colors"
-                :class="isActive(item.to) ? 'bg-guardian-50 text-guardian-700' : 'text-gray-700 hover:bg-gray-100'"
+            </div>
+            <div v-else>
+              <button
+                class="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-colors w-full"
+                :class="isPlanejamentoActive ? 'bg-guardian-50 text-guardian-700' : 'text-gray-700 hover:bg-gray-100'"
+                @click="planejamentoOpen = !planejamentoOpen"
               >
-                <UIcon :name="item.icon" class="w-5 h-5 flex-shrink-0" />
-                <span>{{ item.label }}</span>
-              </NuxtLink>
+                <UIcon name="i-heroicons-chart-bar-square" class="w-5 h-5 flex-shrink-0" />
+                <span class="flex-1 text-left">Planej. Estoque</span>
+                <UIcon
+                  name="i-heroicons-chevron-right-20-solid"
+                  class="w-4 h-4 transition-transform duration-200"
+                  :class="planejamentoOpen ? 'rotate-90' : ''"
+                />
+              </button>
+              <div
+                v-if="planejamentoOpen"
+                class="ml-4 pl-3 border-l border-gray-200 space-y-0.5 mt-0.5"
+              >
+                <NuxtLink
+                  v-for="sub in menuPlanejamentoEstoque"
+                  :key="sub.to"
+                  :to="sub.to"
+                  class="flex items-center gap-3 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors"
+                  :class="isActive(sub.to) ? 'bg-guardian-50 text-guardian-700' : 'text-gray-600 hover:bg-gray-100'"
+                >
+                  <UIcon :name="sub.icon" class="w-4 h-4 flex-shrink-0" />
+                  <span>{{ sub.label }}</span>
+                </NuxtLink>
+              </div>
+            </div>
+
+            <!-- Planej. Compras (accordion) -->
+            <div v-if="sidebarCollapsed">
+              <UTooltip text="Planej. Compras" :popper="{ placement: 'right' }">
+                <button
+                  class="flex items-center justify-center w-10 h-10 rounded-lg transition-colors"
+                  :class="isPlanejComprasActive ? 'bg-guardian-50 text-guardian-700' : 'text-gray-500 hover:bg-gray-100'"
+                  @click="planejComprasOpen = !planejComprasOpen"
+                >
+                  <UIcon name="i-heroicons-clipboard-document-check" class="w-5 h-5" />
+                </button>
+              </UTooltip>
+              <div v-if="planejComprasOpen" class="flex flex-col items-center space-y-0.5 mt-0.5">
+                <div v-for="sub in menuPlanejCompras" :key="sub.to" class="flex justify-center">
+                  <UTooltip :text="sub.label" :popper="{ placement: 'right' }">
+                    <NuxtLink
+                      :to="sub.to"
+                      class="flex items-center justify-center w-8 h-8 rounded-lg transition-colors"
+                      :class="isActive(sub.to) ? 'bg-guardian-50 text-guardian-700' : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600'"
+                    >
+                      <UIcon :name="sub.icon" class="w-4 h-4" />
+                    </NuxtLink>
+                  </UTooltip>
+                </div>
+              </div>
+            </div>
+            <div v-else>
+              <button
+                class="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-colors w-full"
+                :class="isPlanejComprasActive ? 'bg-guardian-50 text-guardian-700' : 'text-gray-700 hover:bg-gray-100'"
+                @click="planejComprasOpen = !planejComprasOpen"
+              >
+                <UIcon name="i-heroicons-clipboard-document-check" class="w-5 h-5 flex-shrink-0" />
+                <span class="flex-1 text-left">Planej. Compras</span>
+                <UIcon
+                  name="i-heroicons-chevron-right-20-solid"
+                  class="w-4 h-4 transition-transform duration-200"
+                  :class="planejComprasOpen ? 'rotate-90' : ''"
+                />
+              </button>
+              <div
+                v-if="planejComprasOpen"
+                class="ml-4 pl-3 border-l border-gray-200 space-y-0.5 mt-0.5"
+              >
+                <NuxtLink
+                  v-for="sub in menuPlanejCompras"
+                  :key="sub.to"
+                  :to="sub.to"
+                  class="flex items-center gap-3 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors"
+                  :class="isActive(sub.to) ? 'bg-guardian-50 text-guardian-700' : 'text-gray-600 hover:bg-gray-100'"
+                >
+                  <UIcon :name="sub.icon" class="w-4 h-4 flex-shrink-0" />
+                  <span>{{ sub.label }}</span>
+                </NuxtLink>
+              </div>
             </div>
           </div>
         </div>
@@ -716,20 +918,85 @@ const menuCadastros = [
   { to: '/cadastro/fornecedores', icon: 'i-heroicons-truck', label: 'Fornecedores' }
 ]
 
-const menuEstoque = [
-  { to: '/relatorios/painel-mes', icon: 'i-heroicons-calendar-days', label: 'Painel de Controle', iconColor: '' },
-  { to: '/relatorios/gestao-inventario', icon: 'i-heroicons-clipboard-document-list', label: 'Gestão Inventário', iconColor: '' },
-  { to: '/movimentos/entradas', icon: 'i-heroicons-arrow-down-tray', label: 'Entradas', iconColor: 'text-controle-500' },
-  { to: '/movimentos/saidas', icon: 'i-heroicons-arrow-up-tray', label: 'Saídas', iconColor: 'text-red-500' },
-  { to: '/movimentos/ajustes', icon: 'i-heroicons-clipboard-document-check', label: 'Contagem', iconColor: 'text-alerta-500' }
+const menuFaturamento = [
+  { to: '/cadastro/faturamentos?tab=0', icon: 'i-heroicons-calendar', label: 'Mensal' },
+  { to: '/cadastro/faturamentos?tab=1', icon: 'i-heroicons-calendar-days', label: 'Semanal' }
 ]
 
-const menuRelatorios = [
-  { to: '/relatorios/curva-abc', icon: 'i-heroicons-chart-bar', label: 'Curva ABC' },
-  { to: '/relatorios/estoque-minimo', icon: 'i-heroicons-clipboard-document-check', label: 'Planej. Compras' },
-  { to: '/relatorios/giro-estoque', icon: 'i-heroicons-arrow-path', label: 'Giro de Estoque' },
-  { to: '/relatorios/cmv', icon: 'i-heroicons-currency-dollar', label: 'CMV' }
+const menuEstoque = [
+  { to: '/movimentos/entradas', icon: 'i-heroicons-arrow-down-tray', label: 'Entradas', iconColor: 'text-controle-500' },
+  { to: '/movimentos/saidas', icon: 'i-heroicons-arrow-up-tray', label: 'Saídas', iconColor: 'text-red-500' }
 ]
+
+const menuPlanejInventario = [
+  { to: '/relatorios/painel-mes', icon: 'i-heroicons-calendar-days', label: 'CMV' },
+  { to: '/relatorios/gestao-inventario', icon: 'i-heroicons-clipboard-document-list', label: 'Inventário' },
+  { to: '/movimentos/ajustes', icon: 'i-heroicons-clipboard-document-check', label: 'Contagem' }
+]
+
+const menuPlanejamentoEstoque = [
+  { to: '/relatorios/giro-estoque', icon: 'i-heroicons-arrow-path', label: 'Giro de Estoque' },
+  { to: '/relatorios/curva-abc', icon: 'i-heroicons-chart-bar', label: 'Curva ABC' }
+]
+
+const menuPlanejCompras = [
+  { to: '/relatorios/estoque-minimo?tab=0', icon: 'i-heroicons-arrow-uturn-down', label: 'Ponto de Reposição' },
+  { to: '/relatorios/estoque-minimo?tab=1', icon: 'i-heroicons-currency-dollar', label: 'CMC' },
+  { to: '/relatorios/estoque-minimo?tab=2', icon: 'i-heroicons-arrow-trending-up', label: 'Variação de Custo' },
+  { to: '/relatorios/lista-pedidos', icon: 'i-heroicons-clipboard-document-list', label: 'Lista de Pedidos' }
+]
+
+const planejamentoOpen = ref(false)
+const planejComprasOpen = ref(false)
+const planejInventarioOpen = ref(false)
+const faturamentoOpen = ref(false)
+
+const isActive = (fullPath: string) => {
+  const [path, query] = fullPath.split('?')
+  if (path === '/') {
+    return route.path === '/'
+  }
+  if (query) {
+    // Match path + specific query param
+    const params = new URLSearchParams(query)
+    const tab = params.get('tab')
+    return route.path === path && route.query.tab === tab
+  }
+  if (route.path === path) return true
+  return route.path.startsWith(path + '/')
+}
+
+const isPlanejamentoActive = computed(() => {
+  return menuPlanejamentoEstoque.some(item => isActive(item.to))
+})
+
+const isPlanejComprasActive = computed(() => {
+  return route.path === '/relatorios/estoque-minimo' || route.path === '/relatorios/lista-pedidos'
+})
+
+const isPlanejInventarioActive = computed(() => {
+  return menuPlanejInventario.some(item => isActive(item.to))
+})
+
+const isFaturamentoActive = computed(() => {
+  return route.path === '/cadastro/faturamentos'
+})
+
+// Auto-expand when a child route is active
+watch(() => route.fullPath, () => {
+  if (isPlanejamentoActive.value) {
+    planejamentoOpen.value = true
+  }
+  if (isPlanejComprasActive.value) {
+    planejComprasOpen.value = true
+  }
+  if (isPlanejInventarioActive.value) {
+    planejInventarioOpen.value = true
+  }
+  if (isFaturamentoActive.value) {
+    faturamentoOpen.value = true
+  }
+}, { immediate: true })
 
 
 const toggleCollapse = () => {
@@ -791,14 +1058,6 @@ const criarNovaEmpresa = async () => {
 const logout = async () => {
   await client.auth.signOut()
   await navigateTo('/login')
-}
-
-const isActive = (path: string) => {
-  if (path === '/') {
-    return route.path === '/'
-  }
-  if (route.path === path) return true
-  return route.path.startsWith(path + '/')
 }
 
 const formatarNome = (nome: string) => {

@@ -4,7 +4,7 @@
     <div class="flex items-center justify-between">
       <div>
         <h1 class="text-2xl font-bold text-gray-900">Curva ABC</h1>
-        <p class="text-sm text-gray-500">Análise de classificação ABC do estoque e CMV</p>
+        <p class="text-sm text-gray-500">Análise de classificação ABC do estoque e consumo</p>
       </div>
       <UButton color="primary" @click="loadAllData" :loading="loading">
         <UIcon name="i-heroicons-arrow-path" class="w-4 h-4 mr-2" />
@@ -152,7 +152,7 @@
       </UCard>
     </template>
 
-    <!-- Tab: ABC de CMV -->
+    <!-- Tab: ABC de Consumo -->
     <template v-if="activeTab === 1">
       <!-- Resumo Skeleton -->
       <div v-if="loading" class="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -171,7 +171,7 @@
         </div>
       </div>
 
-      <!-- Resumo por Classe - CMV -->
+      <!-- Resumo por Classe - Consumo -->
       <div v-if="!loading" class="grid grid-cols-1 md:grid-cols-4 gap-4">
         <UCard class="border-l-4 border-green-500">
           <div class="flex items-center justify-between">
@@ -182,7 +182,7 @@
             </div>
             <div class="text-right">
               <p class="text-sm font-medium text-gray-900">{{ formatCurrency(resumoCMV.A.valor) }}</p>
-              <p class="text-xs text-gray-500">{{ resumoCMV.A.percentualValor.toFixed(1) }}% do CMV</p>
+              <p class="text-xs text-gray-500">{{ resumoCMV.A.percentualValor.toFixed(1) }}% do consumo</p>
             </div>
           </div>
         </UCard>
@@ -196,7 +196,7 @@
             </div>
             <div class="text-right">
               <p class="text-sm font-medium text-gray-900">{{ formatCurrency(resumoCMV.B.valor) }}</p>
-              <p class="text-xs text-gray-500">{{ resumoCMV.B.percentualValor.toFixed(1) }}% do CMV</p>
+              <p class="text-xs text-gray-500">{{ resumoCMV.B.percentualValor.toFixed(1) }}% do consumo</p>
             </div>
           </div>
         </UCard>
@@ -210,7 +210,7 @@
             </div>
             <div class="text-right">
               <p class="text-sm font-medium text-gray-900">{{ formatCurrency(resumoCMV.C.valor) }}</p>
-              <p class="text-xs text-gray-500">{{ resumoCMV.C.percentualValor.toFixed(1) }}% do CMV</p>
+              <p class="text-xs text-gray-500">{{ resumoCMV.C.percentualValor.toFixed(1) }}% do consumo</p>
             </div>
           </div>
         </UCard>
@@ -218,7 +218,7 @@
         <UCard class="border-l-4 border-red-500">
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm text-gray-500">CMV Total</p>
+              <p class="text-sm text-gray-500">Consumo Total</p>
               <p class="text-2xl font-bold text-red-600">{{ curvaCMV.length }}</p>
               <p class="text-xs text-gray-500">produtos</p>
             </div>
@@ -248,10 +248,10 @@
         </div>
       </UCard>
 
-      <!-- Tabela ABC CMV -->
+      <!-- Tabela ABC Consumo -->
       <UCard :ui="{ body: { padding: '' } }">
         <template #header>
-          <h3 class="font-semibold">Classificação ABC por Valor de CMV (Consumo)</h3>
+          <h3 class="font-semibold">Classificação ABC por Valor de Consumo</h3>
         </template>
 
         <UTable :columns="columnsCMV" :rows="paginatedCMV" :loading="loading">
@@ -311,7 +311,7 @@
           <div class="text-center">
             <p class="text-sm text-gray-500">Estoque Excessivo</p>
             <p class="text-3xl font-bold text-red-600">{{ statusCount.ESTOQUE_EXCESSIVO }}</p>
-            <p class="text-xs text-gray-500">A em estoque, C em CMV</p>
+            <p class="text-xs text-gray-500">A em estoque, C em consumo</p>
           </div>
         </UCard>
 
@@ -319,7 +319,7 @@
           <div class="text-center">
             <p class="text-sm text-gray-500">Risco de Ruptura</p>
             <p class="text-3xl font-bold text-orange-600">{{ statusCount.RISCO_RUPTURA }}</p>
-            <p class="text-xs text-gray-500">C em estoque, A em CMV</p>
+            <p class="text-xs text-gray-500">C em estoque, A em consumo</p>
           </div>
         </UCard>
 
@@ -353,7 +353,7 @@
       <!-- Tabela Comparativo -->
       <UCard :ui="{ body: { padding: '' } }">
         <template #header>
-          <h3 class="font-semibold">Comparativo ABC: Estoque vs CMV</h3>
+          <h3 class="font-semibold">Comparativo ABC: Estoque vs Consumo</h3>
         </template>
 
         <UTable :columns="columnsComparativo" :rows="paginatedComparativo" :loading="loading">
@@ -398,21 +398,21 @@
           <div class="flex items-start gap-3 p-3 bg-red-50 rounded-lg">
             <UBadge color="red">Estoque Excessivo</UBadge>
             <div>
-              <p class="text-sm font-medium text-red-800">Classe A em estoque + Classe C em CMV</p>
+              <p class="text-sm font-medium text-red-800">Classe A em estoque + Classe C em consumo</p>
               <p class="text-xs text-red-600">Produto com alto valor em estoque mas baixo consumo. Risco de capital parado ou vencimento.</p>
             </div>
           </div>
           <div class="flex items-start gap-3 p-3 bg-orange-50 rounded-lg">
             <UBadge color="orange">Risco Ruptura</UBadge>
             <div>
-              <p class="text-sm font-medium text-orange-800">Classe C em estoque + Classe A em CMV</p>
+              <p class="text-sm font-medium text-orange-800">Classe C em estoque + Classe A em consumo</p>
               <p class="text-xs text-orange-600">Produto com baixo estoque mas alto consumo. Risco de falta de produto.</p>
             </div>
           </div>
           <div class="flex items-start gap-3 p-3 bg-green-50 rounded-lg">
             <UBadge color="green">Equilibrado</UBadge>
             <div>
-              <p class="text-sm font-medium text-green-800">Mesma classe em estoque e CMV</p>
+              <p class="text-sm font-medium text-green-800">Mesma classe em estoque e consumo</p>
               <p class="text-xs text-green-600">Estoque está alinhado com o padrão de consumo.</p>
             </div>
           </div>
@@ -465,7 +465,7 @@ const pageSizeComparativo = ref(20)
 // Tabs
 const tabItems = [
   { label: 'ABC Estoque', icon: 'i-heroicons-cube' },
-  { label: 'ABC CMV', icon: 'i-heroicons-arrow-trending-up' },
+  { label: 'ABC Consumo', icon: 'i-heroicons-arrow-trending-up' },
   { label: 'Comparativo', icon: 'i-heroicons-scale' }
 ]
 
@@ -481,7 +481,7 @@ const columnsEstoque = [
 const columnsCMV = [
   { key: 'produto', label: 'Produto', sortable: true },
   { key: 'categoria', label: 'Categoria' },
-  { key: 'valor_cmv', label: 'Valor CMV', sortable: true },
+  { key: 'valor_cmv', label: 'Valor Consumo', sortable: true },
   { key: 'classe', label: 'Curva', sortable: true }
 ]
 
@@ -489,9 +489,9 @@ const columnsComparativo = [
   { key: 'produto', label: 'Produto', sortable: true },
   { key: 'categoria', label: 'Categoria' },
   { key: 'classe_estoque', label: 'ABC Estoque' },
-  { key: 'classe_cmv', label: 'ABC CMV' },
+  { key: 'classe_cmv', label: 'ABC Consumo' },
   { key: 'valor_estoque', label: 'Valor Estoque' },
-  { key: 'valor_cmv', label: 'Valor CMV' }
+  { key: 'valor_cmv', label: 'Valor Consumo' }
 ]
 
 // Opções de filtro

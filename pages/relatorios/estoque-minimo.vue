@@ -4,18 +4,19 @@
     <div class="flex items-center justify-between">
       <div>
         <h1 class="text-2xl font-bold text-gray-900">Planejamento de Compras</h1>
-        <p class="text-sm text-gray-500">Ponto de reposição, CMC semanal e variação de custo</p>
+        <p class="text-sm text-gray-500">Ponto de reposição, CMC e variação de custo</p>
       </div>
-      <UButton color="primary" @click="loadData" :loading="loading">
-        <UIcon name="i-heroicons-arrow-path" class="w-4 h-4 mr-2" />
-        Atualizar
-      </UButton>
+      <div class="flex gap-2">
+        <UButton color="primary" variant="outline" @click="gerarCompra" v-if="activeTab === 0" :disabled="produtosEmReposicao.length === 0">
+          <UIcon name="i-heroicons-printer" class="w-4 h-4 mr-2" />
+          Gerar Compra
+        </UButton>
+        <UButton color="primary" @click="loadData" :loading="loading">
+          <UIcon name="i-heroicons-arrow-path" class="w-4 h-4 mr-2" />
+          Atualizar
+        </UButton>
+      </div>
     </div>
-
-    <!-- Tabs -->
-    <UCard>
-      <UTabs v-model="activeTab" :items="tabItems" />
-    </UCard>
 
     <!-- Tab: Ponto de Reposição -->
     <template v-if="activeTab === 0">
@@ -49,9 +50,6 @@
           </div>
         </template>
 
-        <template #subgrupo-data="{ row }">
-          <span class="text-sm text-gray-600">{{ row.subgrupo }}</span>
-        </template>
         <template #nome-data="{ row }">
           <span class="font-medium">{{ row.nome }}</span>
         </template>
@@ -156,46 +154,10 @@
 
     </template>
 
-    <!-- Tab: CMC Semanal -->
+    <!-- Tab: CMC -->
     <template v-if="activeTab === 1">
 
-      <!-- Faturamento Semanal (Input) -->
-      <UCard>
-        <template #header>
-          <div class="flex items-center gap-2">
-            <div class="p-1.5 bg-blue-100 rounded-md">
-              <UIcon name="i-heroicons-currency-dollar" class="w-4 h-4 text-blue-600" />
-            </div>
-            <div>
-              <p class="text-sm font-semibold text-gray-900">Faturamento Semanal</p>
-              <p class="text-xs text-gray-400">Informe o faturamento de cada semana</p>
-            </div>
-          </div>
-        </template>
-
-        <div class="grid gap-3" :style="{ gridTemplateColumns: `repeat(${cmcData?.semanas?.length || 4}, minmax(0, 1fr))` }">
-          <div
-            v-for="(semana, idx) in cmcData?.semanas || []"
-            :key="idx"
-            class="flex flex-col gap-1"
-          >
-            <label class="text-xs font-medium text-gray-500 text-center">
-              {{ semana.inicio }} - {{ semana.fim }}
-            </label>
-            <UInput
-              :model-value="faturamentoInputs[idx]"
-              @update:model-value="faturamentoInputs[idx] = $event"
-              @blur="salvarFaturamento(idx)"
-              type="number"
-              size="sm"
-              placeholder="R$ 0,00"
-              :ui="{ base: 'text-center' }"
-            />
-          </div>
-        </div>
-      </UCard>
-
-      <!-- Tabela CMC Semanal Agrupada -->
+      <!-- Tabela CMC Agrupada -->
       <UCard :ui="{ body: { padding: '' } }">
         <div class="overflow-x-auto">
           <table class="w-full text-sm">
@@ -212,6 +174,81 @@
                 <th class="px-3 py-3 text-right font-semibold text-gray-700 min-w-[120px]">Total</th>
               </tr>
             </thead>
+
+            <!-- Resumo no topo: Total Compras, Faturamento (inline input), CMC % -->
+            <tbody v-if="cmcData?.grupos?.length" class="border-b-2 border-gray-300">
+              <!-- Total Compras -->
+              <tr class="bg-gray-50">
+                <td class="px-4 py-2.5 font-bold text-gray-900">Total Compras</td>
+                <td
+                  v-for="(semana, idx) in cmcData.semanas"
+                  :key="'total-'+idx"
+                  class="px-3 py-2.5 text-right font-bold text-gray-900"
+                >
+                  {{ formatCurrency(calcTotalCompraSemana(idx)) }}
+                </td>
+                <td class="px-3 py-2.5 text-right font-bold text-blue-700">
+                  {{ formatCurrency(cmcData.semanas.reduce((_: number, __: any, idx: number) => _ + calcTotalCompraSemana(idx), 0)) }}
+                </td>
+              </tr>
+              <!-- Faturamento -->
+              <tr class="bg-gray-50/50">
+                <td class="px-4 py-2.5 font-medium text-gray-700">
+                  <NuxtLink to="/cadastro/faturamentos" class="flex items-center gap-1 hover:text-blue-600 transition-colors">
+                    Faturamento
+                    <UIcon name="i-heroicons-arrow-top-right-on-square" class="w-3 h-3 text-gray-400" />
+                  </NuxtLink>
+                </td>
+                <td
+                  v-for="(fat, idx) in cmcData.faturamentos"
+                  :key="'fat-'+idx"
+                  class="px-3 py-2.5 text-right"
+                  :class="fat > 0 ? 'text-gray-700' : 'text-gray-400 italic'"
+                >
+                  {{ fat > 0 ? formatCurrency(fat) : 'não informado' }}
+                </td>
+                <td class="px-3 py-2.5 text-right font-bold text-gray-700">
+                  {{ formatCurrency(cmcData.faturamentos.reduce((a: number, b: number) => a + b, 0)) }}
+                </td>
+              </tr>
+              <!-- CMC % -->
+              <tr class="bg-orange-50">
+                <td class="px-4 py-2.5 font-bold text-orange-700">CMC %</td>
+                <td
+                  v-for="(pct, idx) in cmcData.cmc_percentuais"
+                  :key="'cmc-'+idx"
+                  class="px-3 py-2.5 text-right font-bold"
+                  :class="getCmcColorClass(pct)"
+                >
+                  <span v-if="pct > 0" class="flex items-center justify-end gap-1">
+                    {{ formatPercent(pct) }}
+                    <UTooltip :popper="{ placement: 'top' }" :ui="{ width: 'max-w-sm', base: 'whitespace-normal text-center' }">
+                      <UIcon :name="getCmcIcon(pct)" class="w-4 h-4 cursor-help" />
+                      <template #text>
+                        <span class="text-xs">{{ getCmcTooltip(pct) }}</span>
+                      </template>
+                    </UTooltip>
+                  </span>
+                  <span v-else>-</span>
+                </td>
+                <td class="px-3 py-2.5 text-right font-bold"
+                  :class="getCmcColorClass(cmcMediaGeral)"
+                >
+                  <span v-if="cmcMediaGeral > 0" class="flex items-center justify-end gap-1">
+                    {{ formatPercent(cmcMediaGeral) }}
+                    <UTooltip :popper="{ placement: 'top' }" :ui="{ width: 'max-w-sm', base: 'whitespace-normal text-center' }">
+                      <UIcon :name="getCmcIcon(cmcMediaGeral)" class="w-4 h-4 cursor-help" />
+                      <template #text>
+                        <span class="text-xs">{{ getCmcTooltip(cmcMediaGeral) }}</span>
+                      </template>
+                    </UTooltip>
+                  </span>
+                  <span v-else>-</span>
+                </td>
+              </tr>
+            </tbody>
+
+            <!-- Dados agrupados -->
             <tbody v-if="cmcData?.grupos?.length" class="divide-y divide-gray-100">
               <template v-for="grupo in cmcData.grupos" :key="grupo.grupo_id">
                 <!-- Linha do Grupo -->
@@ -268,55 +305,6 @@
                 </td>
               </tr>
             </tbody>
-
-            <!-- Footer: Totais e CMC % -->
-            <tfoot v-if="cmcData?.grupos?.length" class="border-t-2 border-gray-300">
-              <!-- Total Compras -->
-              <tr class="bg-gray-50">
-                <td class="px-4 py-2.5 font-bold text-gray-900">Total Compras</td>
-                <td
-                  v-for="(semana, idx) in cmcData.semanas"
-                  :key="'total-'+idx"
-                  class="px-3 py-2.5 text-right font-bold text-gray-900"
-                >
-                  {{ formatCurrency(calcTotalCompraSemana(idx)) }}
-                </td>
-                <td class="px-3 py-2.5 text-right font-bold text-blue-700">
-                  {{ formatCurrency(cmcData.semanas.reduce((_: number, __: any, idx: number) => _ + calcTotalCompraSemana(idx), 0)) }}
-                </td>
-              </tr>
-              <!-- Faturamento -->
-              <tr class="bg-gray-50/50">
-                <td class="px-4 py-2.5 font-medium text-gray-700">Faturamento</td>
-                <td
-                  v-for="(fat, idx) in cmcData.faturamentos"
-                  :key="'fat-'+idx"
-                  class="px-3 py-2.5 text-right font-medium text-gray-700"
-                >
-                  {{ fat > 0 ? formatCurrency(fat) : '-' }}
-                </td>
-                <td class="px-3 py-2.5 text-right font-bold text-gray-700">
-                  {{ formatCurrency(cmcData.faturamentos.reduce((a: number, b: number) => a + b, 0)) }}
-                </td>
-              </tr>
-              <!-- CMC % -->
-              <tr class="bg-orange-50">
-                <td class="px-4 py-2.5 font-bold text-orange-700">CMC %</td>
-                <td
-                  v-for="(pct, idx) in cmcData.cmc_percentuais"
-                  :key="'cmc-'+idx"
-                  class="px-3 py-2.5 text-right font-bold"
-                  :class="pct > 35 ? 'text-red-600' : pct > 30 ? 'text-orange-600' : 'text-green-600'"
-                >
-                  {{ pct > 0 ? formatPercent(pct) : '-' }}
-                </td>
-                <td class="px-3 py-2.5 text-right font-bold"
-                  :class="cmcMediaGeral > 35 ? 'text-red-600' : cmcMediaGeral > 30 ? 'text-orange-600' : 'text-green-600'"
-                >
-                  {{ cmcMediaGeral > 0 ? formatPercent(cmcMediaGeral) : '-' }}
-                </td>
-              </tr>
-            </tfoot>
           </table>
         </div>
       </UCard>
@@ -339,7 +327,7 @@
           <UFormGroup label="Buscar">
             <UInput
               v-model="vcSearch"
-              placeholder="Buscar produto ou subgrupo..."
+              placeholder="Buscar produto..."
               icon="i-heroicons-magnifying-glass"
               class="w-64"
             />
@@ -353,9 +341,8 @@
           <table class="min-w-full text-sm">
             <thead class="bg-gray-50">
               <tr>
-                <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 bg-gray-50 min-w-[180px] z-10">Subgrupo</th>
-                <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-[180px] bg-gray-50 min-w-[200px] z-10">Produto</th>
-                <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-[380px] bg-gray-50 min-w-[50px] z-10">Un.</th>
+                <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 bg-gray-50 min-w-[200px] z-10">Produto</th>
+                <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-[200px] bg-gray-50 min-w-[50px] z-10">Un.</th>
                 <th
                   v-for="dia in vcData?.dias || []"
                   :key="dia.data"
@@ -367,13 +354,13 @@
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
               <tr v-if="vcLoading">
-                <td :colspan="3 + (vcData?.dias?.length || 0)" class="px-3 py-8 text-center text-gray-500">
+                <td :colspan="2 + (vcData?.dias?.length || 0)" class="px-3 py-8 text-center text-gray-500">
                   <UIcon name="i-heroicons-arrow-path" class="w-6 h-6 animate-spin mx-auto mb-2" />
                   Carregando...
                 </td>
               </tr>
               <tr v-else-if="vcFilteredData.length === 0">
-                <td :colspan="3 + (vcData?.dias?.length || 0)" class="px-3 py-8 text-center text-gray-400">
+                <td :colspan="2 + (vcData?.dias?.length || 0)" class="px-3 py-8 text-center text-gray-400">
                   <UIcon name="i-heroicons-inbox" class="w-8 h-8 mb-2 mx-auto" />
                   <p class="text-sm">Nenhum dado encontrado</p>
                 </td>
@@ -381,31 +368,14 @@
               <template v-for="item in vcFilteredData" :key="item.produto_id">
                 <!-- Linha de Custo -->
                 <tr class="hover:bg-gray-50">
-                  <td class="px-3 py-2 text-sm text-gray-600 sticky left-0 bg-white">{{ item.subgrupo }}</td>
-                  <td class="px-3 py-2 text-sm font-medium text-gray-900 sticky left-[180px] bg-white">{{ item.produto }}</td>
-                  <td class="px-3 py-2 text-xs text-gray-400 sticky left-[380px] bg-white">{{ item.unidade }}</td>
+                  <td class="px-3 py-2 text-sm font-medium text-gray-900 sticky left-0 bg-white">{{ item.produto }}</td>
+                  <td class="px-3 py-2 text-xs text-gray-400 sticky left-[200px] bg-white">{{ item.unidade }}</td>
                   <td
                     v-for="(custo, index) in item.custos"
                     :key="index"
                     class="px-3 py-2 text-sm text-center"
                   >
                     <span v-if="custo > 0" class="font-medium">{{ formatCurrency(custo) }}</span>
-                    <span v-else class="text-gray-300">-</span>
-                  </td>
-                </tr>
-                <!-- Linha de Variação -->
-                <tr class="bg-gray-50/50">
-                  <td class="px-3 py-1 sticky left-0 bg-gray-50/50"></td>
-                  <td class="px-3 py-1 text-xs text-gray-400 sticky left-[180px] bg-gray-50/50">variação</td>
-                  <td class="px-3 py-1 sticky left-[380px] bg-gray-50/50"></td>
-                  <td
-                    v-for="(variacao, index) in item.variacoes"
-                    :key="index"
-                    class="px-3 py-1 text-xs text-center"
-                  >
-                    <span v-if="variacao !== null" :class="getVariacaoClass(variacao)">
-                      {{ variacao > 0 ? '+' : '' }}{{ formatVariacao(variacao) }}%
-                    </span>
                     <span v-else class="text-gray-300">-</span>
                   </td>
                 </tr>
@@ -422,16 +392,25 @@
 <script setup lang="ts">
 import type { EstoqueMinimo, CmcSemanalResumo } from '~/types'
 
-const { getEstoqueMinimo, getCmcSemanal, upsertFaturamentoSemanal, getVariacaoCustoDiaria } = useRelatorios()
-const { empresaId } = useEmpresa()
+const { getEstoqueMinimo, getCmcSemanal, getVariacaoCustoDiaria } = useRelatorios()
+const { empresaId, empresaAtiva } = useEmpresa()
 const toast = useToast()
 
-const activeTab = ref(0)
+const route = useRoute()
+
+const activeTab = ref(Number(route.query.tab) || 0)
 const tabItems = [
   { label: 'Ponto de Reposição' },
-  { label: 'CMC Semanal' },
+  { label: 'CMC' },
   { label: 'Variação de Custo' }
 ]
+
+// React to query param changes from sidebar navigation
+watch(() => route.query.tab, (tab) => {
+  if (tab !== undefined) {
+    activeTab.value = Number(tab)
+  }
+})
 
 // ==========================================
 // ESTADO GERAL
@@ -461,12 +440,86 @@ const calcPontoReposicao = (row: EstoqueMinimo) => {
 
 const calcPrevisaoCompras = (row: EstoqueMinimo) => {
   const pontoReposicao = calcPontoReposicao(row)
-  const diff = pontoReposicao - row.quantidade_estoque
-  return diff > 0 ? diff : 0
+  return pontoReposicao - row.quantidade_estoque
+}
+
+const produtosEmReposicao = computed(() => {
+  return estoqueData.value.filter(row => calcPrevisaoCompras(row) > 0)
+})
+
+const gerarCompra = () => {
+  const produtos = produtosEmReposicao.value
+  if (produtos.length === 0) return
+
+  const hoje = new Date().toLocaleDateString('pt-BR')
+  const empresa = empresaAtiva?.value?.nome || ''
+
+  const linhas = produtos.map((row, idx) => {
+    const previsao = calcPrevisaoCompras(row)
+    const ponto = calcPontoReposicao(row)
+    return `
+      <tr>
+        <td style="padding: 6px 10px; border-bottom: 1px solid #e5e7eb; text-align: center;">${idx + 1}</td>
+        <td style="padding: 6px 10px; border-bottom: 1px solid #e5e7eb;">${row.nome}</td>
+        <td style="padding: 6px 10px; border-bottom: 1px solid #e5e7eb; text-align: center;">${row.unidade}</td>
+        <td style="padding: 6px 10px; border-bottom: 1px solid #e5e7eb; text-align: right;">${formatNumber(row.quantidade_estoque)}</td>
+        <td style="padding: 6px 10px; border-bottom: 1px solid #e5e7eb; text-align: right;">${formatNumber(ponto)}</td>
+        <td style="padding: 6px 10px; border-bottom: 1px solid #e5e7eb; text-align: right; font-weight: 600; color: #dc2626;">${formatNumber(previsao)}</td>
+      </tr>
+    `
+  }).join('')
+
+  const html = `
+    <html>
+    <head>
+      <title>Lista de Compras - Ponto de Reposição</title>
+      <style>
+        @media print {
+          body { margin: 0; padding: 20px; }
+          .no-print { display: none !important; }
+        }
+        body { font-family: Arial, sans-serif; color: #111827; padding: 20px; }
+        h1 { font-size: 18px; margin-bottom: 4px; }
+        .subtitle { font-size: 13px; color: #6b7280; margin-bottom: 16px; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th { background-color: #f3f4f6; padding: 8px 10px; text-align: left; font-weight: 600; border-bottom: 2px solid #d1d5db; }
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+        .footer { margin-top: 24px; font-size: 11px; color: #9ca3af; text-align: center; }
+      </style>
+    </head>
+    <body>
+      <h1>Lista de Compras - Ponto de Reposição</h1>
+      <div class="subtitle">${empresa} · Gerado em ${hoje} · ${produtos.length} produto(s)</div>
+      <table>
+        <thead>
+          <tr>
+            <th class="text-center" style="width: 40px;">#</th>
+            <th>Produto</th>
+            <th class="text-center" style="width: 50px;">Un.</th>
+            <th class="text-right" style="width: 100px;">Est. Atual</th>
+            <th class="text-right" style="width: 100px;">Pto. Repos.</th>
+            <th class="text-right" style="width: 100px;">Qtd. Compra</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${linhas}
+        </tbody>
+      </table>
+      <div class="footer">Guardião do CMV - Planejamento de Compras</div>
+      <script>window.onload = function() { window.print(); }<\/script>
+    </body>
+    </html>
+  `
+
+  const printWindow = window.open('', '_blank')
+  if (printWindow) {
+    printWindow.document.write(html)
+    printWindow.document.close()
+  }
 }
 
 const columns = [
-  { key: 'subgrupo', label: 'Subgrupo', sortable: true },
   { key: 'nome', label: 'Produto', sortable: true },
   { key: 'quantidade_estoque', label: 'Estoque Atual', sortable: true },
   { key: 'media_semanal', label: 'Média Semanal', sortable: true },
@@ -492,11 +545,10 @@ const filteredEstoque = computed(() => {
 const { page, pageSize, paginatedItems } = usePagination(filteredEstoque)
 
 // ==========================================
-// CMC SEMANAL
+// CMC
 // ==========================================
 const cmcData = ref<CmcSemanalResumo | null>(null)
 const cmcLoading = ref(false)
-const faturamentoInputs = ref<(number | string)[]>([])
 const gruposAbertos = ref<Set<string>>(new Set())
 
 const toggleGrupo = (grupoId: string) => {
@@ -519,40 +571,40 @@ const cmcMediaGeral = computed(() => {
   return totalFat > 0 ? (totalCompras / totalFat) * 100 : 0
 })
 
-const salvarFaturamento = async (idx: number) => {
-  if (!cmcData.value) return
-  const semana = cmcData.value.semanas[idx]
-  const valor = Number(faturamentoInputs.value[idx]) || 0
+// CMC color/icon helpers
+const getCmcColorClass = (pct: number) => {
+  if (pct <= 0) return 'text-gray-400'
+  if (pct < 25) return 'text-blue-600'
+  if (pct <= 30) return 'text-green-600'
+  if (pct <= 35) return 'text-orange-600'
+  return 'text-red-600'
+}
 
-  try {
-    await upsertFaturamentoSemanal(semana.inicio_date, semana.fim_date, valor)
-    // Atualizar local
-    cmcData.value.faturamentos[idx] = valor
-    // Recalcular CMC %
-    cmcData.value.cmc_percentuais[idx] = valor > 0
-      ? (calcTotalCompraSemana(idx) / valor) * 100
-      : 0
-  } catch (error: any) {
-    toast.add({
-      title: 'Erro',
-      description: error.message || 'Erro ao salvar faturamento',
-      color: 'red'
-    })
-  }
+const getCmcIcon = (pct: number) => {
+  if (pct < 25) return 'i-heroicons-question-mark-circle'
+  if (pct <= 30) return 'i-heroicons-check-circle'
+  if (pct <= 35) return 'i-heroicons-exclamation-triangle'
+  return 'i-heroicons-x-circle'
+}
+
+const getCmcTooltip = (pct: number) => {
+  if (pct <= 0) return 'Sem dados para análise'
+  if (pct < 25) return 'CMC abaixo de 25% — Confirmar dados de compras e faturamento'
+  if (pct <= 30) return 'CMC entre 25% e 30% — Dentro do ideal'
+  if (pct <= 35) return 'CMC entre 30% e 35% — Atenção, custo se aproximando do limite'
+  return 'CMC acima de 35% — Risco! Custo de compras elevado'
 }
 
 const loadCmcSemanal = async () => {
   try {
     cmcLoading.value = true
     cmcData.value = await getCmcSemanal(4)
-    // Preencher inputs de faturamento
-    faturamentoInputs.value = cmcData.value.faturamentos.map(f => f || '')
     // Abrir todos os grupos por padrão
     cmcData.value.grupos.forEach(g => gruposAbertos.value.add(g.grupo_id))
   } catch (error: any) {
     toast.add({
       title: 'Erro',
-      description: error.message || 'Erro ao carregar CMC Semanal',
+      description: error.message || 'Erro ao carregar CMC',
       color: 'red'
     })
   } finally {

@@ -3,7 +3,7 @@
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900">Gestao de Inventario</h1>
+        <h1 class="text-2xl font-bold text-gray-900">Inventario</h1>
         <p class="text-sm text-gray-500">Estoque Inicial e Estoque Final por produto (quantidade e valor)</p>
       </div>
       <UButton color="primary" @click="loadData" :loading="loading">
@@ -13,8 +13,8 @@
     </div>
 
     <!-- Cards Resumo Skeleton -->
-    <div v-if="loading" class="grid grid-cols-1 md:grid-cols-4 gap-4">
-      <div v-for="i in 4" :key="i" class="rounded-xl bg-white ring-1 ring-gray-100 shadow-sm border-l-4 border-gray-200 p-5">
+    <div v-if="loading" class="grid grid-cols-1 md:grid-cols-5 gap-4">
+      <div v-for="i in 5" :key="i" class="rounded-xl bg-white ring-1 ring-gray-100 shadow-sm border-l-4 border-gray-200 p-5">
         <div class="flex items-center justify-between">
           <div class="space-y-2">
             <USkeleton class="h-4 w-24" />
@@ -27,7 +27,7 @@
     </div>
 
     <!-- Cards Resumo -->
-    <div v-if="!loading" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div v-if="!loading" class="grid grid-cols-1 md:grid-cols-5 gap-4">
       <UCard class="border-l-4 border-blue-500">
         <div class="flex items-center justify-between">
           <div>
@@ -35,7 +35,7 @@
             <p class="text-2xl font-bold text-blue-600">{{ formatCurrency(totais.ei_valor) }}</p>
             <p class="text-xs text-gray-500">{{ formatNumber(totais.ei_quantidade) }} itens</p>
           </div>
-          <div class="p-3 bg-blue-50 rounded-lg">
+          <div class="p-3 bg-blue-50 rounded-lg flex items-center justify-center shrink-0">
             <UIcon name="i-heroicons-arrow-left-on-rectangle" class="w-6 h-6 text-blue-500" />
           </div>
         </div>
@@ -48,7 +48,7 @@
             <p class="text-2xl font-bold text-green-600">{{ formatCurrency(totais.ef_valor) }}</p>
             <p class="text-xs text-gray-500">{{ formatNumber(totais.ef_quantidade) }} itens</p>
           </div>
-          <div class="p-3 bg-green-50 rounded-lg">
+          <div class="p-3 bg-green-50 rounded-lg flex items-center justify-center shrink-0">
             <UIcon name="i-heroicons-arrow-right-on-rectangle" class="w-6 h-6 text-green-500" />
           </div>
         </div>
@@ -63,7 +63,7 @@
             </p>
             <p class="text-xs text-gray-500">EF - EI</p>
           </div>
-          <div class="p-3 rounded-lg" :class="totais.variacao_valor >= 0 ? 'bg-emerald-50' : 'bg-red-50'">
+          <div class="p-3 rounded-lg flex items-center justify-center shrink-0" :class="totais.variacao_valor >= 0 ? 'bg-emerald-50' : 'bg-red-50'">
             <UIcon
               :name="totais.variacao_valor >= 0 ? 'i-heroicons-arrow-trending-up' : 'i-heroicons-arrow-trending-down'"
               class="w-6 h-6"
@@ -78,10 +78,23 @@
           <div>
             <p class="text-sm text-gray-500">Total Produtos</p>
             <p class="text-2xl font-bold text-purple-600">{{ dados.length }}</p>
-            <p class="text-xs text-gray-500">com movimentacao</p>
+            <p class="text-xs text-gray-500">com estoque</p>
           </div>
-          <div class="p-3 bg-purple-50 rounded-lg">
+          <div class="p-3 bg-purple-50 rounded-lg flex items-center justify-center shrink-0">
             <UIcon name="i-heroicons-cube" class="w-6 h-6 text-purple-500" />
+          </div>
+        </div>
+      </UCard>
+
+      <UCard class="border-l-4 border-amber-500">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm text-gray-500">Sem Movimentacao</p>
+            <p class="text-2xl font-bold text-amber-600">{{ totalSemMovimentacao }}</p>
+            <p class="text-xs text-gray-500">produtos parados</p>
+          </div>
+          <div class="p-3 bg-amber-50 rounded-lg flex items-center justify-center shrink-0">
+            <UIcon name="i-heroicons-pause-circle" class="w-6 h-6 text-amber-500" />
           </div>
         </div>
       </UCard>
@@ -96,8 +109,14 @@
         <UFormGroup label="Mes">
           <USelect v-model="selectedMes" :options="mesesOptions" class="w-40" />
         </UFormGroup>
-        <UFormGroup label="Categoria">
-          <USelect v-model="filterCategoria" :options="categoriaOptions" class="w-48" />
+        <UFormGroup label="Grupo">
+          <USelect v-model="filterGrupo" :options="grupoOptions" class="w-48" />
+        </UFormGroup>
+        <UFormGroup label="Subgrupo">
+          <USelect v-model="filterSubgrupo" :options="subgrupoOptions" class="w-48" :disabled="!filterGrupo" />
+        </UFormGroup>
+        <UFormGroup label="Movimentacao">
+          <USelect v-model="filterMovimentacao" :options="movimentacaoOptions" class="w-48" />
         </UFormGroup>
         <UFormGroup label="Buscar">
           <UInput v-model="search" placeholder="Buscar produto..." icon="i-heroicons-magnifying-glass" class="w-64" />
@@ -110,11 +129,11 @@
       <template #header>
         <div class="flex items-center justify-between">
           <h3 class="font-semibold">Inventario por Produto</h3>
-          <p class="text-xs text-gray-400">Ordenado pelo menor custo medio</p>
+          <p class="text-xs text-gray-400">Ordenado por EF Valor (maior p/ menor)</p>
         </div>
       </template>
 
-      <UTable :columns="columns" :rows="paginatedData" :loading="loading" :sort="{ column: 'custo_medio', direction: 'asc' }">
+      <UTable :columns="columns" :rows="paginatedData" :loading="loading" :sort="{ column: 'ef_valor', direction: 'desc' }">
         <template #empty-state>
           <div class="flex flex-col items-center justify-center py-6 text-gray-500">
             <UIcon name="i-heroicons-inbox" class="w-8 h-8 mb-2" />
@@ -128,8 +147,12 @@
             <span class="text-xs text-gray-400 ml-1">({{ row.unidade }})</span>
           </div>
         </template>
-        <template #categoria-data="{ row }">
-          <UBadge color="blue" variant="soft">{{ row.categoria || '-' }}</UBadge>
+        <template #grupo-data="{ row }">
+          <div class="flex flex-col gap-0.5">
+            <UBadge v-if="row.grupo" color="blue" variant="soft" size="xs">{{ row.grupo }}</UBadge>
+            <span v-if="row.subgrupo" class="text-xs text-gray-500">{{ row.subgrupo }}</span>
+            <span v-if="!row.grupo && !row.subgrupo" class="text-gray-400">-</span>
+          </div>
         </template>
         <template #ei_quantidade-data="{ row }">
           <span class="font-medium">{{ formatNumber(row.ei_quantidade) }}</span>
@@ -143,8 +166,8 @@
         <template #ef_valor-data="{ row }">
           <span class="text-green-600 font-medium">{{ formatCurrency(row.ef_valor) }}</span>
         </template>
-        <template #custo_medio-data="{ row }">
-          {{ formatCurrency(row.custo_medio) }}
+        <template #custo_ultima_entrada-data="{ row }">
+          {{ formatCurrency(row.custo_ultima_entrada) }}
         </template>
         <template #variacao_quantidade-data="{ row }">
           <span :class="row.variacao_quantidade > 0 ? 'text-emerald-600' : row.variacao_quantidade < 0 ? 'text-red-600' : 'text-gray-400'">
@@ -180,7 +203,9 @@ const dados = ref<GestaoInventario[]>([])
 
 // Filtros
 const search = ref('')
-const filterCategoria = ref('')
+const filterGrupo = ref('')
+const filterSubgrupo = ref('')
+const filterMovimentacao = ref('')
 const selectedAno = ref(new Date().getFullYear())
 const selectedMes = ref(new Date().getMonth() + 1)
 
@@ -191,12 +216,12 @@ const pageSize = ref(20)
 // Colunas
 const columns = [
   { key: 'produto', label: 'Produto', sortable: true },
-  { key: 'categoria', label: 'Categoria' },
+  { key: 'grupo', label: 'Grupo / Subgrupo' },
   { key: 'ei_quantidade', label: 'EI Qtd', sortable: true },
   { key: 'ei_valor', label: 'EI Valor', sortable: true },
   { key: 'ef_quantidade', label: 'EF Qtd', sortable: true },
   { key: 'ef_valor', label: 'EF Valor', sortable: true },
-  { key: 'custo_medio', label: 'Custo Medio', sortable: true },
+  { key: 'custo_ultima_entrada', label: 'Ultima Entrada', sortable: true },
   { key: 'variacao_quantidade', label: 'Var. Qtd', sortable: true },
   { key: 'variacao_valor', label: 'Var. Valor', sortable: true }
 ]
@@ -225,15 +250,43 @@ const mesesOptions = [
   { label: 'Dezembro', value: 12 }
 ]
 
-const categoriaOptions = computed(() => {
-  const categorias = [...new Set(dados.value.map(d => d.categoria).filter(Boolean))]
+const grupoOptions = computed(() => {
+  const grupos = [...new Set(dados.value.map(d => d.grupo).filter(Boolean))]
   return [
-    { label: 'Todas', value: '' },
-    ...categorias.sort().map(c => ({ label: c, value: c }))
+    { label: 'Todos', value: '' },
+    ...grupos.sort().map(g => ({ label: g, value: g }))
   ]
 })
 
-// Computed - Filtros + ordenacao por menor custo
+const subgrupoOptions = computed(() => {
+  if (!filterGrupo.value) {
+    return [{ label: 'Todos', value: '' }]
+  }
+  const subgrupos = [...new Set(
+    dados.value
+      .filter(d => d.grupo === filterGrupo.value)
+      .map(d => d.subgrupo)
+      .filter(Boolean)
+  )]
+  return [
+    { label: 'Todos', value: '' },
+    ...subgrupos.sort().map(s => ({ label: s, value: s }))
+  ]
+})
+
+// Total sem movimentacao
+const totalSemMovimentacao = computed(() => {
+  return dados.value.filter(d => d.sem_movimentacao).length
+})
+
+// Opcoes de movimentacao
+const movimentacaoOptions = [
+  { label: 'Todos', value: '' },
+  { label: 'Sem movimentacao', value: 'sem' },
+  { label: 'Com movimentacao', value: 'com' }
+]
+
+// Computed - Filtros + ordenacao por EF valor descendente
 const filteredData = computed(() => {
   let result = [...dados.value]
 
@@ -241,12 +294,20 @@ const filteredData = computed(() => {
     const term = search.value.toLowerCase()
     result = result.filter(d => d.produto.toLowerCase().includes(term))
   }
-  if (filterCategoria.value) {
-    result = result.filter(d => d.categoria === filterCategoria.value)
+  if (filterGrupo.value) {
+    result = result.filter(d => d.grupo === filterGrupo.value)
+  }
+  if (filterSubgrupo.value) {
+    result = result.filter(d => d.subgrupo === filterSubgrupo.value)
+  }
+  if (filterMovimentacao.value === 'sem') {
+    result = result.filter(d => d.sem_movimentacao)
+  } else if (filterMovimentacao.value === 'com') {
+    result = result.filter(d => !d.sem_movimentacao)
   }
 
-  // Ordenar pelo menor custo medio
-  result.sort((a, b) => a.custo_medio - b.custo_medio)
+  // Ordenar por EF valor descendente
+  result.sort((a, b) => b.ef_valor - a.ef_valor)
 
   return result
 })
@@ -314,8 +375,13 @@ watch([selectedAno, selectedMes], () => {
   loadData()
 })
 
-watch([search, filterCategoria], () => {
+watch([search, filterGrupo, filterSubgrupo, filterMovimentacao], () => {
   page.value = 1
+})
+
+// Limpar subgrupo quando grupo muda
+watch(filterGrupo, () => {
+  filterSubgrupo.value = ''
 })
 
 watch(empresaId, () => {

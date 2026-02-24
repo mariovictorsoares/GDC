@@ -299,14 +299,17 @@ export interface GestaoInventario {
   produto_id: string
   produto: string
   categoria: string
+  grupo: string
+  subgrupo: string
   unidade: string
   ei_quantidade: number
   ei_valor: number
   ef_quantidade: number
   ef_valor: number
-  custo_medio: number
+  custo_ultima_entrada: number
   variacao_quantidade: number
   variacao_valor: number
+  sem_movimentacao: boolean
 }
 
 // Tipos utilitários
@@ -372,25 +375,77 @@ export interface FiltroRelatorio extends FiltroData {
   tipo_saida?: TipoSaida | 'todos'
 }
 
+// Setores para contagem de inventário
+export interface Setor {
+  id: string
+  nome: string
+  descricao?: string
+  empresa_id?: string
+  created_at?: string
+}
+
 // Tipos para Contagem de Estoque (inventário em lote)
+export type TipoContagem = 'inventario' | 'estoque'
+
 export interface ContagemItem {
   produto_id: string
   nome: string
   unidade_sigla: string
   subgrupo_nome: string
+  grupo_nome: string
   saldo_sistema: number
   quantidade_contada: number | null
   diferenca: number | null
+  custo_medio: number
+  valor_divergencia: number | null
 }
 
 export interface ContagemHistorico {
   data: string
   motivo: string
+  tipo_contagem: TipoContagem
+  setor_nome?: string
   grupo_nome: string
   subgrupo_nome?: string
   total_itens: number
   total_sobras: number
   total_faltas: number
   total_zerados: number
+  valor_total_divergencia: number
   ajustes: Ajuste[]
+}
+
+// Tipos para Pedidos de Compra
+export interface Pedido {
+  id: string
+  empresa_id?: string
+  data: string
+  observacao?: string
+  status: 'rascunho' | 'enviado' | 'concluido'
+  created_at?: string
+  // Relacionamentos
+  itens?: PedidoItem[]
+}
+
+export interface PedidoItem {
+  id: string
+  pedido_id: string
+  produto_id: string
+  fornecedor_id?: string
+  quantidade: number
+  observacao?: string
+  created_at?: string
+  // Relacionamentos
+  produto?: Produto
+  fornecedor?: Fornecedor
+}
+
+export interface PedidoContagemItem {
+  produto_id: string
+  nome: string
+  unidade_sigla: string
+  subgrupo_nome: string
+  quantidade: number | null
+  fornecedor_id: string
+  observacao: string
 }

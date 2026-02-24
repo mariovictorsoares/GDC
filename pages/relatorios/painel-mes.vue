@@ -3,7 +3,7 @@
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900">Painel do Mês</h1>
+        <h1 class="text-2xl font-bold text-gray-900">Painel de Controle</h1>
         <p class="text-sm text-gray-500">Visão consolidada do estoque por produto com CMV</p>
       </div>
     </div>
@@ -142,7 +142,6 @@
         <table class="min-w-full divide-y divide-gray-200">
           <thead class="bg-gray-50">
             <tr>
-              <th rowspan="2" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r">Cat.</th>
               <th rowspan="2" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r">Produto</th>
               <th rowspan="2" class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-r">E.I.</th>
               <th :colspan="semanas.length + 1" class="px-3 py-2 text-center text-xs font-medium text-green-600 uppercase tracking-wider border-r bg-green-50">Entradas</th>
@@ -176,7 +175,6 @@
               </td>
             </tr>
             <tr v-for="item in paginatedItems" :key="item.produto_id" class="hover:bg-gray-50">
-              <td class="px-2 py-2 text-xs text-gray-600 border-r truncate max-w-[80px]" :title="item.categoria">{{ item.categoria }}</td>
               <td class="px-2 py-2 text-xs font-medium text-gray-900 border-r truncate max-w-[120px]" :title="item.produto">{{ item.produto }}</td>
               <td class="px-2 py-2 text-xs text-center text-gray-600 border-r">{{ formatQtd(item.estoque_inicial) }}</td>
               <!-- Entradas por semana (dinâmico) -->
@@ -195,7 +193,7 @@
           </tbody>
           <tfoot class="bg-gray-100">
             <tr class="font-semibold">
-              <td colspan="2" class="px-3 py-2 text-xs text-gray-700 border-r">TOTAL</td>
+              <td class="px-3 py-2 text-xs text-gray-700 border-r">TOTAL</td>
               <td class="px-3 py-2 text-xs text-center text-gray-700 border-r">-</td>
               <td :colspan="semanas.length + 1" class="px-3 py-2 text-xs text-center text-green-700 border-r bg-green-100">{{ formatQtd(totais.entradas) }}</td>
               <td :colspan="semanas.length + 1" class="px-3 py-2 text-xs text-center text-red-700 border-r bg-red-100">{{ formatQtd(totais.saidas) }}</td>
@@ -253,7 +251,7 @@ const labelCmv = computed(() => {
 })
 
 // Total de colunas: Cat + Produto + EI + (semanas * 2 entradas/saídas) + 2 totais + EF + CUnit + CTotal + (CMV se não for produção)
-const totalColunas = computed(() => 3 + (semanas.value.length + 1) * 2 + 3 + (showCmv.value ? 1 : 0))
+const totalColunas = computed(() => 2 + (semanas.value.length + 1) * 2 + 3 + (showCmv.value ? 1 : 0))
 
 const mesesOptions = [
   { label: 'Janeiro', value: 1 },

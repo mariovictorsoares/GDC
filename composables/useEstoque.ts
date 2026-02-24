@@ -12,6 +12,8 @@ import type {
   CustoMensal,
   ProdutoBeneficiamento,
   Beneficiamento,
+  Pedido,
+  PedidoItem,
 
   SaldoEstoque,
   FiltroData,
@@ -558,7 +560,7 @@ export const useEstoque = () => {
       .from('ajustes')
       .select(`
         *,
-        produto:produtos(*, categoria:categorias(*), unidade:unidades(*))
+        produto:produtos(*, categoria:categorias(*), subgrupo:subgrupos(*, grupo:grupos(*)), unidade:unidades(*))
       `)
       .order('data', { ascending: false })
 
@@ -887,6 +889,114 @@ export const useEstoque = () => {
     }
   }
 
+  // ==========================================
+  // PEDIDOS DE COMPRA
+  // ==========================================
+
+  const getPedidos = async () => {
+    const { data, error } = await client
+      .from('pedidos')
+      .select(`*, itens:pedido_itens(*, produto:produtos(*, unidade:unidades(*), subgrupo:subgrupos(*, grupo:grupos(*))), fornecedor:fornecedores(*))`)
+      .eq('empresa_id', empresaId.value)
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+    return data as Pedido[]
+  }
+
+  const createPedido = async (
+    pedido: { data: string; observacao?: string; status?: string },
+    itens: { produto_id: string; quantidade: number; fornecedor_id?: string; observacao?: string }[]
+  ) => {
+    // Criar pedido
+    const { data: novoPedido, error: errPedido } = await client
+      .from('pedidos')
+      .insert({
+        empresa_id: empresaId.value,
+        data: pedido.data,
+        observacao: pedido.observacao || null,
+        status: pedido.status || 'rascunho'
+      })
+      .select()
+      .single()
+
+    if (errPedido) throw errPedido
+
+    // Criar itens
+    const itensPayload = itens.map(item => ({
+      pedido_id: novoPedido.id,
+      produto_id: item.produto_id,
+      quantidade: item.quantidade,
+      fornecedor_id: item.fornecedor_id || null,
+      observacao: item.observacao || null
+    }))
+
+    const { error: errItens } = await client
+      .from('pedido_itens')
+      .insert(itensPayload)
+
+    if (errItens) throw errItens
+
+    return novoPedido as Pedido
+  }
+
+  const updatePedidoStatus = async (id: string, status: string) => {
+    const { error } = await client
+      .from('pedidos')
+      .update({ status })
+      .eq('id', id)
+
+    if (error) throw error
+  }
+
+  const deletePedido = async (id: string) => {
+    const { error } = await client
+      .from('pedidos')
+      .delete()
+      .eq('id', id)
+
+    if (error) throw error
+  }
+
+  // ==========================================
+  // SETORES
+  // ==========================================
+
+  const getSetores = async () => {
+    let query = client
+      .from('setores')
+      .select('*')
+      .order('nome', { ascending: true })
+
+    if (empresaId.value) {
+      query = query.eq('empresa_id', empresaId.value)
+    }
+
+    const { data, error } = await query
+    if (error) throw error
+    return data as import('~/types').Setor[]
+  }
+
+  const createSetor = async (setor: { nome: string; descricao?: string }) => {
+    const { data, error } = await client
+      .from('setores')
+      .insert({ ...setor, empresa_id: empresaId.value })
+      .select()
+      .single()
+
+    if (error) throw error
+    return data as import('~/types').Setor
+  }
+
+  const deleteSetor = async (id: string) => {
+    const { error } = await client
+      .from('setores')
+      .delete()
+      .eq('id', id)
+
+    if (error) throw error
+  }
+
   return {
     // Grupos
     getGrupos,
@@ -953,6 +1063,15 @@ export const useEstoque = () => {
     getBeneficiamentosPendentes,
     countBeneficiamentosPendentes,
     createSaidaBeneficiamento,
-    resolverBeneficiamento
+    resolverBeneficiamento,
+    // Pedidos de Compra
+    getPedidos,
+    createPedido,
+    updatePedidoStatus,
+    deletePedido,
+    // Setores
+    getSetores,
+    createSetor,
+    deleteSetor
   }
 }

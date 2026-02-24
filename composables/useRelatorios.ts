@@ -419,7 +419,7 @@ export const useRelatorios = () => {
   }
 
   // ==========================================
-  // CURVA ABC DE CMV (CONSUMO)
+  // CURVA ABC DE CONSUMO
   // ==========================================
 
   const getCurvaABCCMV = async (ano?: number, mes?: number): Promise<CurvaABC[]> => {
@@ -498,9 +498,9 @@ export const useRelatorios = () => {
       acumulado += percentual
 
       let classe: 'A' | 'B' | 'C'
-      if (acumulado <= 80) {
+      if (acumulado <= 50) {
         classe = 'A'
-      } else if (acumulado <= 95) {
+      } else if (acumulado <= 80) {
         classe = 'B'
       } else {
         classe = 'C'
@@ -522,13 +522,13 @@ export const useRelatorios = () => {
   }
 
   // ==========================================
-  // COMPARATIVO ABC (ESTOQUE vs CMV)
+  // COMPARATIVO ABC (ESTOQUE vs CONSUMO)
   // ==========================================
 
-  const getComparativoABC = async (): Promise<ComparativoABC[]> => {
+  const getComparativoABC = async (ano?: number, mes?: number): Promise<ComparativoABC[]> => {
     const [abcEstoque, abcCMV] = await Promise.all([
       getCurvaABCEstoque(),
-      getCurvaABCCMV()
+      getCurvaABCCMV(ano, mes)
     ])
 
     // Criar mapa de classificação CMV
@@ -1278,10 +1278,11 @@ export const useRelatorios = () => {
 
     if (error) throw error
 
-    // Coletar todos os dias únicos que tiveram entradas
-    const diasSet = new Set<string>()
-    entradas?.forEach(e => diasSet.add(e.data))
-    const dias = Array.from(diasSet).sort()
+    // Gerar todos os dias do mês (para exibir período completo)
+    const dias: string[] = []
+    for (let d = 1; d <= ultimoDia; d++) {
+      dias.push(`${ano}-${String(mes).padStart(2, '0')}-${String(d).padStart(2, '0')}`)
+    }
 
     // Agrupar por produto
     const produtosMap = new Map<string, {
@@ -1418,7 +1419,7 @@ export const useRelatorios = () => {
     const ultimoDiaAnterior = new Date(anoAnterior, mesAnterior, 0).getDate()
     const dataFimAnterior = `${anoAnterior}-${String(mesAnterior).padStart(2, '0')}-${ultimoDiaAnterior}`
 
-    // Buscar produtos ativos
+    // Buscar produtos ativos com grupo/subgrupo
     const { data: produtos, error: prodError } = await comEmpresa(client
       .from('produtos')
       .select(`
@@ -1427,6 +1428,7 @@ export const useRelatorios = () => {
         estoque_inicial,
         preco_inicial,
         categoria:categorias(nome),
+        subgrupo:subgrupos(nome, grupo:grupos(nome)),
         unidade:unidades(sigla)
       `)
       .eq('ativo', true)
@@ -1438,7 +1440,7 @@ export const useRelatorios = () => {
     // Buscar todas as entradas até o fim do mês
     const { data: entradasAte } = await comEmpresa(client
       .from('entradas')
-      .select('produto_id, quantidade, valor_total, data')
+      .select('produto_id, quantidade, valor_total, custo_unitario, data')
       .lte('data', dataFim))
 
     // Buscar todas as saídas até o fim do mês
@@ -1453,6 +1455,23 @@ export const useRelatorios = () => {
       .select('produto_id, quantidade, data')
       .lte('data', dataFim))
 
+    // Buscar última entrada de cada produto (para custo da última entrada)
+    const { data: todasEntradas } = await comEmpresa(client
+      .from('entradas')
+      .select('produto_id, quantidade, valor_total, data')
+      .order('data', { ascending: false }))
+
+    // Mapa com custo unitário da última entrada por produto
+    const ultimaEntradaPorProduto = new Map<string, number>()
+    todasEntradas?.forEach(e => {
+      if (!ultimaEntradaPorProduto.has(e.produto_id)) {
+        const custoUnitario = Number(e.quantidade) > 0
+          ? Number(e.valor_total || 0) / Number(e.quantidade)
+          : 0
+        ultimaEntradaPorProduto.set(e.produto_id, custoUnitario)
+      }
+    })
+
     const resultado: GestaoInventario[] = produtos.map(p => {
       const prodEntradas = entradasAte?.filter(e => e.produto_id === p.id) || []
       const prodSaidas = saidasAte?.filter(s => s.produto_id === p.id) || []
@@ -1460,13 +1479,9 @@ export const useRelatorios = () => {
 
       // Calcular EI: movimentos até o último dia do mês anterior
       let ei_quantidade = Number(p.estoque_inicial || 0)
-      let valorEntradasEI = Number(p.estoque_inicial || 0) * Number(p.preco_inicial || 0)
-      let qtdEntradasEI = Number(p.estoque_inicial || 0)
 
       prodEntradas.filter(e => e.data <= dataFimAnterior).forEach(e => {
         ei_quantidade += Number(e.quantidade)
-        valorEntradasEI += Number(e.valor_total || 0)
-        qtdEntradasEI += Number(e.quantidade)
       })
       prodSaidas.filter(s => s.data <= dataFimAnterior).forEach(s => {
         ei_quantidade -= Number(s.quantidade)
@@ -1475,18 +1490,11 @@ export const useRelatorios = () => {
         ei_quantidade += Number(a.quantidade)
       })
 
-      const custoMedioEI = qtdEntradasEI > 0 ? valorEntradasEI / qtdEntradasEI : 0
-      const ei_valor = Math.max(0, ei_quantidade) * custoMedioEI
-
       // Calcular EF: movimentos até o último dia do mês selecionado
       let ef_quantidade = Number(p.estoque_inicial || 0)
-      let valorEntradasEF = Number(p.estoque_inicial || 0) * Number(p.preco_inicial || 0)
-      let qtdEntradasEF = Number(p.estoque_inicial || 0)
 
       prodEntradas.filter(e => e.data <= dataFim).forEach(e => {
         ef_quantidade += Number(e.quantidade)
-        valorEntradasEF += Number(e.valor_total || 0)
-        qtdEntradasEF += Number(e.quantidade)
       })
       prodSaidas.filter(s => s.data <= dataFim).forEach(s => {
         ef_quantidade -= Number(s.quantidade)
@@ -1495,27 +1503,37 @@ export const useRelatorios = () => {
         ef_quantidade += Number(a.quantidade)
       })
 
-      const custoMedioEF = qtdEntradasEF > 0 ? valorEntradasEF / qtdEntradasEF : 0
-      const ef_valor = Math.max(0, ef_quantidade) * custoMedioEF
+      // Custo da última entrada (para valorizar EF)
+      const custoUltimaEntrada = ultimaEntradaPorProduto.get(p.id) || Number(p.preco_inicial || 0)
 
-      const custo_medio = custoMedioEF > 0 ? custoMedioEF : custoMedioEI
+      const ei_valor = Math.max(0, ei_quantidade) * custoUltimaEntrada
+      const ef_valor = Math.max(0, ef_quantidade) * custoUltimaEntrada
+
+      // Verificar se houve movimentação no mês
+      const entradasNoMes = prodEntradas.filter(e => e.data >= dataInicio && e.data <= dataFim)
+      const saidasNoMes = prodSaidas.filter(s => s.data >= dataInicio && s.data <= dataFim)
+      const ajustesNoMes = prodAjustes.filter(a => a.data >= dataInicio && a.data <= dataFim)
+      const semMovimentacao = entradasNoMes.length === 0 && saidasNoMes.length === 0 && ajustesNoMes.length === 0
 
       return {
         produto_id: p.id,
         produto: p.nome,
         categoria: (p.categoria as any)?.nome || '',
+        grupo: (p.subgrupo as any)?.grupo?.nome || '',
+        subgrupo: (p.subgrupo as any)?.nome || '',
         unidade: (p.unidade as any)?.sigla || '',
         ei_quantidade,
         ei_valor,
         ef_quantidade,
         ef_valor,
-        custo_medio,
+        custo_ultima_entrada: custoUltimaEntrada,
         variacao_quantidade: ef_quantidade - ei_quantidade,
-        variacao_valor: ef_valor - ei_valor
+        variacao_valor: ef_valor - ei_valor,
+        sem_movimentacao: semMovimentacao
       }
     })
 
-    // Filtrar produtos sem movimentação
+    // Retornar todos os produtos que têm estoque (EI ou EF)
     return resultado.filter(r =>
       r.ei_quantidade !== 0 || r.ef_quantidade !== 0 ||
       r.ei_valor !== 0 || r.ef_valor !== 0
