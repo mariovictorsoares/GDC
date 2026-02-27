@@ -18,7 +18,7 @@
       <!-- Conteúdo centralizado -->
       <div class="relative z-10 flex flex-col items-center justify-center w-full px-12">
         <!-- Logo -->
-        <img src="/logo-guardiao.png" alt="Guardião do CMV" class="h-20 w-auto mb-10 drop-shadow-2xl" />
+        <img src="/logo.png" alt="Guardião do CMV" class="h-20 w-auto mb-10 drop-shadow-2xl" />
 
         <!-- Headline -->
         <h1 class="text-3xl font-bold text-white text-center leading-tight mb-4">
@@ -78,7 +78,7 @@
       <div class="w-full max-w-md">
         <!-- Logo mobile -->
         <div class="lg:hidden text-center mb-8">
-          <img src="/logo-guardiao.png" alt="Guardião do CMV" class="h-12 w-auto mx-auto" />
+          <img src="/logo.png" alt="Guardião do CMV" class="h-12 w-auto mx-auto" />
         </div>
 
         <!-- Header -->

@@ -819,18 +819,41 @@ export const useRelatorios = () => {
       comEmpresa(client
         .from('entradas')
         .select('produto_id, quantidade, valor_total, data, origem_beneficiamento')
+        .gte('data', dataInicioTotal)
         .lte('data', dataFimTotal)),
       comEmpresa(client
         .from('saidas')
         .select('produto_id, quantidade, data, tipo')
+        .gte('data', dataInicioTotal)
         .lte('data', dataFimTotal)),
       comEmpresa(client
         .from('ajustes')
         .select('produto_id, quantidade, data')
+        .gte('data', dataInicioTotal)
         .lte('data', dataFimTotal))
     ])
 
     if (!produtos || produtos.length === 0) return []
+
+    // Se não há nenhuma movimentação no ano consultado, retornar tudo zerado
+    const temMovimentacaoNoAno = [
+      ...(todasEntradas || []),
+      ...(todasSaidas || []),
+      ...(todosAjustes || [])
+    ].some(m => m.data >= `${ano}-01-01` && m.data <= `${ano}-12-31`)
+
+    if (!temMovimentacaoNoAno && !(faturamentos && faturamentos.length > 0)) {
+      return Array.from({ length: 12 }, (_, i) => ({
+        ano,
+        mes: i + 1,
+        estoque_inicial: 0,
+        compras: 0,
+        estoque_final: 0,
+        cmv: 0,
+        faturamento: 0,
+        percentual_cmv: 0
+      }))
+    }
 
     // Filtrar produtos não-MTP
     const produtosNaoMTP = produtos.filter(p => {
@@ -1330,13 +1353,28 @@ export const useRelatorios = () => {
         return ((custo - custoAnterior) / custoAnterior) * 100
       })
 
+      // Calcular menor e maior valor comprado no mês (ignorando zeros)
+      const custosValidos = custos.filter(c => c > 0)
+      const menor_valor = custosValidos.length > 0 ? Math.min(...custosValidos) : 0
+      const maior_valor = custosValidos.length > 0 ? Math.max(...custosValidos) : 0
+      // Variação do mês: diferença percentual entre primeiro e último custo registrado
+      let variacao_mes: number | null = null
+      if (custosValidos.length >= 2) {
+        const primeiro = custosValidos[0]
+        const ultimo = custosValidos[custosValidos.length - 1]
+        variacao_mes = ((ultimo - primeiro) / primeiro) * 100
+      }
+
       return {
         produto_id: p.produto_id,
         produto: p.produto,
         subgrupo: p.subgrupo,
         unidade: p.unidade,
         custos,
-        variacoes
+        variacoes,
+        menor_valor,
+        maior_valor,
+        variacao_mes
       }
     }).sort((a, b) => a.produto.localeCompare(b.produto))
 

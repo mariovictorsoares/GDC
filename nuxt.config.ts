@@ -3,6 +3,12 @@ export default defineNuxtConfig({
   compatibilityDate: '2024-11-01',
   devtools: { enabled: true },
 
+  runtimeConfig: {
+    zapiInstanceId: process.env.ZAPI_INSTANCE_ID || '',
+    zapiToken: process.env.ZAPI_TOKEN || '',
+    zapiBaseUrl: process.env.ZAPI_BASE_URL || 'https://api.z-api.io'
+  },
+
   modules: [
     '@nuxt/ui',
     '@nuxtjs/supabase'

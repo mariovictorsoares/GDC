@@ -959,6 +959,109 @@ export const useEstoque = () => {
   }
 
   // ==========================================
+  // CONTAGENS
+  // ==========================================
+
+  const getContagens = async () => {
+    let query = client
+      .from('contagens')
+      .select('*, contagem_setores(id, contagem_id, setor_id, setor:setores(id, nome))')
+      .order('created_at', { ascending: false })
+
+    if (empresaId.value) {
+      query = query.eq('empresa_id', empresaId.value)
+    }
+
+    const { data, error } = await query
+    if (error) throw error
+    return data as import('~/types').Contagem[]
+  }
+
+  const createContagem = async (contagem: {
+    nome: string
+    tipo: string
+    data: string
+    recorrencia?: string
+    horario_notificacao?: string
+    dias_semana?: string[]
+    mensal_posicao?: string
+    mensal_dia?: string
+    responsavel_nome?: string
+    responsavel_telefone?: string
+    responsavel_id?: string
+  }, setorIds: string[]) => {
+    // 1. Criar a contagem
+    const { data, error } = await client
+      .from('contagens')
+      .insert({ ...contagem, empresa_id: empresaId.value })
+      .select()
+      .single()
+
+    if (error) throw error
+    const nova = data as import('~/types').Contagem
+
+    // 2. Vincular setores
+    if (setorIds.length > 0) {
+      const rows = setorIds.map(sid => ({ contagem_id: nova.id, setor_id: sid }))
+      const { error: errSetores } = await client
+        .from('contagem_setores')
+        .insert(rows)
+
+      if (errSetores) throw errSetores
+    }
+
+    return nova
+  }
+
+  // ==========================================
+  // RESPONSÁVEIS
+  // ==========================================
+
+  const getResponsaveis = async () => {
+    let query = client
+      .from('responsaveis')
+      .select('*')
+      .order('nome')
+
+    if (empresaId.value) {
+      query = query.eq('empresa_id', empresaId.value)
+    }
+
+    const { data, error } = await query
+    if (error) throw error
+    return data as { id: string; nome: string; telefone: string }[]
+  }
+
+  const createResponsavel = async (resp: { nome: string; telefone: string }) => {
+    const { data, error } = await client
+      .from('responsaveis')
+      .insert({ ...resp, empresa_id: empresaId.value })
+      .select()
+      .single()
+
+    if (error) throw error
+    return data as { id: string; nome: string; telefone: string }
+  }
+
+  const updateContagemStatus = async (id: string, status: string) => {
+    const { error } = await client
+      .from('contagens')
+      .update({ status, updated_at: new Date().toISOString() })
+      .eq('id', id)
+
+    if (error) throw error
+  }
+
+  const deleteContagem = async (id: string) => {
+    const { error } = await client
+      .from('contagens')
+      .delete()
+      .eq('id', id)
+
+    if (error) throw error
+  }
+
+  // ==========================================
   // SETORES
   // ==========================================
 
@@ -995,6 +1098,75 @@ export const useEstoque = () => {
       .eq('id', id)
 
     if (error) throw error
+  }
+
+  // ==========================================
+  // SETOR PRODUTOS (vínculo setor <-> produto)
+  // ==========================================
+
+  const getSetorProdutos = async (setorId: string) => {
+    const { data, error } = await client
+      .from('setor_produtos')
+      .select('*, produto:produtos(id, nome, subgrupo:subgrupos(id, nome, grupo:grupos(id, nome)), unidade:unidades(id, sigla))')
+      .eq('setor_id', setorId)
+      .order('created_at', { ascending: true })
+
+    if (error) throw error
+    return data as import('~/types').SetorProduto[]
+  }
+
+  const addProdutosToSetor = async (setorId: string, produtoIds: string[]) => {
+    const rows = produtoIds.map(pid => ({
+      setor_id: setorId,
+      produto_id: pid,
+      empresa_id: empresaId.value
+    }))
+
+    const { data, error } = await client
+      .from('setor_produtos')
+      .upsert(rows, { onConflict: 'setor_id,produto_id' })
+      .select('*, produto:produtos(id, nome, subgrupo:subgrupos(id, nome, grupo:grupos(id, nome)), unidade:unidades(id, sigla))')
+
+    if (error) throw error
+    return data as import('~/types').SetorProduto[]
+  }
+
+  const removeProdutoFromSetor = async (setorProdutoId: string) => {
+    const { error } = await client
+      .from('setor_produtos')
+      .delete()
+      .eq('id', setorProdutoId)
+
+    if (error) throw error
+  }
+
+  const getAllSetorProdutos = async () => {
+    let query = client
+      .from('setor_produtos')
+      .select('id, setor_id, produto_id, produto:produtos(id, nome)')
+      .order('created_at', { ascending: true })
+
+    if (empresaId.value) {
+      query = query.eq('empresa_id', empresaId.value)
+    }
+
+    const { data, error } = await query
+    if (error) throw error
+    return data as { id: string; setor_id: string; produto_id: string; produto: { id: string; nome: string } | null }[]
+  }
+
+  const countSetorProdutos = async () => {
+    const { data, error } = await client
+      .from('setor_produtos')
+      .select('setor_id')
+
+    if (error) throw error
+
+    const counts: Record<string, number> = {}
+    for (const row of (data || [])) {
+      counts[row.setor_id] = (counts[row.setor_id] || 0) + 1
+    }
+    return counts
   }
 
   return {
@@ -1072,6 +1244,20 @@ export const useEstoque = () => {
     // Setores
     getSetores,
     createSetor,
-    deleteSetor
+    deleteSetor,
+    // Setor Produtos
+    getSetorProdutos,
+    addProdutosToSetor,
+    removeProdutoFromSetor,
+    countSetorProdutos,
+    getAllSetorProdutos,
+    // Contagens
+    getContagens,
+    createContagem,
+    updateContagemStatus,
+    deleteContagem,
+    // Responsáveis
+    getResponsaveis,
+    createResponsavel
   }
 }

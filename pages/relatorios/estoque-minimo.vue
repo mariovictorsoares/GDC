@@ -8,7 +8,7 @@
       </div>
       <div class="flex gap-2">
         <UButton color="primary" variant="outline" @click="gerarCompra" v-if="activeTab === 0" :disabled="produtosEmReposicao.length === 0">
-          <UIcon name="i-heroicons-printer" class="w-4 h-4 mr-2" />
+          <UIcon name="i-heroicons-shopping-cart" class="w-4 h-4 mr-2" />
           Gerar Compra
         </UButton>
         <UButton color="primary" @click="loadData" :loading="loading">
@@ -154,10 +154,10 @@
 
     </template>
 
-    <!-- Tab: CMC -->
+    <!-- Tab: CMC Semanal -->
     <template v-if="activeTab === 1">
 
-      <!-- Tabela CMC Agrupada -->
+      <!-- Tabela CMC Semanal Agrupada -->
       <UCard :ui="{ body: { padding: '' } }">
         <div class="overflow-x-auto">
           <table class="w-full text-sm">
@@ -368,12 +368,18 @@
               <template v-for="item in vcFilteredData" :key="item.produto_id">
                 <!-- Linha de Custo -->
                 <tr class="hover:bg-gray-50">
-                  <td class="px-3 py-2 text-sm font-medium text-gray-900 sticky left-0 bg-white">{{ item.produto }}</td>
-                  <td class="px-3 py-2 text-xs text-gray-400 sticky left-[200px] bg-white">{{ item.unidade }}</td>
+                  <td class="px-3 py-1.5 sticky left-0 bg-white z-10">
+                    <span class="text-sm font-medium text-gray-900">{{ item.produto }}</span>
+                    <div class="flex items-center gap-2 mt-0.5 text-[10px] text-gray-400 leading-tight">
+                      <span v-if="item.menor_valor > 0" class="text-green-600">↓{{ formatCurrency(item.menor_valor) }}</span>
+                      <span v-if="item.maior_valor > 0" class="text-red-500">↑{{ formatCurrency(item.maior_valor) }}</span>
+                    </div>
+                  </td>
+                  <td class="px-3 py-1.5 text-xs text-gray-400 sticky left-[200px] bg-white z-10">{{ item.unidade }}</td>
                   <td
                     v-for="(custo, index) in item.custos"
                     :key="index"
-                    class="px-3 py-2 text-sm text-center"
+                    class="px-3 py-1.5 text-sm text-center"
                   >
                     <span v-if="custo > 0" class="font-medium">{{ formatCurrency(custo) }}</span>
                     <span v-else class="text-gray-300">-</span>
@@ -386,6 +392,99 @@
       </UCard>
 
     </template>
+
+    <!-- Modal: Gerar Compra -->
+    <UModal
+      v-model="modalGerarCompraOpen"
+      :ui="{
+        width: 'sm:max-w-lg',
+        overlay: { background: 'bg-gray-900/50 backdrop-blur-sm' },
+        background: 'bg-white dark:bg-gray-800',
+        ring: 'ring-1 ring-gray-200 dark:ring-gray-700',
+        shadow: 'shadow-2xl'
+      }"
+    >
+      <UCard :ui="{ background: 'bg-transparent', ring: 'ring-0', shadow: '', divide: 'divide-gray-100 dark:divide-gray-700' }">
+        <template #header>
+          <div class="flex items-center gap-3">
+            <div class="p-2 bg-blue-100 rounded-lg flex items-center justify-center">
+              <UIcon name="i-heroicons-shopping-cart" class="w-5 h-5 text-blue-600" />
+            </div>
+            <div>
+              <h3 class="text-lg font-semibold text-gray-900">Gerar Lista de Compras</h3>
+              <p class="text-xs text-gray-500">{{ produtosEmReposicao.length }} produto(s) em reposição</p>
+            </div>
+          </div>
+        </template>
+
+        <!-- Resumo dos itens -->
+        <div class="space-y-4">
+          <div class="p-4 bg-blue-50 rounded-lg">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <UIcon name="i-heroicons-cube" class="w-5 h-5 text-blue-600" />
+                <span class="text-sm font-medium text-blue-800">Produtos para compra</span>
+              </div>
+              <span class="text-2xl font-bold text-blue-600">{{ produtosEmReposicao.length }}</span>
+            </div>
+          </div>
+
+          <!-- Lista resumida -->
+          <div class="max-h-[30vh] overflow-y-auto border border-gray-200 rounded-lg divide-y divide-gray-100">
+            <div
+              v-for="row in produtosEmReposicao"
+              :key="row.produto_id"
+              class="flex items-center justify-between px-4 py-2.5"
+            >
+              <div class="flex-1 min-w-0">
+                <p class="font-medium text-gray-900 text-sm">{{ row.nome }}</p>
+                <p class="text-xs text-gray-500">{{ row.subgrupo }} &middot; {{ row.unidade }}</p>
+              </div>
+              <span class="font-bold text-sm text-red-600 ml-3 whitespace-nowrap">
+                {{ formatNumber(calcPrevisaoCompras(row)) }} {{ row.unidade }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Observação -->
+          <UFormGroup label="Observação (opcional)">
+            <UTextarea
+              v-model="observacaoCompra"
+              placeholder="Ex: Pedido urgente, entrega até sexta..."
+              rows="2"
+            />
+          </UFormGroup>
+        </div>
+
+        <template #footer>
+          <div class="flex flex-col-reverse sm:flex-row justify-between gap-3">
+            <UButton color="gray" variant="ghost" @click="modalGerarCompraOpen = false" :disabled="salvandoCompra">
+              Cancelar
+            </UButton>
+            <div class="flex flex-col-reverse sm:flex-row gap-2">
+              <UButton
+                color="gray"
+                :loading="salvandoImprimir"
+                :disabled="salvandoWhatsApp"
+                @click="salvarEImprimir"
+              >
+                <UIcon name="i-heroicons-printer" class="w-4 h-4 mr-1" />
+                Salvar e Imprimir
+              </UButton>
+              <UButton
+                color="primary"
+                :loading="salvandoWhatsApp"
+                :disabled="salvandoImprimir"
+                @click="salvarEEnviarWhatsApp"
+              >
+                <UIcon name="i-heroicons-chat-bubble-left-ellipsis" class="w-4 h-4 mr-1" />
+                Salvar e Enviar WhatsApp
+              </UButton>
+            </div>
+          </div>
+        </template>
+      </UCard>
+    </UModal>
   </div>
 </template>
 
@@ -393,6 +492,7 @@
 import type { EstoqueMinimo, CmcSemanalResumo } from '~/types'
 
 const { getEstoqueMinimo, getCmcSemanal, getVariacaoCustoDiaria } = useRelatorios()
+const { createPedido } = useEstoque()
 const { empresaId, empresaAtiva } = useEmpresa()
 const toast = useToast()
 
@@ -401,7 +501,7 @@ const route = useRoute()
 const activeTab = ref(Number(route.query.tab) || 0)
 const tabItems = [
   { label: 'Ponto de Reposição' },
-  { label: 'CMC' },
+  { label: 'CMC Semanal' },
   { label: 'Variação de Custo' }
 ]
 
@@ -423,7 +523,24 @@ const loading = ref(false)
 const estoqueData = ref<EstoqueMinimo[]>([])
 const search = ref('')
 
-const segurancaMap = ref<Record<string, number>>({})
+const SEGURANCA_STORAGE_KEY = computed(() => `seguranca_map_${empresaId.value || 'default'}`)
+
+const loadSegurancaFromStorage = (): Record<string, number> => {
+  try {
+    const stored = localStorage.getItem(SEGURANCA_STORAGE_KEY.value)
+    return stored ? JSON.parse(stored) : {}
+  } catch {
+    return {}
+  }
+}
+
+const segurancaMap = ref<Record<string, number>>(loadSegurancaFromStorage())
+
+const saveSegurancaToStorage = () => {
+  try {
+    localStorage.setItem(SEGURANCA_STORAGE_KEY.value, JSON.stringify(segurancaMap.value))
+  } catch {}
+}
 
 const getSeguranca = (produtoId: string) => {
   return segurancaMap.value[produtoId] ?? 20
@@ -431,7 +548,13 @@ const getSeguranca = (produtoId: string) => {
 
 const setSeguranca = (produtoId: string, value: any) => {
   segurancaMap.value[produtoId] = Number(value) || 0
+  saveSegurancaToStorage()
 }
+
+// Reload segurancaMap when empresa changes
+watch(empresaId, () => {
+  segurancaMap.value = loadSegurancaFromStorage()
+})
 
 const calcPontoReposicao = (row: EstoqueMinimo) => {
   const pct = getSeguranca(row.produto_id) / 100
@@ -447,11 +570,51 @@ const produtosEmReposicao = computed(() => {
   return estoqueData.value.filter(row => calcPrevisaoCompras(row) > 0)
 })
 
+// ==========================================
+// MODAL GERAR COMPRA
+// ==========================================
+const modalGerarCompraOpen = ref(false)
+const observacaoCompra = ref('')
+const salvandoImprimir = ref(false)
+const salvandoWhatsApp = ref(false)
+const salvandoCompra = computed(() => salvandoImprimir.value || salvandoWhatsApp.value)
+
 const gerarCompra = () => {
+  if (produtosEmReposicao.value.length === 0) return
+  observacaoCompra.value = ''
+  modalGerarCompraOpen.value = true
+}
+
+const salvarPedidoReposicao = async (status: string) => {
+  const produtos = produtosEmReposicao.value
+  if (produtos.length === 0) return false
+
+  try {
+    const dataHoje = new Date().toISOString().split('T')[0]
+    const obs = observacaoCompra.value.trim()
+      ? `Ponto de Reposição — ${observacaoCompra.value.trim()}`
+      : 'Gerado via Ponto de Reposição'
+
+    const itens = produtos.map(row => ({
+      produto_id: row.produto_id,
+      quantidade: Math.ceil(calcPrevisaoCompras(row) * 100) / 100
+    }))
+
+    await createPedido({ data: dataHoje, observacao: obs, status }, itens)
+
+    toast.add({ title: 'Sucesso', description: `Pedido salvo com ${itens.length} itens!`, color: 'green' })
+    return true
+  } catch (error: any) {
+    toast.add({ title: 'Erro', description: error.message || 'Erro ao salvar pedido', color: 'red' })
+    return false
+  }
+}
+
+const imprimirLista = () => {
   const produtos = produtosEmReposicao.value
   if (produtos.length === 0) return
 
-  const hoje = new Date().toLocaleDateString('pt-BR')
+  const hojeStr = new Date().toLocaleDateString('pt-BR')
   const empresa = empresaAtiva?.value?.nome || ''
 
   const linhas = produtos.map((row, idx) => {
@@ -490,7 +653,7 @@ const gerarCompra = () => {
     </head>
     <body>
       <h1>Lista de Compras - Ponto de Reposição</h1>
-      <div class="subtitle">${empresa} · Gerado em ${hoje} · ${produtos.length} produto(s)</div>
+      <div class="subtitle">${empresa} · Gerado em ${hojeStr} · ${produtos.length} produto(s)</div>
       <table>
         <thead>
           <tr>
@@ -516,6 +679,55 @@ const gerarCompra = () => {
   if (printWindow) {
     printWindow.document.write(html)
     printWindow.document.close()
+  }
+}
+
+const montarTextoWhatsApp = () => {
+  const produtos = produtosEmReposicao.value
+  const empresa = empresaAtiva?.value?.nome || ''
+  const hojeStr = new Date().toLocaleDateString('pt-BR')
+
+  const itensTexto = produtos.map((row, idx) => {
+    const previsao = calcPrevisaoCompras(row)
+    return `${idx + 1}. ${row.nome} — ${formatNumber(previsao)} ${row.unidade}`
+  })
+
+  let texto = `*LISTA DE COMPRAS - PONTO DE REPOSIÇÃO*\n`
+  texto += `Empresa: ${empresa}\n`
+  texto += `Data: ${hojeStr}\n\n`
+  texto += `*ITENS:*\n`
+  texto += itensTexto.join('\n')
+  texto += `\n\nTotal: ${produtos.length} ${produtos.length === 1 ? 'item' : 'itens'}`
+  if (observacaoCompra.value.trim()) texto += `\nObs: ${observacaoCompra.value.trim()}`
+
+  return texto
+}
+
+const salvarEImprimir = async () => {
+  salvandoImprimir.value = true
+  try {
+    const sucesso = await salvarPedidoReposicao('rascunho')
+    if (sucesso) {
+      modalGerarCompraOpen.value = false
+      imprimirLista()
+    }
+  } finally {
+    salvandoImprimir.value = false
+  }
+}
+
+const salvarEEnviarWhatsApp = async () => {
+  salvandoWhatsApp.value = true
+  try {
+    const texto = montarTextoWhatsApp()
+    const sucesso = await salvarPedidoReposicao('enviado')
+    if (sucesso) {
+      modalGerarCompraOpen.value = false
+      const encoded = encodeURIComponent(texto)
+      window.open(`https://wa.me/?text=${encoded}`, '_blank')
+    }
+  } finally {
+    salvandoWhatsApp.value = false
   }
 }
 

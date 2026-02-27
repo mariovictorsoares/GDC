@@ -2,7 +2,7 @@
   <div>
     <!-- Logo e Titulo -->
     <div class="text-center mb-8">
-      <img src="/logo-guardiao.png" alt="Guardião do CMV" class="h-16 w-auto mx-auto mb-4" />
+      <img src="/logo.png" alt="Guardião do CMV" class="h-16 w-auto mx-auto mb-4" />
       <h1 class="text-2xl font-bold text-gray-900">Nova senha</h1>
       <p class="text-gray-500 mt-1">Digite sua nova senha abaixo</p>
     </div>

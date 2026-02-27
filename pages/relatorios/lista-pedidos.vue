@@ -164,7 +164,6 @@
                   <tr class="text-left text-gray-500 border-b border-gray-200">
                     <th class="pb-2 font-medium">Produto</th>
                     <th class="pb-2 font-medium text-right">Quantidade</th>
-                    <th class="pb-2 font-medium">Fornecedor</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -179,12 +178,20 @@
                         {{ item.produto?.unidade?.sigla || '' }}
                       </span>
                     </td>
-                    <td class="py-2 text-gray-600 text-sm">{{ item.fornecedor?.nome_empresa || '—' }}</td>
                   </tr>
                 </tbody>
               </table>
             </div>
             <div class="mt-3 flex flex-wrap justify-end gap-2">
+              <UButton
+                color="gray"
+                variant="soft"
+                size="sm"
+                @click.stop="imprimirPedido(pedido)"
+              >
+                <UIcon name="i-heroicons-printer" class="w-4 h-4 mr-1" />
+                Imprimir
+              </UButton>
               <UButton
                 color="green"
                 variant="soft"
@@ -264,10 +271,10 @@
               </div>
               <div>
                 <h3 class="text-lg font-semibold text-gray-900">
-                  {{ faseModal === 1 ? 'Novo Pedido' : faseModal === 2 ? 'Quantidades e Fornecedores' : 'Revisão do Pedido' }}
+                  {{ faseModal === 1 ? 'Novo Pedido' : faseModal === 2 ? 'Quantidades' : 'Revisão do Pedido' }}
                 </h3>
                 <p class="text-xs text-gray-500">
-                  {{ faseModal === 1 ? 'Selecione grupo e subgrupo' : faseModal === 2 ? `${grupoSelecionadoNome}${subgrupoSelecionadoNome ? ' / ' + subgrupoSelecionadoNome : ''}` : `${itensParaSalvar.length} itens · ${formatDate(setupData)}` }}
+                  {{ faseModal === 1 ? 'Selecione grupos e subgrupos' : faseModal === 2 ? resumoSelecoes : `${itensParaSalvar.length} itens · ${formatDate(setupData)}` }}
                 </p>
               </div>
             </div>
@@ -302,27 +309,60 @@
 
           <div class="border-t border-gray-200 dark:border-gray-700" />
 
-          <UFormGroup label="Grupo" required>
-            <USelect
-              v-model="setupGrupoId"
-              :options="grupoOptions"
-              placeholder="Selecione o grupo..."
-            />
-          </UFormGroup>
-
-          <UFormGroup label="Subgrupo">
-            <USelect
-              v-model="setupSubgrupoId"
-              :options="subgrupoOptions"
-              placeholder="Todos os subgrupos"
+          <!-- Seleção de grupo/subgrupo para adicionar -->
+          <div class="space-y-3">
+            <p class="text-sm font-medium text-gray-700">Adicionar Grupo / Subgrupo</p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <UFormGroup label="Grupo">
+                <USelect
+                  v-model="setupGrupoId"
+                  :options="grupoOptions"
+                  placeholder="Selecione o grupo..."
+                />
+              </UFormGroup>
+              <UFormGroup label="Subgrupo">
+                <USelect
+                  v-model="setupSubgrupoId"
+                  :options="subgrupoOptions"
+                  placeholder="Todos os subgrupos"
+                  :disabled="!setupGrupoId"
+                />
+              </UFormGroup>
+            </div>
+            <UButton
+              color="primary"
+              variant="soft"
+              size="sm"
               :disabled="!setupGrupoId"
-            />
-            <p class="text-xs text-gray-500 mt-1">
-              Opcional — se não selecionar, lista todos os produtos do grupo
-            </p>
-          </UFormGroup>
+              @click="adicionarGrupoSubgrupo"
+            >
+              <UIcon name="i-heroicons-plus" class="w-4 h-4 mr-1" />
+              Adicionar ao pedido
+            </UButton>
+          </div>
 
-          <div v-if="setupGrupoId" class="p-3 bg-blue-50 rounded-lg border border-blue-200">
+          <!-- Lista de grupo/subgrupo selecionados -->
+          <div v-if="selecoes.length > 0" class="space-y-2">
+            <p class="text-sm font-medium text-gray-700">Grupos selecionados</p>
+            <div class="flex flex-wrap gap-2">
+              <div
+                v-for="(sel, idx) in selecoes"
+                :key="idx"
+                class="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-full text-sm text-blue-800"
+              >
+                <span class="font-medium">{{ sel.grupoNome }}</span>
+                <span v-if="sel.subgrupoNome" class="text-blue-500">/ {{ sel.subgrupoNome }}</span>
+                <button
+                  class="ml-1 p-0.5 rounded-full hover:bg-blue-200 transition-colors"
+                  @click="removerSelecao(idx)"
+                >
+                  <UIcon name="i-heroicons-x-mark" class="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div v-if="selecoes.length > 0" class="p-3 bg-blue-50 rounded-lg border border-blue-200">
             <div class="flex items-center gap-2">
               <UIcon name="i-heroicons-information-circle" class="w-5 h-5 text-blue-600" />
               <span class="text-sm text-blue-800 font-medium">
@@ -332,7 +372,7 @@
           </div>
         </div>
 
-        <!-- FASE 2: Quantidades + Fornecedores -->
+        <!-- FASE 2: Quantidades -->
         <div v-if="faseModal === 2" class="space-y-4">
           <!-- Barra de progresso -->
           <div class="flex items-center justify-between">
@@ -360,10 +400,9 @@
           <div class="max-h-[55vh] overflow-y-auto border border-gray-200 rounded-lg">
             <!-- Header -->
             <div class="hidden sm:grid sm:grid-cols-12 gap-3 px-4 py-2.5 bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wider sticky top-0 z-10">
-              <div class="col-span-4">Produto</div>
-              <div class="col-span-2 text-center">Quantidade</div>
-              <div class="col-span-4">Fornecedor</div>
-              <div class="col-span-2">Obs.</div>
+              <div class="col-span-5">Produto</div>
+              <div class="col-span-3 text-center">Quantidade</div>
+              <div class="col-span-4">Obs.</div>
             </div>
 
             <div class="divide-y divide-gray-100">
@@ -375,11 +414,11 @@
               >
                 <!-- Desktop -->
                 <div class="hidden sm:grid sm:grid-cols-12 gap-3 items-center">
-                  <div class="col-span-4">
+                  <div class="col-span-5">
                     <p class="font-medium text-gray-900 text-sm">{{ item.nome }}</p>
                     <p class="text-xs text-gray-500">{{ item.subgrupo_nome }} &middot; {{ item.unidade_sigla }}</p>
                   </div>
-                  <div class="col-span-2 flex justify-center">
+                  <div class="col-span-3 flex justify-center">
                     <UInput
                       :ref="(el) => setInputRef(idx, el)"
                       :model-value="item.quantidade"
@@ -395,14 +434,6 @@
                     />
                   </div>
                   <div class="col-span-4">
-                    <USelect
-                      :model-value="item.fornecedor_id"
-                      :options="fornecedorOptions"
-                      size="xs"
-                      @update:model-value="atualizarFornecedor(item.produto_id, $event)"
-                    />
-                  </div>
-                  <div class="col-span-2">
                     <UInput
                       :model-value="item.observacao"
                       placeholder="Obs."
@@ -434,11 +465,11 @@
                       :ui="{ base: 'font-mono' }"
                       @update:model-value="atualizarQuantidade(item.produto_id, $event)"
                     />
-                    <USelect
-                      :model-value="item.fornecedor_id"
-                      :options="fornecedorOptions"
+                    <UInput
+                      :model-value="item.observacao"
+                      placeholder="Obs."
                       size="xs"
-                      @update:model-value="atualizarFornecedor(item.produto_id, $event)"
+                      @update:model-value="atualizarObservacao(item.produto_id, $event)"
                     />
                   </div>
                 </div>
@@ -454,16 +485,10 @@
 
         <!-- FASE 3: Revisão -->
         <div v-if="faseModal === 3" class="space-y-5">
-          <!-- Cards de resumo -->
-          <div class="grid grid-cols-2 gap-4">
-            <div class="p-4 bg-blue-50 rounded-lg text-center">
-              <p class="text-2xl font-bold text-blue-600">{{ itensParaSalvar.length }}</p>
-              <p class="text-xs text-blue-700 mt-1">Itens no pedido</p>
-            </div>
-            <div class="p-4 bg-gray-50 rounded-lg text-center">
-              <p class="text-2xl font-bold text-gray-900">{{ fornecedoresUnicos }}</p>
-              <p class="text-xs text-gray-600 mt-1">{{ fornecedoresUnicos === 1 ? 'Fornecedor' : 'Fornecedores' }}</p>
-            </div>
+          <!-- Card de resumo -->
+          <div class="p-4 bg-blue-50 rounded-lg text-center">
+            <p class="text-2xl font-bold text-blue-600">{{ itensParaSalvar.length }}</p>
+            <p class="text-xs text-blue-700 mt-1">Itens no pedido</p>
           </div>
 
           <!-- Lista dos itens -->
@@ -477,8 +502,6 @@
                 <p class="font-medium text-gray-900 text-sm">{{ item.nome }}</p>
                 <p class="text-xs text-gray-500">
                   {{ item.subgrupo_nome }}
-                  <span v-if="getFornecedorNome(item.fornecedor_id)" class="mx-1">&middot;</span>
-                  <span v-if="getFornecedorNome(item.fornecedor_id)" class="text-blue-600">{{ getFornecedorNome(item.fornecedor_id) }}</span>
                   <span v-if="item.observacao" class="mx-1">&middot;</span>
                   <span v-if="item.observacao" class="italic">{{ item.observacao }}</span>
                 </p>
@@ -527,7 +550,7 @@
               <UButton
                 v-if="faseModal === 1"
                 color="primary"
-                :disabled="!setupGrupoId || produtosParaMontar.length === 0"
+                :disabled="selecoes.length === 0 || produtosParaMontar.length === 0"
                 @click="iniciarMontagem"
               >
                 <UIcon name="i-heroicons-arrow-right" class="w-4 h-4 mr-1" />
@@ -656,11 +679,11 @@
 </template>
 
 <script setup lang="ts">
-import type { Pedido, Produto, Grupo, Subgrupo, Fornecedor, PedidoContagemItem } from '~/types'
+import type { Pedido, Produto, Grupo, Subgrupo, PedidoContagemItem } from '~/types'
 
 const toast = useToast()
 const {
-  getGrupos, getSubgrupos, getProdutos, getFornecedores,
+  getGrupos, getSubgrupos, getProdutos,
   getPedidos, createPedido, updatePedidoStatus, deletePedido: removePedido
 } = useEstoque()
 const { empresaId, empresaAtiva } = useEmpresa()
@@ -671,7 +694,6 @@ const { empresaId, empresaAtiva } = useEmpresa()
 const grupos = ref<Grupo[]>([])
 const subgrupos = ref<Subgrupo[]>([])
 const produtos = ref<Produto[]>([])
-const fornecedores = ref<Fornecedor[]>([])
 const todosPedidos = ref<Pedido[]>([])
 const loadingHistorico = ref(true)
 
@@ -685,6 +707,14 @@ const faseModal = ref(1)
 const setupData = ref(new Date().toISOString().split('T')[0])
 const setupGrupoId = ref('')
 const setupSubgrupoId = ref('')
+
+interface SelecaoGrupoSubgrupo {
+  grupoId: string
+  grupoNome: string
+  subgrupoId: string
+  subgrupoNome: string
+}
+const selecoes = ref<SelecaoGrupoSubgrupo[]>([])
 
 const grupoOptions = computed(() => [
   { label: 'Selecione...', value: '' },
@@ -700,39 +730,62 @@ const subgrupoOptions = computed(() => {
   ]
 })
 
-const fornecedorOptions = computed(() => [
-  { label: '—', value: '' },
-  ...fornecedores.value.map(f => ({ label: f.nome_empresa, value: f.id }))
-])
+const adicionarGrupoSubgrupo = () => {
+  if (!setupGrupoId.value) return
+  // Verifica se já existe essa combinação
+  const jaExiste = selecoes.value.some(s =>
+    s.grupoId === setupGrupoId.value && s.subgrupoId === setupSubgrupoId.value
+  )
+  if (jaExiste) {
+    toast.add({ title: 'Aviso', description: 'Esta combinação já foi adicionada', color: 'yellow' })
+    return
+  }
+  const grupo = grupos.value.find(g => g.id === setupGrupoId.value)
+  const subgrupo = setupSubgrupoId.value ? subgrupos.value.find(s => s.id === setupSubgrupoId.value) : null
+  selecoes.value.push({
+    grupoId: setupGrupoId.value,
+    grupoNome: grupo?.nome || '',
+    subgrupoId: setupSubgrupoId.value,
+    subgrupoNome: subgrupo?.nome || ''
+  })
+  setupGrupoId.value = ''
+  setupSubgrupoId.value = ''
+}
+
+const removerSelecao = (idx: number) => {
+  selecoes.value.splice(idx, 1)
+}
 
 const produtosParaMontar = computed(() => {
-  if (!setupGrupoId.value) return []
-  return produtos.value.filter(p => {
-    if (!p.subgrupo_id) return false
-    // Usa o subgrupo que já vem no join do produto OU busca no array separado
-    const grupoIdDoProduto = p.subgrupo?.grupo_id || subgrupos.value.find(s => s.id === p.subgrupo_id)?.grupo_id
-    if (!grupoIdDoProduto) return false
-    if (setupSubgrupoId.value) return p.subgrupo_id === setupSubgrupoId.value
-    return grupoIdDoProduto === setupGrupoId.value
-  })
+  if (selecoes.value.length === 0) return []
+  const produtosSet = new Set<string>()
+  const result: typeof produtos.value = []
+
+  for (const sel of selecoes.value) {
+    for (const p of produtos.value) {
+      if (!p.subgrupo_id || produtosSet.has(p.id)) continue
+      const grupoIdDoProduto = p.subgrupo?.grupo_id || subgrupos.value.find(s => s.id === p.subgrupo_id)?.grupo_id
+      if (!grupoIdDoProduto) continue
+
+      let match = false
+      if (sel.subgrupoId) {
+        match = p.subgrupo_id === sel.subgrupoId
+      } else {
+        match = grupoIdDoProduto === sel.grupoId
+      }
+
+      if (match) {
+        produtosSet.add(p.id)
+        result.push(p)
+      }
+    }
+  }
+  return result
 })
 
-const grupoSelecionadoNome = computed(() => {
-  const g = grupos.value.find(g => g.id === setupGrupoId.value)
-  return g?.nome || ''
+const resumoSelecoes = computed(() => {
+  return selecoes.value.map(s => s.subgrupoNome ? `${s.grupoNome} / ${s.subgrupoNome}` : s.grupoNome).join(', ')
 })
-
-const subgrupoSelecionadoNome = computed(() => {
-  if (!setupSubgrupoId.value) return ''
-  const s = subgrupos.value.find(s => s.id === setupSubgrupoId.value)
-  return s?.nome || ''
-})
-
-const getFornecedorNome = (id: string) => {
-  if (!id) return ''
-  const f = fornecedores.value.find(f => f.id === id)
-  return f?.nome_empresa || ''
-}
 
 watch(setupGrupoId, () => {
   setupSubgrupoId.value = ''
@@ -774,12 +827,6 @@ const atualizarQuantidade = (produtoId: string, valor: any) => {
   item.quantidade = valor === '' || valor === null || valor === undefined ? null : Number(valor)
 }
 
-const atualizarFornecedor = (produtoId: string, valor: any) => {
-  const item = itensPedido.value.find(i => i.produto_id === produtoId)
-  if (!item) return
-  item.fornecedor_id = valor || ''
-}
-
 const atualizarObservacao = (produtoId: string, valor: any) => {
   const item = itensPedido.value.find(i => i.produto_id === produtoId)
   if (!item) return
@@ -803,10 +850,6 @@ const itensParaSalvar = computed(() => {
   return itensPedido.value.filter(i => i.quantidade !== null && i.quantidade > 0)
 })
 
-const fornecedoresUnicos = computed(() => {
-  const ids = new Set(itensParaSalvar.value.map(i => i.fornecedor_id).filter(Boolean))
-  return ids.size || 0
-})
 
 // ==========================================
 // HISTÓRICO
@@ -826,7 +869,7 @@ const pedidosFiltrados = computed(() => {
     const term = filtroBusca.value.toLowerCase()
     result = result.filter(p =>
       p.observacao?.toLowerCase().includes(term) ||
-      p.itens?.some(i => i.produto?.nome?.toLowerCase().includes(term) || i.fornecedor?.nome_empresa?.toLowerCase().includes(term))
+      p.itens?.some(i => i.produto?.nome?.toLowerCase().includes(term))
     )
   }
   return result
@@ -859,13 +902,12 @@ const excluindo = ref(false)
 
 const carregarDadosBase = async () => {
   try {
-    const [g, s, p, f] = await Promise.all([
-      getGrupos(), getSubgrupos(), getProdutos(), getFornecedores()
+    const [g, s, p] = await Promise.all([
+      getGrupos(), getSubgrupos(), getProdutos()
     ])
     grupos.value = g
     subgrupos.value = s
     produtos.value = p
-    fornecedores.value = f
   } catch (error: any) {
     toast.add({ title: 'Erro', description: error.message || 'Erro ao carregar dados', color: 'red' })
   }
@@ -892,6 +934,7 @@ const abrirModalSetup = () => {
   setupData.value = new Date().toISOString().split('T')[0]
   setupGrupoId.value = ''
   setupSubgrupoId.value = ''
+  selecoes.value = []
   faseModal.value = 1
   itensPedido.value = []
   buscaMontagem.value = ''
@@ -908,7 +951,7 @@ const iniciarMontagem = () => {
     quantidade: null,
     fornecedor_id: '',
     observacao: ''
-  })).sort((a, b) => a.nome.localeCompare(b.nome))
+  })).sort((a, b) => a.subgrupo_nome.localeCompare(b.subgrupo_nome) || a.nome.localeCompare(b.nome))
 
   buscaMontagem.value = ''
   faseModal.value = 2
@@ -937,7 +980,6 @@ const salvarPedido = async (status: string) => {
     const itens = itensParaSalvar.value.map(item => ({
       produto_id: item.produto_id,
       quantidade: item.quantidade!,
-      fornecedor_id: item.fornecedor_id || undefined,
       observacao: item.observacao || undefined
     }))
 
@@ -974,12 +1016,11 @@ const montarTextoWhatsApp = (pedido?: Pedido) => {
 
   const itens = pedido
     ? (pedido.itens || []).map((item, idx) =>
-        `${idx + 1}. ${item.produto?.nome} — ${formatNumber(item.quantidade)} ${item.produto?.unidade?.sigla || ''}${item.fornecedor?.nome_empresa ? ' (' + item.fornecedor.nome_empresa + ')' : ''}`
+        `${idx + 1}. ${item.produto?.nome} — ${formatNumber(item.quantidade)} ${item.produto?.unidade?.sigla || ''}`
       )
-    : itensParaSalvar.value.map((item, idx) => {
-        const forn = getFornecedorNome(item.fornecedor_id)
-        return `${idx + 1}. ${item.nome} — ${formatNumber(item.quantidade!)} ${item.unidade_sigla}${forn ? ' (' + forn + ')' : ''}`
-      })
+    : itensParaSalvar.value.map((item, idx) =>
+        `${idx + 1}. ${item.nome} — ${formatNumber(item.quantidade!)} ${item.unidade_sigla}`
+      )
 
   let texto = `*PEDIDO DE COMPRA*\n`
   texto += `Empresa: ${empresa}\n`
@@ -1011,6 +1052,74 @@ const enviarWhatsApp = async (pedido: Pedido) => {
       await updatePedidoStatus(pedido.id, 'enviado')
       await carregarHistorico()
     } catch { /* silently ignore */ }
+  }
+}
+
+const imprimirPedido = (pedido: Pedido) => {
+  const empresa = empresaAtiva?.value?.nome || ''
+  const dataPedido = formatDate(pedido.data)
+  const itens = pedido.itens || []
+
+  const linhas = itens.map((item, idx) => {
+    return `
+      <tr>
+        <td style="padding: 6px 10px; border-bottom: 1px solid #e5e7eb; text-align: center;">${idx + 1}</td>
+        <td style="padding: 6px 10px; border-bottom: 1px solid #e5e7eb;">${item.produto?.nome || '-'}</td>
+        <td style="padding: 6px 10px; border-bottom: 1px solid #e5e7eb; text-align: center;">${item.produto?.unidade?.sigla || ''}</td>
+        <td style="padding: 6px 10px; border-bottom: 1px solid #e5e7eb; text-align: right; font-weight: 600;">${formatNumber(item.quantidade)}</td>
+        <td style="padding: 6px 10px; border-bottom: 1px solid #e5e7eb;">${item.observacao || ''}</td>
+      </tr>
+    `
+  }).join('')
+
+  const html = `
+    <html>
+    <head>
+      <title>Pedido de Compra - ${dataPedido}</title>
+      <style>
+        @media print {
+          body { margin: 0; padding: 20px; }
+          .no-print { display: none !important; }
+        }
+        body { font-family: Arial, sans-serif; color: #111827; padding: 20px; }
+        h1 { font-size: 18px; margin-bottom: 4px; }
+        .subtitle { font-size: 13px; color: #6b7280; margin-bottom: 16px; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th { background-color: #f3f4f6; padding: 8px 10px; text-align: left; font-weight: 600; border-bottom: 2px solid #d1d5db; }
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+        .obs { margin-top: 16px; font-size: 13px; color: #374151; }
+        .footer { margin-top: 24px; font-size: 11px; color: #9ca3af; text-align: center; }
+      </style>
+    </head>
+    <body>
+      <h1>Pedido de Compra</h1>
+      <div class="subtitle">${empresa} · ${dataPedido} · ${itens.length} ${itens.length === 1 ? 'item' : 'itens'}</div>
+      <table>
+        <thead>
+          <tr>
+            <th class="text-center" style="width: 40px;">#</th>
+            <th>Produto</th>
+            <th class="text-center" style="width: 50px;">Un.</th>
+            <th class="text-right" style="width: 100px;">Quantidade</th>
+            <th style="width: 150px;">Obs.</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${linhas}
+        </tbody>
+      </table>
+      ${pedido.observacao ? `<div class="obs"><strong>Observação:</strong> ${pedido.observacao}</div>` : ''}
+      <div class="footer">Guardião do CMV - Pedido de Compra</div>
+      <script>window.onload = function() { window.print(); }<\/script>
+    </body>
+    </html>
+  `
+
+  const printWindow = window.open('', '_blank')
+  if (printWindow) {
+    printWindow.document.write(html)
+    printWindow.document.close()
   }
 }
 

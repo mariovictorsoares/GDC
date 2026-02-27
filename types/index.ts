@@ -382,10 +382,52 @@ export interface Setor {
   descricao?: string
   empresa_id?: string
   created_at?: string
+  produtos?: SetorProduto[]
+}
+
+export interface SetorProduto {
+  id: string
+  setor_id: string
+  produto_id: string
+  empresa_id?: string
+  created_at?: string
+  produto?: Produto
+}
+
+// Contagem (persistida no banco)
+export type StatusContagem = 'aguardando' | 'pendente' | 'atrasada' | 'em_andamento' | 'finalizada'
+export type TipoContagem = 'inventario' | 'estoque'
+
+export interface Contagem {
+  id: string
+  empresa_id?: string
+  nome: string
+  tipo: TipoContagem
+  data: string
+  status: StatusContagem
+  recorrencia?: string
+  horario_notificacao?: string
+  dias_semana?: string[]
+  mensal_posicao?: string
+  mensal_dia?: string
+  responsavel_nome?: string
+  responsavel_telefone?: string
+  ultima_contagem?: string
+  progresso?: number
+  created_at?: string
+  updated_at?: string
+  // Relacionamentos
+  contagem_setores?: ContagemSetorRel[]
+}
+
+export interface ContagemSetorRel {
+  id: string
+  contagem_id: string
+  setor_id: string
+  setor?: Setor
 }
 
 // Tipos para Contagem de Estoque (inventário em lote)
-export type TipoContagem = 'inventario' | 'estoque'
 
 export interface ContagemItem {
   produto_id: string

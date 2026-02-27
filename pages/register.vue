@@ -3,7 +3,7 @@
     <!-- Logo com fundo branco -->
     <div class="text-center mb-8">
       <div class="inline-block bg-white rounded-xl p-3 mb-4">
-        <img src="/logo-guardiao.png" alt="Guardião do CMV" class="h-14 w-auto" />
+        <img src="/logo.png" alt="Guardião do CMV" class="h-14 w-auto" />
       </div>
       <h1 class="text-2xl font-bold text-gray-900">Crie sua conta</h1>
       <p class="text-gray-500 mt-1">Comece a controlar seu estoque agora mesmo</p>
