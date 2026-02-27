@@ -106,6 +106,7 @@ export default defineEventHandler(async (event) => {
       {
         instanceId: config.zapiInstanceId,
         token: config.zapiToken,
+        clientToken: config.zapiClientToken,
         baseUrl: config.zapiBaseUrl
       },
       {

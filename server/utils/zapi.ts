@@ -5,6 +5,7 @@
 interface ZApiConfig {
   instanceId: string
   token: string
+  clientToken: string
   baseUrl: string
 }
 
@@ -50,6 +51,9 @@ export async function sendWhatsAppText(
   try {
     const response = await $fetch<any>(url, {
       method: 'POST',
+      headers: {
+        'Client-Token': config.clientToken
+      },
       body: {
         phone: formattedPhone,
         message: payload.message
