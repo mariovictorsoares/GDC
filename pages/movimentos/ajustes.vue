@@ -56,15 +56,8 @@
         </div>
       </UCard>
 
-      <!-- Lista de contagens recorrentes -->
+      <!-- Lista de contagens -->
       <UCard v-else :ui="{ body: { padding: '' } }">
-        <template #header>
-          <div>
-            <h3 class="text-lg font-semibold text-gray-900">Contagens recorrentes</h3>
-            <p class="text-sm text-gray-500 mt-0.5">Aqui estão suas contagens recorrentes. Clique para ver detalhes, progresso e histórico.</p>
-          </div>
-        </template>
-
         <!-- Tabela desktop -->
         <div class="hidden sm:block overflow-x-auto">
           <table class="w-full">
@@ -74,8 +67,7 @@
                 <th class="text-center px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Última contagem</th>
                 <th class="text-center px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Próxima contagem</th>
                 <th class="text-center px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Recorrência</th>
-                <th class="text-center px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                <th class="text-center px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider w-[80px]">Progresso</th>
+                <th class="text-center px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider w-[100px]">Progresso</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
@@ -101,22 +93,10 @@
                   <p class="font-semibold text-gray-700 text-sm">{{ labelRecorrencia(contagem.recorrencia) }}</p>
                 </td>
                 <td class="px-4 py-4 text-center">
-                  <p class="text-xs text-gray-400">Status</p>
-                  <p
-                    class="font-bold text-sm"
-                    :class="{
-                      'text-red-500': contagem.status === 'atrasada',
-                      'text-yellow-600': contagem.status === 'pendente' || contagem.status === 'em_andamento',
-                      'text-green-600': contagem.status === 'finalizada',
-                      'text-gray-500': !contagem.status
-                    }"
-                  >
-                    {{ statusLabelTabela(contagem.status) }}
-                  </p>
-                </td>
-                <td class="px-4 py-4 text-center">
                   <p class="text-xs text-gray-400">Progresso</p>
-                  <p class="font-bold text-gray-700 text-sm">{{ contagem.progresso || '0' }}%</p>
+                  <p class="font-bold text-sm" :class="calcProgressoMensal(contagem).feitas >= calcProgressoMensal(contagem).esperadas ? 'text-green-600' : 'text-gray-700'">
+                    {{ calcProgressoMensal(contagem).feitas }}/{{ calcProgressoMensal(contagem).esperadas }}
+                  </p>
                 </td>
               </tr>
             </tbody>
@@ -133,16 +113,8 @@
           >
             <div class="flex items-center justify-between mb-2">
               <p class="font-semibold text-gray-900">{{ contagem.nome }}</p>
-              <p
-                class="text-xs font-bold"
-                :class="{
-                  'text-red-500': contagem.status === 'atrasada',
-                  'text-yellow-600': contagem.status === 'pendente' || contagem.status === 'em_andamento',
-                  'text-green-600': contagem.status === 'finalizada',
-                  'text-gray-500': !contagem.status
-                }"
-              >
-                {{ statusLabelTabela(contagem.status) }}
+              <p class="text-xs font-bold" :class="calcProgressoMensal(contagem).feitas >= calcProgressoMensal(contagem).esperadas ? 'text-green-600' : 'text-gray-700'">
+                {{ calcProgressoMensal(contagem).feitas }}/{{ calcProgressoMensal(contagem).esperadas }}
               </p>
             </div>
             <div class="grid grid-cols-3 gap-2 text-center">
@@ -156,7 +128,9 @@
               </div>
               <div>
                 <p class="text-[10px] text-gray-400 uppercase">Progresso</p>
-                <p class="text-xs font-bold text-gray-700">{{ contagem.progresso || '0' }}%</p>
+                <p class="text-xs font-bold" :class="calcProgressoMensal(contagem).feitas >= calcProgressoMensal(contagem).esperadas ? 'text-green-600' : 'text-gray-700'">
+                  {{ calcProgressoMensal(contagem).feitas }}/{{ calcProgressoMensal(contagem).esperadas }}
+                </p>
               </div>
             </div>
           </div>
@@ -192,6 +166,17 @@
             >
               <UIcon name="i-heroicons-trash" class="w-4 h-4 mr-1" />
               Excluir
+            </UButton>
+            <UButton
+              v-if="contagemSelecionada.responsavel_telefone"
+              color="green"
+              variant="soft"
+              size="sm"
+              :loading="loadingEnviarWhatsApp"
+              @click="enviarLembreteManual"
+            >
+              <UIcon name="i-heroicons-chat-bubble-left-ellipsis" class="w-4 h-4 mr-1" />
+              Enviar Lembrete
             </UButton>
             <UButton
               v-if="contagemSelecionada.status !== 'finalizada'"
@@ -1198,7 +1183,8 @@ const {
   getAjustes, createAjustesEmLote, deleteAjuste: removeAjuste, deleteAjustesEmLote,
   getSetores, createSetor, deleteSetor,
   getSetorProdutos, addProdutosToSetor, removeProdutoFromSetor, countSetorProdutos, getAllSetorProdutos,
-  getContagens, createContagem, updateContagemStatus, deleteContagem
+  getContagens, createContagem, updateContagemStatus, deleteContagem,
+  getResponsaveis, createResponsavel
 } = useEstoque()
 const { empresaId } = useEmpresa()
 
@@ -1236,6 +1222,59 @@ const contagensPersistidasPaginadas = computed(() => {
 const detalhesSetorProdutos = ref<Record<string, { id: string; nome: string }[]>>({})
 const detalhesSetorProdutosCount = ref<Record<string, number>>({})
 const loadingIniciar = ref(false)
+const loadingEnviarWhatsApp = ref(false)
+
+const enviarLembreteManual = async () => {
+  if (!contagemSelecionada.value) return
+  const c = contagemSelecionada.value
+  if (!c.responsavel_telefone || !c.responsavel_nome) {
+    toast.add({ title: 'Aviso', description: 'Esta contagem não possui responsável com telefone cadastrado.', color: 'yellow' })
+    return
+  }
+
+  try {
+    loadingEnviarWhatsApp.value = true
+
+    // Montar nomes dos setores
+    const setoresNomes = (c.contagem_setores || [])
+      .map((cs: any) => cs.setor?.nome)
+      .filter(Boolean)
+
+    // Montar mensagem no mesmo formato do cron
+    const recLabels: Record<string, string> = { diaria: 'Diária', semanal: 'Semanal', quinzenal: 'Quinzenal', mensal: 'Mensal' }
+    const setoresTexto = setoresNomes.length > 0
+      ? setoresNomes.map((s: string) => `  • ${s}`).join('\n')
+      : '  • Todos os setores'
+
+    const mensagem = [
+      `📋 *Lembrete de Contagem*`,
+      ``,
+      `Olá, *${c.responsavel_nome}*!`,
+      `Está na hora de realizar a contagem:`,
+      ``,
+      `📌 *${c.nome}*`,
+      `🔄 Recorrência: ${recLabels[c.recorrencia || ''] || c.recorrencia || 'Nenhuma'}`,
+      `⏰ Horário: ${c.horario_notificacao || '07:00'}`,
+      ``,
+      `📍 *Setores:*`,
+      setoresTexto,
+      ``,
+      `👉 *Acesse e inicie a contagem:*`,
+      `https://gdcnew.vercel.app/movimentos/ajustes`
+    ].join('\n')
+
+    await $fetch('/api/whatsapp/enviar', {
+      method: 'POST',
+      body: { phone: c.responsavel_telefone, message: mensagem }
+    })
+
+    toast.add({ title: 'Enviado!', description: `Lembrete enviado para ${c.responsavel_nome} via WhatsApp`, color: 'green' })
+  } catch (error: any) {
+    toast.add({ title: 'Erro ao enviar', description: error?.data?.message || error.message || 'Erro ao enviar WhatsApp', color: 'red' })
+  } finally {
+    loadingEnviarWhatsApp.value = false
+  }
+}
 
 // ==========================================
 // SETORES (Slideover)
@@ -1488,17 +1527,37 @@ watch(() => setupRecorrencia.value, () => {
 })
 
 // Responsáveis
-const responsaveis = ref<{ nome: string; telefone: string }[]>([])
+const responsaveis = ref<{ id?: string; nome: string; telefone: string }[]>([])
 const novoResponsavelNome = ref('')
 const novoResponsavelTelefone = ref('')
+const loadingResponsaveis = ref(false)
 
-const adicionarResponsavel = () => {
+const carregarResponsaveis = async () => {
+  try {
+    loadingResponsaveis.value = true
+    const data = await getResponsaveis()
+    responsaveis.value = data
+  } catch (error: any) {
+    console.error('Erro ao carregar responsáveis:', error.message)
+  } finally {
+    loadingResponsaveis.value = false
+  }
+}
+
+const adicionarResponsavel = async () => {
   if (!novoResponsavelNome.value.trim() || !novoResponsavelTelefone.value.trim()) return
-  const novo = { nome: novoResponsavelNome.value.trim(), telefone: novoResponsavelTelefone.value.trim() }
-  responsaveis.value.push(novo)
-  setupResponsavel.value = novo
-  novoResponsavelNome.value = ''
-  novoResponsavelTelefone.value = ''
+  try {
+    const novo = await createResponsavel({
+      nome: novoResponsavelNome.value.trim(),
+      telefone: novoResponsavelTelefone.value.trim()
+    })
+    responsaveis.value.push(novo)
+    setupResponsavel.value = novo
+    novoResponsavelNome.value = ''
+    novoResponsavelTelefone.value = ''
+  } catch (error: any) {
+    toast.add({ title: 'Erro', description: error.message || 'Erro ao salvar responsável', color: 'red' })
+  }
 }
 
 const allSetorProdutosData = ref<{ id: string; setor_id: string; produto_id: string; produto: { id: string; nome: string } | null }[]>([])
@@ -1801,6 +1860,47 @@ const labelRecorrencia = (recorrencia?: string) => {
   }
 }
 
+/**
+ * Calcula quantas contagens foram feitas no mês vs quantas deveriam ter sido feitas ATÉ HOJE
+ * Ex: Diária em fev/28 dias, se hoje é dia 27 → esperadas = 27 (não 28)
+ */
+const calcProgressoMensal = (contagem: Contagem): { feitas: number; esperadas: number } => {
+  const rec = contagem.recorrencia || 'nenhuma'
+  if (rec === 'nenhuma') return { feitas: 0, esperadas: 0 }
+
+  const hoje = new Date()
+  const ano = hoje.getFullYear()
+  const mes = hoje.getMonth()
+  const diaHoje = hoje.getDate()
+
+  // Contar esperadas apenas ATÉ HOJE (dia 1 até dia atual, inclusive)
+  let esperadas = 0
+  if (rec === 'diaria') {
+    esperadas = diaHoje
+  } else if (rec === 'semanal') {
+    const diasConfig = contagem.dias_semana || []
+    if (diasConfig.length === 0) {
+      esperadas = Math.ceil(diaHoje / 7)
+    } else {
+      let count = 0
+      for (let d = 1; d <= diaHoje; d++) {
+        const diaSemana = new Date(ano, mes, d).getDay()
+        const label = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'][diaSemana]
+        if (diasConfig.includes(label)) count++
+      }
+      esperadas = count
+    }
+  } else if (rec === 'quinzenal') {
+    esperadas = diaHoje >= 15 ? 2 : 1
+  } else if (rec === 'mensal') {
+    esperadas = 1
+  }
+
+  const feitas = contagem.progresso || 0
+
+  return { feitas, esperadas }
+}
+
 const calcProximaContagem = (contagem: Contagem) => {
   // Placeholder — será calculado com base na recorrência e última contagem
   if (!contagem.recorrencia || contagem.recorrencia === 'nenhuma') return '-'
@@ -1892,11 +1992,23 @@ const criarContagemPersistida = async () => {
   if (!setupNomeContagem.value.trim() || !setupRecorrencia.value || !setupResponsavel.value || setupSetoresSelecionados.value.size === 0) return
   try {
     loadingSetup.value = true
+
+    // Montar dias_semana como array
+    const diasSemanaArr = Array.from(setupDiasSemana.value)
+
     await createContagem(
       {
         nome: setupNomeContagem.value.trim(),
         tipo: 'estoque' as TipoContagem,
-        data: setupData.value
+        data: setupData.value,
+        recorrencia: setupRecorrencia.value,
+        horario_notificacao: setupHorarioNotificacao.value,
+        dias_semana: diasSemanaArr.length > 0 ? diasSemanaArr : undefined,
+        mensal_posicao: setupRecorrencia.value === 'mensal' ? setupMensalPosicao.value : undefined,
+        mensal_dia: setupRecorrencia.value === 'mensal' ? setupMensalDia.value : undefined,
+        responsavel_nome: setupResponsavel.value.nome,
+        responsavel_telefone: setupResponsavel.value.telefone,
+        responsavel_id: (setupResponsavel.value as any).id || undefined
       },
       Array.from(setupSetoresSelecionados.value)
     )
@@ -2185,7 +2297,10 @@ watch([filtroDataInicio, filtroDataFim], () => {
 watch(empresaId, async () => {
   if (empresaId.value) {
     await carregarDadosBase()
-    await carregarContagens()
+    await Promise.all([
+      carregarContagens(),
+      carregarResponsaveis()
+    ])
   }
 }, { immediate: true })
 </script>

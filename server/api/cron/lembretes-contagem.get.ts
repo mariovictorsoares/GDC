@@ -15,6 +15,15 @@ import { createClient } from '@supabase/supabase-js'
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig()
 
+  // Segurança: verificar CRON_SECRET se estiver configurado (Vercel Cron envia no header)
+  const cronSecret = process.env.CRON_SECRET
+  if (cronSecret) {
+    const authHeader = getHeader(event, 'authorization')
+    if (authHeader !== `Bearer ${cronSecret}`) {
+      throw createError({ statusCode: 401, message: 'Não autorizado' })
+    }
+  }
+
   // Validar configuração
   if (!config.zapiInstanceId || !config.zapiToken) {
     throw createError({ statusCode: 500, message: 'Z-API não configurada' })

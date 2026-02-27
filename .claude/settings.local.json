@@ -32,7 +32,8 @@
       "Bash(grep -n \"CREATE TABLE\\\\|CREATE VIEW\" /c/Users/mario/Desktop/estoque-cd/supabase/migrations/*.sql)",
       "Bash(grep -l \"contagem\\\\|setor\\\\|pedido\" /c/Users/mario/Desktop/estoque-cd/supabase/migrations/*.sql)",
       "Bash(wc -l /c/Users/mario/Desktop/estoque-cd/supabase/migrations/*.sql)",
-      "Bash(cat /c/Users/mario/Desktop/estoque-cd/supabase/migrations/*.sql)"
+      "Bash(cat /c/Users/mario/Desktop/estoque-cd/supabase/migrations/*.sql)",
+      "Bash(grep -l \"contagens\" C:/Users/mario/Desktop/estoque-cd/supabase/migrations/*.sql)"
     ]
   }
 }
