@@ -49,7 +49,15 @@
       "mcp__plugin_playwright_playwright__browser_navigate_back",
       "mcp__plugin_playwright_playwright__browser_press_key",
       "Bash(npx nuxt typecheck)",
-      "mcp__plugin_playwright_playwright__browser_type"
+      "mcp__plugin_playwright_playwright__browser_type",
+      "Bash(git status -u)",
+      "Bash(gh api repos/:owner/:repo/deployments --jq '.[0] | {state: .environment, created: .created_at, sha: .sha[0:7]}')",
+      "Bash(npx vercel ls)",
+      "Bash(npx vercel --prod)",
+      "Bash(git commit:*)",
+      "Bash(git push origin main)",
+      "Bash(npx vercel login)",
+      "Bash(git add .)"
     ]
   }
 }
