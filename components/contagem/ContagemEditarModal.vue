@@ -64,13 +64,8 @@
               value-attribute="value"
             />
           </UFormGroup>
-          <UFormGroup label="Horario da Notificacao">
-            <USelect
-              v-model="horarioNotificacao"
-              :options="opcoesHorario"
-              option-attribute="label"
-              value-attribute="value"
-            />
+          <UFormGroup label="Horário da Notificação">
+            <UInput v-model="horarioNotificacao" type="time" />
           </UFormGroup>
         </div>
 

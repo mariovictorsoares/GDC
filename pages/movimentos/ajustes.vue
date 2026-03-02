@@ -126,7 +126,7 @@
           <!-- Campos dinâmicos de recorrência -->
           <template v-if="setupRecorrencia && setupRecorrencia !== 'nenhuma'">
             <UFormGroup v-if="setupRecorrencia === 'diaria'" label="Horário da Notificação" required>
-              <USelect v-model="setupHorarioNotificacao" :options="opcoesHorario" option-attribute="label" value-attribute="value" />
+              <UInput v-model="setupHorarioNotificacao" type="time" />
             </UFormGroup>
 
             <div v-if="setupRecorrencia === 'semanal' || setupRecorrencia === 'quinzenal'">
@@ -146,7 +146,7 @@
                 </div>
               </UFormGroup>
               <UFormGroup label="Horário da Notificação" required class="mt-4">
-                <USelect v-model="setupHorarioNotificacao" :options="opcoesHorario" option-attribute="label" value-attribute="value" />
+                <UInput v-model="setupHorarioNotificacao" type="time" />
               </UFormGroup>
             </div>
 
@@ -158,7 +158,7 @@
                 </div>
               </UFormGroup>
               <UFormGroup label="Horário da Notificação" required>
-                <USelect v-model="setupHorarioNotificacao" :options="opcoesHorario" option-attribute="label" value-attribute="value" />
+                <UInput v-model="setupHorarioNotificacao" type="time" />
               </UFormGroup>
             </template>
 
