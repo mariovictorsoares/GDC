@@ -3,8 +3,8 @@
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900">Curva ABC</h1>
-        <p class="text-sm text-gray-500">Análise de classificação ABC do estoque e consumo</p>
+        <h1 class="text-2xl font-bold text-operacao-800">Curva ABC</h1>
+        <p class="text-sm text-operacao-400">Análise de classificação ABC do estoque e consumo</p>
       </div>
       <UButton color="primary" @click="loadAllData" :loading="loading">
         <UIcon name="i-heroicons-arrow-path" class="w-4 h-4 mr-2" />
@@ -21,7 +21,7 @@
     <template v-if="activeTab === 0">
       <!-- Resumo Skeleton -->
       <div v-if="loading" class="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div v-for="i in 4" :key="i" class="rounded-xl bg-white ring-1 ring-gray-100 shadow-sm border-l-4 border-gray-200 p-5">
+        <div v-for="i in 4" :key="i" class="rounded-xl bg-white ring-1 ring-operacao-100 shadow-sm border-l-4 border-operacao-200 p-5">
           <div class="flex items-center justify-between">
             <div class="space-y-2">
               <USkeleton class="h-4 w-16" />
@@ -41,13 +41,13 @@
         <UCard class="border-l-4 border-green-500">
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm text-gray-500">Curva A</p>
-              <p class="text-2xl font-bold text-green-600">{{ resumoEstoque.A.quantidade }}</p>
-              <p class="text-xs text-gray-500">{{ resumoEstoque.A.percentual.toFixed(1) }}% dos itens</p>
+              <p class="text-sm text-operacao-400">Curva A</p>
+              <p class="text-2xl font-bold text-controle-600">{{ resumoEstoque.A.quantidade }}</p>
+              <p class="text-xs text-operacao-400">{{ resumoEstoque.A.percentual.toFixed(1) }}% dos itens</p>
             </div>
             <div class="text-right">
-              <p class="text-sm font-medium text-gray-900">{{ formatCurrency(resumoEstoque.A.valor) }}</p>
-              <p class="text-xs text-gray-500">{{ resumoEstoque.A.percentualValor.toFixed(1) }}% do valor</p>
+              <p class="text-sm font-medium text-operacao-800">{{ formatCurrency(resumoEstoque.A.valor) }}</p>
+              <p class="text-xs text-operacao-400">{{ resumoEstoque.A.percentualValor.toFixed(1) }}% do valor</p>
             </div>
           </div>
         </UCard>
@@ -55,27 +55,27 @@
         <UCard class="border-l-4 border-yellow-500">
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm text-gray-500">Curva B</p>
-              <p class="text-2xl font-bold text-yellow-600">{{ resumoEstoque.B.quantidade }}</p>
-              <p class="text-xs text-gray-500">{{ resumoEstoque.B.percentual.toFixed(1) }}% dos itens</p>
+              <p class="text-sm text-operacao-400">Curva B</p>
+              <p class="text-2xl font-bold text-alerta-600">{{ resumoEstoque.B.quantidade }}</p>
+              <p class="text-xs text-operacao-400">{{ resumoEstoque.B.percentual.toFixed(1) }}% dos itens</p>
             </div>
             <div class="text-right">
-              <p class="text-sm font-medium text-gray-900">{{ formatCurrency(resumoEstoque.B.valor) }}</p>
-              <p class="text-xs text-gray-500">{{ resumoEstoque.B.percentualValor.toFixed(1) }}% do valor</p>
+              <p class="text-sm font-medium text-operacao-800">{{ formatCurrency(resumoEstoque.B.valor) }}</p>
+              <p class="text-xs text-operacao-400">{{ resumoEstoque.B.percentualValor.toFixed(1) }}% do valor</p>
             </div>
           </div>
         </UCard>
 
-        <UCard class="border-l-4 border-gray-400">
+        <UCard class="border-l-4 border-operacao-400">
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm text-gray-500">Curva C</p>
-              <p class="text-2xl font-bold text-gray-600">{{ resumoEstoque.C.quantidade }}</p>
-              <p class="text-xs text-gray-500">{{ resumoEstoque.C.percentual.toFixed(1) }}% dos itens</p>
+              <p class="text-sm text-operacao-400">Curva C</p>
+              <p class="text-2xl font-bold text-operacao-500">{{ resumoEstoque.C.quantidade }}</p>
+              <p class="text-xs text-operacao-400">{{ resumoEstoque.C.percentual.toFixed(1) }}% dos itens</p>
             </div>
             <div class="text-right">
-              <p class="text-sm font-medium text-gray-900">{{ formatCurrency(resumoEstoque.C.valor) }}</p>
-              <p class="text-xs text-gray-500">{{ resumoEstoque.C.percentualValor.toFixed(1) }}% do valor</p>
+              <p class="text-sm font-medium text-operacao-800">{{ formatCurrency(resumoEstoque.C.valor) }}</p>
+              <p class="text-xs text-operacao-400">{{ resumoEstoque.C.percentualValor.toFixed(1) }}% do valor</p>
             </div>
           </div>
         </UCard>
@@ -83,13 +83,13 @@
         <UCard class="border-l-4 border-blue-500">
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm text-gray-500">Total</p>
-              <p class="text-2xl font-bold text-blue-600">{{ curvaEstoque.length }}</p>
-              <p class="text-xs text-gray-500">produtos</p>
+              <p class="text-sm text-operacao-400">Total</p>
+              <p class="text-2xl font-bold text-guardian-600">{{ curvaEstoque.length }}</p>
+              <p class="text-xs text-operacao-400">produtos</p>
             </div>
             <div class="text-right">
-              <p class="text-sm font-medium text-gray-900">{{ formatCurrency(valorTotalEstoque) }}</p>
-              <p class="text-xs text-gray-500">valor total</p>
+              <p class="text-sm font-medium text-operacao-800">{{ formatCurrency(valorTotalEstoque) }}</p>
+              <p class="text-xs text-operacao-400">valor total</p>
             </div>
           </div>
         </UCard>
@@ -121,7 +121,7 @@
 
         <UTable :columns="columnsEstoque" :rows="paginatedEstoque" :loading="loading">
           <template #empty-state>
-            <div class="flex flex-col items-center justify-center py-6 text-gray-500">
+            <div class="flex flex-col items-center justify-center py-6 text-operacao-400">
               <UIcon name="i-heroicons-inbox" class="w-8 h-8 mb-2" />
               <p class="text-sm">Nenhum registro encontrado</p>
             </div>
@@ -156,7 +156,7 @@
     <template v-if="activeTab === 1">
       <!-- Resumo Skeleton -->
       <div v-if="loading" class="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div v-for="i in 4" :key="i" class="rounded-xl bg-white ring-1 ring-gray-100 shadow-sm border-l-4 border-gray-200 p-5">
+        <div v-for="i in 4" :key="i" class="rounded-xl bg-white ring-1 ring-operacao-100 shadow-sm border-l-4 border-operacao-200 p-5">
           <div class="flex items-center justify-between">
             <div class="space-y-2">
               <USkeleton class="h-4 w-16" />
@@ -176,13 +176,13 @@
         <UCard class="border-l-4 border-green-500">
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm text-gray-500">Curva A</p>
-              <p class="text-2xl font-bold text-green-600">{{ resumoCMV.A.quantidade }}</p>
-              <p class="text-xs text-gray-500">{{ resumoCMV.A.percentual.toFixed(1) }}% dos itens</p>
+              <p class="text-sm text-operacao-400">Curva A</p>
+              <p class="text-2xl font-bold text-controle-600">{{ resumoCMV.A.quantidade }}</p>
+              <p class="text-xs text-operacao-400">{{ resumoCMV.A.percentual.toFixed(1) }}% dos itens</p>
             </div>
             <div class="text-right">
-              <p class="text-sm font-medium text-gray-900">{{ formatCurrency(resumoCMV.A.valor) }}</p>
-              <p class="text-xs text-gray-500">{{ resumoCMV.A.percentualValor.toFixed(1) }}% do consumo</p>
+              <p class="text-sm font-medium text-operacao-800">{{ formatCurrency(resumoCMV.A.valor) }}</p>
+              <p class="text-xs text-operacao-400">{{ resumoCMV.A.percentualValor.toFixed(1) }}% do consumo</p>
             </div>
           </div>
         </UCard>
@@ -190,27 +190,27 @@
         <UCard class="border-l-4 border-yellow-500">
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm text-gray-500">Curva B</p>
-              <p class="text-2xl font-bold text-yellow-600">{{ resumoCMV.B.quantidade }}</p>
-              <p class="text-xs text-gray-500">{{ resumoCMV.B.percentual.toFixed(1) }}% dos itens</p>
+              <p class="text-sm text-operacao-400">Curva B</p>
+              <p class="text-2xl font-bold text-alerta-600">{{ resumoCMV.B.quantidade }}</p>
+              <p class="text-xs text-operacao-400">{{ resumoCMV.B.percentual.toFixed(1) }}% dos itens</p>
             </div>
             <div class="text-right">
-              <p class="text-sm font-medium text-gray-900">{{ formatCurrency(resumoCMV.B.valor) }}</p>
-              <p class="text-xs text-gray-500">{{ resumoCMV.B.percentualValor.toFixed(1) }}% do consumo</p>
+              <p class="text-sm font-medium text-operacao-800">{{ formatCurrency(resumoCMV.B.valor) }}</p>
+              <p class="text-xs text-operacao-400">{{ resumoCMV.B.percentualValor.toFixed(1) }}% do consumo</p>
             </div>
           </div>
         </UCard>
 
-        <UCard class="border-l-4 border-gray-400">
+        <UCard class="border-l-4 border-operacao-400">
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm text-gray-500">Curva C</p>
-              <p class="text-2xl font-bold text-gray-600">{{ resumoCMV.C.quantidade }}</p>
-              <p class="text-xs text-gray-500">{{ resumoCMV.C.percentual.toFixed(1) }}% dos itens</p>
+              <p class="text-sm text-operacao-400">Curva C</p>
+              <p class="text-2xl font-bold text-operacao-500">{{ resumoCMV.C.quantidade }}</p>
+              <p class="text-xs text-operacao-400">{{ resumoCMV.C.percentual.toFixed(1) }}% dos itens</p>
             </div>
             <div class="text-right">
-              <p class="text-sm font-medium text-gray-900">{{ formatCurrency(resumoCMV.C.valor) }}</p>
-              <p class="text-xs text-gray-500">{{ resumoCMV.C.percentualValor.toFixed(1) }}% do consumo</p>
+              <p class="text-sm font-medium text-operacao-800">{{ formatCurrency(resumoCMV.C.valor) }}</p>
+              <p class="text-xs text-operacao-400">{{ resumoCMV.C.percentualValor.toFixed(1) }}% do consumo</p>
             </div>
           </div>
         </UCard>
@@ -218,13 +218,13 @@
         <UCard class="border-l-4 border-red-500">
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm text-gray-500">Consumo Total</p>
+              <p class="text-sm text-operacao-400">Consumo Total</p>
               <p class="text-2xl font-bold text-red-600">{{ curvaCMV.length }}</p>
-              <p class="text-xs text-gray-500">produtos</p>
+              <p class="text-xs text-operacao-400">produtos</p>
             </div>
             <div class="text-right">
-              <p class="text-sm font-medium text-gray-900">{{ formatCurrency(valorTotalCMV) }}</p>
-              <p class="text-xs text-gray-500">valor consumido</p>
+              <p class="text-sm font-medium text-operacao-800">{{ formatCurrency(valorTotalCMV) }}</p>
+              <p class="text-xs text-operacao-400">valor consumido</p>
             </div>
           </div>
         </UCard>
@@ -256,7 +256,7 @@
 
         <UTable :columns="columnsCMV" :rows="paginatedCMV" :loading="loading">
           <template #empty-state>
-            <div class="flex flex-col items-center justify-center py-6 text-gray-500">
+            <div class="flex flex-col items-center justify-center py-6 text-operacao-400">
               <UIcon name="i-heroicons-inbox" class="w-8 h-8 mb-2" />
               <p class="text-sm">Nenhum registro encontrado</p>
             </div>
@@ -288,7 +288,7 @@
     <template v-if="activeTab === 2">
       <!-- Resumo Skeleton -->
       <div v-if="loading" class="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div v-for="i in 4" :key="i" class="rounded-xl bg-white ring-1 ring-gray-100 shadow-sm border-l-4 border-gray-200 p-5">
+        <div v-for="i in 4" :key="i" class="rounded-xl bg-white ring-1 ring-operacao-100 shadow-sm border-l-4 border-operacao-200 p-5">
           <div class="text-center space-y-2">
             <USkeleton class="h-4 w-24 mx-auto" />
             <USkeleton class="h-10 w-14 mx-auto" />
@@ -301,33 +301,33 @@
       <div v-if="!loading" class="grid grid-cols-1 md:grid-cols-4 gap-4">
         <UCard class="border-l-4 border-green-500">
           <div class="text-center">
-            <p class="text-sm text-gray-500">Equilibrado</p>
-            <p class="text-3xl font-bold text-green-600">{{ statusCount.EQUILIBRADO }}</p>
-            <p class="text-xs text-gray-500">Estoque alinhado ao consumo</p>
+            <p class="text-sm text-operacao-400">Equilibrado</p>
+            <p class="text-3xl font-bold text-controle-600">{{ statusCount.EQUILIBRADO }}</p>
+            <p class="text-xs text-operacao-400">Estoque alinhado ao consumo</p>
           </div>
         </UCard>
 
         <UCard class="border-l-4 border-red-500">
           <div class="text-center">
-            <p class="text-sm text-gray-500">Estoque Excessivo</p>
+            <p class="text-sm text-operacao-400">Estoque Excessivo</p>
             <p class="text-3xl font-bold text-red-600">{{ statusCount.ESTOQUE_EXCESSIVO }}</p>
-            <p class="text-xs text-gray-500">A em estoque, C em consumo</p>
+            <p class="text-xs text-operacao-400">A em estoque, C em consumo</p>
           </div>
         </UCard>
 
         <UCard class="border-l-4 border-orange-500">
           <div class="text-center">
-            <p class="text-sm text-gray-500">Risco de Ruptura</p>
+            <p class="text-sm text-operacao-400">Risco de Ruptura</p>
             <p class="text-3xl font-bold text-orange-600">{{ statusCount.RISCO_RUPTURA }}</p>
-            <p class="text-xs text-gray-500">C em estoque, A em consumo</p>
+            <p class="text-xs text-operacao-400">C em estoque, A em consumo</p>
           </div>
         </UCard>
 
         <UCard class="border-l-4 border-yellow-500">
           <div class="text-center">
-            <p class="text-sm text-gray-500">Atenção</p>
-            <p class="text-3xl font-bold text-yellow-600">{{ statusCount['ATENCAO'] }}</p>
-            <p class="text-xs text-gray-500">Diferença de 1 classe</p>
+            <p class="text-sm text-operacao-400">Atenção</p>
+            <p class="text-3xl font-bold text-alerta-600">{{ statusCount['ATENCAO'] }}</p>
+            <p class="text-xs text-operacao-400">Diferença de 1 classe</p>
           </div>
         </UCard>
       </div>
@@ -358,7 +358,7 @@
 
         <UTable :columns="columnsComparativo" :rows="paginatedComparativo" :loading="loading">
           <template #empty-state>
-            <div class="flex flex-col items-center justify-center py-6 text-gray-500">
+            <div class="flex flex-col items-center justify-center py-6 text-operacao-400">
               <UIcon name="i-heroicons-inbox" class="w-8 h-8 mb-2" />
               <p class="text-sm">Nenhum registro encontrado</p>
             </div>
@@ -409,18 +409,18 @@
               <p class="text-xs text-orange-600">Produto com baixo estoque mas alto consumo. Risco de falta de produto.</p>
             </div>
           </div>
-          <div class="flex items-start gap-3 p-3 bg-green-50 rounded-lg">
+          <div class="flex items-start gap-3 p-3 bg-controle-50 rounded-lg">
             <UBadge color="green">Equilibrado</UBadge>
             <div>
               <p class="text-sm font-medium text-green-800">Mesma classe em estoque e consumo</p>
-              <p class="text-xs text-green-600">Estoque está alinhado com o padrão de consumo.</p>
+              <p class="text-xs text-controle-600">Estoque está alinhado com o padrão de consumo.</p>
             </div>
           </div>
-          <div class="flex items-start gap-3 p-3 bg-yellow-50 rounded-lg">
+          <div class="flex items-start gap-3 p-3 bg-alerta-50 rounded-lg">
             <UBadge color="yellow">Atenção</UBadge>
             <div>
               <p class="text-sm font-medium text-yellow-800">Diferença de 1 classe</p>
-              <p class="text-xs text-yellow-600">Pequeno desalinhamento que merece monitoramento.</p>
+              <p class="text-xs text-alerta-600">Pequeno desalinhamento que merece monitoramento.</p>
             </div>
           </div>
         </div>
@@ -638,9 +638,9 @@ const statusCount = computed(() => {
 
 // Helpers
 const getClasseColor = (classe: string) => {
-  if (classe === 'A') return 'bg-green-500'
-  if (classe === 'B') return 'bg-yellow-500'
-  return 'bg-gray-400'
+  if (classe === 'A') return 'bg-controle-500'
+  if (classe === 'B') return 'bg-alerta-500'
+  return 'bg-operacao-400'
 }
 
 const getClasseBadgeColor = (classe: string) => {
@@ -666,23 +666,7 @@ const formatStatus = (status: string) => {
   return map[status] || status
 }
 
-const truncate2 = (v: number) => Math.trunc((v || 0) * 100) / 100
-
-const formatNumber = (value: number) => {
-  return new Intl.NumberFormat('pt-BR', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(truncate2(value))
-}
-
-const formatCurrency = (value: number) => {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(truncate2(value))
-}
+const { formatCurrency, formatNumber } = useFormatters()
 
 // Carregamento
 const loadAllData = async () => {

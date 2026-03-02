@@ -108,7 +108,7 @@
     <div class="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-8 lg:p-12 relative z-10">
       <div class="w-full max-w-md animate-slide-up">
         <!-- Card do formulário -->
-        <div class="bg-white rounded-2xl shadow-2xl shadow-black/20 p-8 sm:p-10 border border-gray-100">
+        <div class="bg-white rounded-2xl shadow-2xl shadow-black/20 p-8 sm:p-10 border border-operacao-100">
           <slot />
         </div>
 

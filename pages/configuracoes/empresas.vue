@@ -3,8 +3,8 @@
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900">Empresas</h1>
-        <p class="text-sm text-gray-500">Gerencie suas empresas e alterne entre elas</p>
+        <h1 class="text-2xl font-bold text-operacao-800">Empresas</h1>
+        <p class="text-sm text-operacao-400">Gerencie suas empresas e alterne entre elas</p>
       </div>
       <UButton
         color="primary"
@@ -35,12 +35,12 @@
         :rows="paginatedItems"
         :loading="false"
         :ui="{
-          td: { color: 'text-gray-700 dark:text-gray-200' },
-          th: { color: 'text-gray-900 dark:text-white' }
+          td: { color: 'text-operacao-600 dark:text-operacao-200' },
+          th: { color: 'text-operacao-800 dark:text-white' }
         }"
       >
         <template #empty-state>
-          <div class="flex flex-col items-center justify-center py-6 text-gray-500">
+          <div class="flex flex-col items-center justify-center py-6 text-operacao-400">
             <UIcon name="i-heroicons-inbox" class="w-8 h-8 mb-2" />
             <p class="text-sm">Nenhuma empresa encontrada</p>
           </div>
@@ -51,10 +51,10 @@
             <div v-if="row.logo_url" class="flex-shrink-0 w-8 h-8 rounded-lg overflow-hidden">
               <img :src="row.logo_url" class="w-8 h-8 object-cover" />
             </div>
-            <div v-else class="flex-shrink-0 w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center">
-              <UIcon name="i-heroicons-building-storefront" class="w-4 h-4 text-gray-400" />
+            <div v-else class="flex-shrink-0 w-8 h-8 rounded-lg bg-operacao-100 flex items-center justify-center">
+              <UIcon name="i-heroicons-building-storefront" class="w-4 h-4 text-operacao-400" />
             </div>
-            <span class="font-semibold text-gray-900 dark:text-white">{{ row.nome }}</span>
+            <span class="font-semibold text-operacao-800 dark:text-white">{{ row.nome }}</span>
           </div>
         </template>
 
@@ -114,13 +114,13 @@
       v-model="showModal"
       :ui="{
         width: 'sm:max-w-lg',
-        overlay: { background: 'bg-gray-900/50 backdrop-blur-sm' },
-        background: 'bg-white dark:bg-gray-800',
-        ring: 'ring-1 ring-gray-200 dark:ring-gray-700',
+        overlay: { background: 'bg-operacao-900/50 backdrop-blur-sm' },
+        background: 'bg-white dark:bg-operacao-800',
+        ring: 'ring-1 ring-operacao-200 dark:ring-operacao-700',
         shadow: 'shadow-2xl'
       }"
     >
-      <UCard :ui="{ background: 'bg-transparent', ring: 'ring-0', shadow: '', divide: 'divide-gray-100 dark:divide-gray-700' }">
+      <UCard :ui="{ background: 'bg-transparent', ring: 'ring-0', shadow: '', divide: 'divide-operacao-100 dark:divide-operacao-700' }">
         <template #header>
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
@@ -128,10 +128,10 @@
                 <UIcon name="i-heroicons-building-storefront" class="w-5 h-5 text-guardian-600" />
               </div>
               <div>
-                <h3 class="text-lg font-semibold text-gray-900">
+                <h3 class="text-lg font-semibold text-operacao-800">
                   {{ editando ? 'Editar Empresa' : 'Nova Empresa' }}
                 </h3>
-                <p class="text-xs text-gray-500">
+                <p class="text-xs text-operacao-400">
                   {{ editando ? 'Atualize os dados da empresa' : 'Preencha os dados para criar uma empresa' }}
                 </p>
               </div>
@@ -169,11 +169,11 @@
             <div class="flex items-center gap-4">
               <!-- Preview -->
               <div
-                class="relative w-16 h-16 rounded-xl bg-gray-50 border-2 border-dashed border-gray-200 flex items-center justify-center overflow-hidden cursor-pointer hover:border-guardian-300 hover:bg-guardian-50/30 transition-colors group"
+                class="relative w-16 h-16 rounded-xl bg-operacao-50 border-2 border-dashed border-operacao-200 flex items-center justify-center overflow-hidden cursor-pointer hover:border-guardian-300 hover:bg-guardian-50/30 transition-colors group"
                 @click="triggerFileInput"
               >
                 <img v-if="logoPreview" :src="logoPreview" class="w-16 h-16 object-cover rounded-xl" />
-                <UIcon v-else name="i-heroicons-photo" class="w-6 h-6 text-gray-300 group-hover:text-guardian-400 transition-colors" />
+                <UIcon v-else name="i-heroicons-photo" class="w-6 h-6 text-operacao-300 group-hover:text-guardian-400 transition-colors" />
                 <!-- Overlay de editar quando tem imagem -->
                 <div v-if="logoPreview" class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-xl">
                   <UIcon name="i-heroicons-pencil" class="w-4 h-4 text-white" />
@@ -202,7 +202,7 @@
                     Remover
                   </UButton>
                 </div>
-                <p class="text-[11px] text-gray-400 mt-1.5">PNG, JPG ou WebP até 2MB</p>
+                <p class="text-[11px] text-operacao-400 mt-1.5">PNG, JPG ou WebP até 2MB</p>
               </div>
               <input
                 ref="fileInputRef"
@@ -239,13 +239,13 @@
     <UModal
       v-model="showConfirmDelete"
       :ui="{
-        overlay: { background: 'bg-gray-900/50 backdrop-blur-sm' },
-        background: 'bg-white dark:bg-gray-800',
-        ring: 'ring-1 ring-gray-200 dark:ring-gray-700',
+        overlay: { background: 'bg-operacao-900/50 backdrop-blur-sm' },
+        background: 'bg-white dark:bg-operacao-800',
+        ring: 'ring-1 ring-operacao-200 dark:ring-operacao-700',
         shadow: 'shadow-2xl'
       }"
     >
-      <UCard :ui="{ background: 'bg-transparent', ring: 'ring-0', shadow: '', divide: 'divide-gray-100 dark:divide-gray-700' }">
+      <UCard :ui="{ background: 'bg-transparent', ring: 'ring-0', shadow: '', divide: 'divide-operacao-100 dark:divide-operacao-700' }">
         <template #header>
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
@@ -253,8 +253,8 @@
                 <UIcon name="i-heroicons-trash" class="w-5 h-5 text-red-600" />
               </div>
               <div>
-                <h3 class="text-lg font-semibold text-gray-900">Confirmar Exclusão</h3>
-                <p class="text-xs text-gray-500">Esta ação não pode ser desfeita</p>
+                <h3 class="text-lg font-semibold text-operacao-800">Confirmar Exclusão</h3>
+                <p class="text-xs text-operacao-400">Esta ação não pode ser desfeita</p>
               </div>
             </div>
             <UButton
@@ -266,7 +266,7 @@
           </div>
         </template>
 
-        <p class="text-gray-600">
+        <p class="text-operacao-500">
           Tem certeza que deseja excluir a empresa <strong>{{ empresaParaDeletar?.nome }}</strong>?
         </p>
         <div class="mt-3 p-3 bg-red-50 rounded-lg border border-red-200">

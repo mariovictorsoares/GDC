@@ -3,8 +3,8 @@
     <!-- Header -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900">Saídas</h1>
-        <p class="text-sm text-gray-500">Registre transferências e saídas definitivas</p>
+        <h1 class="text-2xl font-bold text-operacao-800">Saídas</h1>
+        <p class="text-sm text-operacao-400">Registre transferências e saídas definitivas</p>
       </div>
       <UButton color="primary" class="w-full sm:w-auto" @click="openModal()">
         <UIcon name="i-heroicons-plus" class="w-4 h-4 mr-2" />
@@ -45,7 +45,7 @@
 
     <!-- Resumo Skeleton -->
     <div v-if="loading" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <div v-for="i in 3" :key="i" class="rounded-xl bg-white ring-1 ring-gray-100 shadow-sm p-5">
+      <div v-for="i in 3" :key="i" class="rounded-xl bg-white ring-1 ring-operacao-100 shadow-sm p-5">
         <div class="flex items-center gap-4">
           <USkeleton class="h-12 w-12 rounded-lg" />
           <div class="space-y-2">
@@ -64,19 +64,19 @@
             <UIcon name="i-heroicons-arrow-up-tray" class="w-6 h-6 text-red-600" />
           </div>
           <div>
-            <p class="text-sm text-gray-500">Total de Saídas</p>
-            <p class="text-2xl font-bold text-gray-900">{{ filteredSaidas.length }}</p>
+            <p class="text-sm text-operacao-400">Total de Saídas</p>
+            <p class="text-2xl font-bold text-operacao-800">{{ filteredSaidas.length }}</p>
           </div>
         </div>
       </UCard>
       <UCard>
         <div class="flex items-center gap-4">
-          <div class="p-3 bg-blue-100 rounded-lg flex items-center justify-center">
-            <UIcon name="i-heroicons-cube" class="w-6 h-6 text-blue-600" />
+          <div class="p-3 bg-guardian-100 rounded-lg flex items-center justify-center">
+            <UIcon name="i-heroicons-cube" class="w-6 h-6 text-guardian-600" />
           </div>
           <div>
-            <p class="text-sm text-gray-500">Total Quantidade</p>
-            <p class="text-2xl font-bold text-gray-900">{{ formatNumber(totalQuantidade) }}</p>
+            <p class="text-sm text-operacao-400">Total Quantidade</p>
+            <p class="text-2xl font-bold text-operacao-800">{{ formatNumber(totalQuantidade) }}</p>
           </div>
         </div>
       </UCard>
@@ -86,8 +86,8 @@
             <UIcon name="i-heroicons-currency-dollar" class="w-6 h-6 text-purple-600" />
           </div>
           <div>
-            <p class="text-sm text-gray-500">Custo Total</p>
-            <p class="text-2xl font-bold text-gray-900">{{ formatCurrency(totalCusto) }}</p>
+            <p class="text-sm text-operacao-400">Custo Total</p>
+            <p class="text-2xl font-bold text-operacao-800">{{ formatCurrency(totalCusto) }}</p>
           </div>
         </div>
       </UCard>
@@ -115,13 +115,13 @@
         :rows="paginatedItems"
         :loading="loading"
         :ui="{
-          td: { color: 'text-gray-700 dark:text-gray-200' },
-          th: { color: 'text-gray-900 dark:text-white' }
+          td: { color: 'text-operacao-600 dark:text-operacao-200' },
+          th: { color: 'text-operacao-800 dark:text-white' }
         }"
       >
         <!-- Empty State -->
         <template #empty-state>
-          <div class="flex flex-col items-center justify-center py-6 text-gray-500">
+          <div class="flex flex-col items-center justify-center py-6 text-operacao-400">
             <UIcon name="i-heroicons-inbox" class="w-8 h-8 mb-2" />
             <p class="text-sm">Nenhum registro encontrado</p>
           </div>
@@ -133,8 +133,8 @@
 
         <template #produto-data="{ row }">
           <div>
-            <p class="font-semibold text-gray-900 dark:text-white">{{ row.produto?.nome || '-' }}</p>
-            <p class="text-xs text-gray-500">{{ row.produto?.categoria?.nome || '' }}</p>
+            <p class="font-semibold text-operacao-800 dark:text-white">{{ row.produto?.nome || '-' }}</p>
+            <p class="text-xs text-operacao-400">{{ row.produto?.categoria?.nome || '' }}</p>
           </div>
         </template>
 
@@ -184,28 +184,28 @@
       v-model="modalOpen"
       :ui="{
         width: 'sm:max-w-3xl',
-        overlay: { background: 'bg-gray-900/50 backdrop-blur-sm' },
-        background: 'bg-white dark:bg-gray-800',
-        ring: 'ring-1 ring-gray-200 dark:ring-gray-700',
+        overlay: { background: 'bg-operacao-900/50 backdrop-blur-sm' },
+        background: 'bg-white dark:bg-operacao-800',
+        ring: 'ring-1 ring-operacao-200 dark:ring-operacao-700',
         shadow: 'shadow-2xl'
       }"
     >
-      <UCard :ui="{ background: 'bg-transparent', ring: 'ring-0', shadow: '', divide: 'divide-gray-100 dark:divide-gray-700' }">
+      <UCard :ui="{ background: 'bg-transparent', ring: 'ring-0', shadow: '', divide: 'divide-operacao-100 dark:divide-operacao-700' }">
         <template #header>
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
-              <div class="p-2 rounded-lg flex items-center justify-center" :class="tipoSaida === 'transferencia' ? 'bg-blue-100' : tipoSaida === 'beneficiamento' ? 'bg-purple-100' : 'bg-red-100'">
+              <div class="p-2 rounded-lg flex items-center justify-center" :class="tipoSaida === 'transferencia' ? 'bg-guardian-100' : tipoSaida === 'beneficiamento' ? 'bg-purple-100' : 'bg-red-100'">
                 <UIcon
                   :name="tipoSaida === 'transferencia' ? 'i-heroicons-arrows-right-left' : tipoSaida === 'beneficiamento' ? 'i-heroicons-beaker' : 'i-heroicons-arrow-up-tray'"
                   class="w-5 h-5"
-                  :class="tipoSaida === 'transferencia' ? 'text-blue-600' : tipoSaida === 'beneficiamento' ? 'text-purple-600' : 'text-red-600'"
+                  :class="tipoSaida === 'transferencia' ? 'text-guardian-600' : tipoSaida === 'beneficiamento' ? 'text-purple-600' : 'text-red-600'"
                 />
               </div>
               <div>
-                <h3 class="text-lg font-semibold text-gray-900">
+                <h3 class="text-lg font-semibold text-operacao-800">
                   {{ editingSaida ? 'Editar Saída' : 'Nova Saída' }}
                 </h3>
-                <p class="text-xs text-gray-500" v-if="!editingSaida">
+                <p class="text-xs text-operacao-400" v-if="!editingSaida">
                   Adicione um ou mais produtos à saída
                 </p>
               </div>
@@ -230,8 +230,8 @@
                   @click="tipoSaida = 'transferencia'"
                   class="px-3 py-2.5 rounded-lg border-2 text-sm font-medium transition-all flex items-center justify-center gap-2"
                   :class="tipoSaida === 'transferencia'
-                    ? 'border-blue-500 bg-blue-50 text-blue-700'
-                    : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300'"
+                    ? 'border-guardian-500 bg-guardian-50 text-guardian-700'
+                    : 'border-operacao-200 bg-white text-operacao-400 hover:border-operacao-300'"
                 >
                   <UIcon name="i-heroicons-arrows-right-left" class="w-4 h-4 flex-shrink-0" />
                   <span class="truncate">Transferência</span>
@@ -242,7 +242,7 @@
                   class="px-3 py-2.5 rounded-lg border-2 text-sm font-medium transition-all flex items-center justify-center gap-2"
                   :class="tipoSaida === 'definitiva'
                     ? 'border-red-500 bg-red-50 text-red-700'
-                    : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300'"
+                    : 'border-operacao-200 bg-white text-operacao-400 hover:border-operacao-300'"
                 >
                   <UIcon name="i-heroicons-arrow-up-tray" class="w-4 h-4 flex-shrink-0" />
                   <span class="truncate">Definitiva</span>
@@ -253,13 +253,13 @@
                   class="px-3 py-2.5 rounded-lg border-2 text-sm font-medium transition-all flex items-center justify-center gap-2"
                   :class="tipoSaida === 'beneficiamento'
                     ? 'border-purple-500 bg-purple-50 text-purple-700'
-                    : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300'"
+                    : 'border-operacao-200 bg-white text-operacao-400 hover:border-operacao-300'"
                 >
                   <UIcon name="i-heroicons-beaker" class="w-4 h-4 flex-shrink-0" />
                   <span class="truncate">Produção</span>
                 </button>
               </div>
-              <p class="text-xs text-gray-500 mt-1">
+              <p class="text-xs text-operacao-400 mt-1">
                 {{ tipoSaida === 'transferencia'
                   ? 'Move do Estoque Principal para o Estoque de Apoio'
                   : tipoSaida === 'beneficiamento'
@@ -274,12 +274,12 @@
           </div>
 
           <!-- Divider -->
-          <div class="border-t border-gray-200 dark:border-gray-700" />
+          <div class="border-t border-operacao-200 dark:border-operacao-700" />
 
           <!-- Lista de itens -->
           <div class="space-y-3">
             <div class="flex items-center justify-between">
-              <span class="text-sm font-medium text-gray-700">
+              <span class="text-sm font-medium text-operacao-600">
                 Itens da saída
               </span>
               <UBadge :color="tipoSaida === 'transferencia' ? 'blue' : tipoSaida === 'beneficiamento' ? 'purple' : 'red'" variant="subtle" size="xs" v-if="itens.length > 0">
@@ -292,8 +292,8 @@
               <div
                 v-for="(item, index) in itens"
                 :key="index"
-                class="relative group rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/30 p-4 transition-all"
-                :class="tipoSaida === 'transferencia' ? 'hover:border-blue-300 hover:shadow-sm' : tipoSaida === 'beneficiamento' ? 'hover:border-purple-300 hover:shadow-sm' : 'hover:border-red-300 hover:shadow-sm'"
+                class="relative group rounded-xl border border-operacao-200 dark:border-operacao-700 bg-operacao-50/50 dark:bg-operacao-900/30 p-4 transition-all"
+                :class="tipoSaida === 'transferencia' ? 'hover:border-guardian-300 hover:shadow-sm' : tipoSaida === 'beneficiamento' ? 'hover:border-purple-300 hover:shadow-sm' : 'hover:border-red-300 hover:shadow-sm'"
               >
                 <!-- Botão remover (só se multi-item e não editando) -->
                 <button
@@ -318,13 +318,13 @@
                     :ui="{ trigger: { base: 'w-full' } }"
                   >
                     <template #leading>
-                      <UIcon name="i-heroicons-cube" class="w-4 h-4 text-gray-400" />
+                      <UIcon name="i-heroicons-cube" class="w-4 h-4 text-operacao-400" />
                     </template>
                     <template #label>
                       <span v-if="item.produto_id" class="truncate">
                         {{ getProdutoNome(item.produto_id) }}
                       </span>
-                      <span v-else class="text-gray-400">Buscar produto...</span>
+                      <span v-else class="text-operacao-400">Buscar produto...</span>
                     </template>
                   </USelectMenu>
                 </div>
@@ -333,7 +333,7 @@
                 <div class="grid grid-cols-2 gap-3">
                   <!-- Quantidade com UN -->
                   <div>
-                    <label class="block text-xs font-medium text-gray-500 mb-1">Quantidade</label>
+                    <label class="block text-xs font-medium text-operacao-400 mb-1">Quantidade</label>
                     <div class="flex">
                       <UInput
                         v-model.number="item.quantidade"
@@ -346,7 +346,7 @@
                       />
                       <div
                         v-if="item.produto_id && getProdutoUnidade(item.produto_id)"
-                        class="inline-flex items-center px-3 border border-l-0 border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 rounded-r-md text-sm font-medium text-gray-600 dark:text-gray-300 whitespace-nowrap"
+                        class="inline-flex items-center px-3 border border-l-0 border-operacao-300 dark:border-operacao-600 bg-operacao-100 dark:bg-operacao-700 rounded-r-md text-sm font-medium text-operacao-500 dark:text-operacao-300 whitespace-nowrap"
                       >
                         {{ getProdutoUnidade(item.produto_id) }}
                       </div>
@@ -355,28 +355,28 @@
 
                   <!-- Estoque disponível -->
                   <div>
-                    <label class="block text-xs font-medium text-gray-500 mb-1">Estoque Principal</label>
+                    <label class="block text-xs font-medium text-operacao-400 mb-1">Estoque Principal</label>
                     <div
                       v-if="item.produto_id"
                       class="h-[38px] flex items-center px-3 rounded-md border"
                       :class="isEstoqueInsuficiente(item)
                         ? 'bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800'
-                        : 'bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800'"
+                        : 'bg-guardian-50 border-guardian-200 dark:bg-guardian-900/20 dark:border-guardian-800'"
                     >
                       <UIcon
                         :name="isEstoqueInsuficiente(item) ? 'i-heroicons-exclamation-triangle' : 'i-heroicons-check-circle'"
                         class="w-4 h-4 mr-2"
-                        :class="isEstoqueInsuficiente(item) ? 'text-red-500' : 'text-blue-500'"
+                        :class="isEstoqueInsuficiente(item) ? 'text-red-500' : 'text-guardian-500'"
                       />
                       <span
                         class="text-sm font-medium"
-                        :class="isEstoqueInsuficiente(item) ? 'text-red-700' : 'text-blue-700'"
+                        :class="isEstoqueInsuficiente(item) ? 'text-red-700' : 'text-guardian-700'"
                       >
                         {{ formatNumber(getSaldoItem(item)) }} {{ getProdutoUnidade(item.produto_id) }}
                       </span>
                     </div>
-                    <div v-else class="h-[38px] flex items-center px-3 bg-gray-50 border border-gray-200 rounded-md">
-                      <span class="text-sm text-gray-400">Selecione um produto</span>
+                    <div v-else class="h-[38px] flex items-center px-3 bg-operacao-50 border border-operacao-200 rounded-md">
+                      <span class="text-sm text-operacao-400">Selecione um produto</span>
                     </div>
                   </div>
                 </div>
@@ -399,7 +399,7 @@
                 <button
                   v-if="!item.showObs"
                   @click="item.showObs = true"
-                  class="mt-2 text-xs text-gray-400 hover:text-gray-600 transition-colors flex items-center gap-1"
+                  class="mt-2 text-xs text-operacao-400 hover:text-operacao-500 transition-colors flex items-center gap-1"
                 >
                   <UIcon name="i-heroicons-chat-bubble-bottom-center-text" class="w-3.5 h-3.5" />
                   Adicionar observação
@@ -413,8 +413,8 @@
               @click="addItem"
               class="w-full py-3 border-2 border-dashed rounded-xl text-sm hover:bg-opacity-50 transition-all flex items-center justify-center gap-2"
               :class="tipoSaida === 'transferencia'
-                ? 'border-gray-300 text-gray-500 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50/50'
-                : 'border-gray-300 text-gray-500 hover:border-red-400 hover:text-red-600 hover:bg-red-50/50'"
+                ? 'border-operacao-300 text-operacao-400 hover:border-guardian-400 hover:text-guardian-600 hover:bg-guardian-50/50'
+                : 'border-operacao-300 text-operacao-400 hover:border-red-400 hover:text-red-600 hover:bg-red-50/50'"
             >
               <UIcon name="i-heroicons-plus-circle" class="w-5 h-5" />
               Adicionar outro produto
@@ -446,13 +446,13 @@
       v-model="confirmDefinitivaOpen"
       prevent-close
       :ui="{
-        overlay: { background: 'bg-gray-900/50 backdrop-blur-sm' },
-        background: 'bg-white dark:bg-gray-800',
-        ring: 'ring-1 ring-gray-200 dark:ring-gray-700',
+        overlay: { background: 'bg-operacao-900/50 backdrop-blur-sm' },
+        background: 'bg-white dark:bg-operacao-800',
+        ring: 'ring-1 ring-operacao-200 dark:ring-operacao-700',
         shadow: 'shadow-2xl'
       }"
     >
-      <UCard :ui="{ background: 'bg-transparent', ring: 'ring-0', shadow: '', divide: 'divide-gray-100 dark:divide-gray-700' }">
+      <UCard :ui="{ background: 'bg-transparent', ring: 'ring-0', shadow: '', divide: 'divide-operacao-100 dark:divide-operacao-700' }">
         <template #header>
           <div class="flex items-center gap-3">
             <div class="p-2 bg-red-100 rounded-lg flex items-center justify-center">
@@ -463,7 +463,7 @@
         </template>
 
         <div class="space-y-3">
-          <p class="text-gray-700">Você está registrando uma <strong>saída definitiva</strong>. Os produtos abaixo serão removidos permanentemente do estoque:</p>
+          <p class="text-operacao-600">Você está registrando uma <strong>saída definitiva</strong>. Os produtos abaixo serão removidos permanentemente do estoque:</p>
           <div class="space-y-2">
             <div
               v-for="(item, index) in itensValidosConfirmacao"
@@ -471,8 +471,8 @@
               class="p-3 bg-red-50 border border-red-200 rounded-lg flex items-center justify-between"
             >
               <div>
-                <p class="font-medium text-gray-900">{{ getProdutoNome(item.produto_id) }}</p>
-                <p class="text-xs text-gray-500">{{ formatDate(formData) }}</p>
+                <p class="font-medium text-operacao-800">{{ getProdutoNome(item.produto_id) }}</p>
+                <p class="text-xs text-operacao-400">{{ formatDate(formData) }}</p>
               </div>
               <span class="font-semibold text-red-700">
                 {{ formatNumber(item.quantidade) }} {{ getProdutoUnidade(item.produto_id) }}
@@ -503,25 +503,25 @@
     <UModal
       v-model="deleteModalOpen"
       :ui="{
-        overlay: { background: 'bg-gray-900/50 backdrop-blur-sm' },
-        background: 'bg-white dark:bg-gray-800',
-        ring: 'ring-1 ring-gray-200 dark:ring-gray-700',
+        overlay: { background: 'bg-operacao-900/50 backdrop-blur-sm' },
+        background: 'bg-white dark:bg-operacao-800',
+        ring: 'ring-1 ring-operacao-200 dark:ring-operacao-700',
         shadow: 'shadow-2xl'
       }"
     >
-      <UCard :ui="{ background: 'bg-transparent', ring: 'ring-0', shadow: '', divide: 'divide-gray-100 dark:divide-gray-700' }">
+      <UCard :ui="{ background: 'bg-transparent', ring: 'ring-0', shadow: '', divide: 'divide-operacao-100 dark:divide-operacao-700' }">
         <template #header>
           <h3 class="text-lg font-semibold text-red-600">Confirmar Exclusão</h3>
         </template>
 
         <p>Tem certeza que deseja excluir esta saída?</p>
-        <div class="mt-2 p-3 bg-gray-50 rounded-lg">
+        <div class="mt-2 p-3 bg-operacao-50 rounded-lg">
           <p><strong>Produto:</strong> {{ deletingSaida?.produto?.nome }}</p>
           <p><strong>Tipo:</strong> {{ deletingSaida?.tipo === 'transferencia' ? 'Transferência' : deletingSaida?.tipo === 'beneficiamento' ? 'Produção' : 'Definitiva' }}</p>
           <p><strong>Data:</strong> {{ formatDate(deletingSaida?.data) }}</p>
           <p><strong>Quantidade:</strong> {{ formatNumber(deletingSaida?.quantidade) }}</p>
         </div>
-        <p class="text-sm text-gray-500 mt-2">Esta ação não pode ser desfeita.</p>
+        <p class="text-sm text-operacao-400 mt-2">Esta ação não pode ser desfeita.</p>
 
         <template #footer>
           <div class="flex flex-col-reverse sm:flex-row justify-end gap-3">
@@ -727,14 +727,7 @@ const formatNumber = (value: number | undefined) => {
   }).format(truncate2(value || 0))
 }
 
-const formatCurrency = (value: number | undefined) => {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(truncate2(value || 0))
-}
+const { formatCurrency } = useFormatters()
 
 const loadSaidas = async () => {
   try {

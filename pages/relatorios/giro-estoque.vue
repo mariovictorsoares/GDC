@@ -3,8 +3,8 @@
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900">Giro de Estoque</h1>
-        <p class="text-sm text-gray-500">Análise de velocidade de rotação do estoque</p>
+        <h1 class="text-2xl font-bold text-operacao-800">Giro de Estoque</h1>
+        <p class="text-sm text-operacao-400">Análise de velocidade de rotação do estoque</p>
       </div>
     </div>
 
@@ -27,7 +27,7 @@
 
     <!-- Resumo Skeleton -->
     <div v-if="loading" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div v-for="i in 2" :key="i" class="rounded-xl bg-white ring-1 ring-gray-100 shadow-sm p-5">
+      <div v-for="i in 2" :key="i" class="rounded-xl bg-white ring-1 ring-operacao-100 shadow-sm p-5">
         <div class="text-center space-y-2">
           <USkeleton class="h-4 w-28 mx-auto" />
           <USkeleton class="h-8 w-32 mx-auto" />
@@ -39,13 +39,13 @@
     <div v-if="!loading" class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <UCard>
         <div class="text-center">
-          <p class="text-sm text-gray-500">CMV Total</p>
+          <p class="text-sm text-operacao-400">CMV Total</p>
           <p class="text-2xl font-bold text-red-600">{{ formatCurrency(resumoAnual.cmvTotal) }}</p>
         </div>
       </UCard>
       <UCard>
         <div class="text-center">
-          <p class="text-sm text-gray-500">Giro Médio (dias)</p>
+          <p class="text-sm text-operacao-400">Giro Médio (dias)</p>
           <p class="text-2xl font-bold" :class="getGiroClass(resumoAnual.giroMedioDias)">{{ formatNumber(resumoAnual.giroMedioDias) }}</p>
         </div>
       </UCard>
@@ -64,7 +64,7 @@
       >
         <!-- Empty State -->
         <template #empty-state>
-          <div class="flex flex-col items-center justify-center py-6 text-gray-500">
+          <div class="flex flex-col items-center justify-center py-6 text-operacao-400">
             <UIcon name="i-heroicons-inbox" class="w-8 h-8 mb-2" />
             <p class="text-sm">Nenhum registro encontrado</p>
           </div>
@@ -140,28 +140,12 @@ const resumoAnual = computed(() => {
 })
 
 const getGiroClass = (dias: number) => {
-  if (dias <= 6.99) return 'text-green-600 font-medium'  // Excelente
-  if (dias <= 9.99) return 'text-yellow-600 font-medium'  // Aceitável
+  if (dias <= 6.99) return 'text-controle-600 font-medium'  // Excelente
+  if (dias <= 9.99) return 'text-alerta-600 font-medium'  // Aceitável
   return 'text-red-600 font-medium'                        // Atenção
 }
 
-const truncate2 = (v: number) => Math.trunc((v || 0) * 100) / 100
-
-const formatNumber = (value: number) => {
-  return new Intl.NumberFormat('pt-BR', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(truncate2(value))
-}
-
-const formatCurrency = (value: number) => {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(truncate2(value))
-}
+const { formatCurrency, formatNumber } = useFormatters()
 
 const loadGiro = async () => {
   try {

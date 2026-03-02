@@ -10,8 +10,8 @@ const props = withDefaults(defineProps<{
   width?: number
   height?: number
 }>(), {
-  color: '#2A6FF0',
-  fillColor: 'rgba(42, 111, 240, 0.1)',
+  color: '#0E63B6',
+  fillColor: 'rgba(14, 99, 182, 0.1)',
   width: 100,
   height: 28
 })

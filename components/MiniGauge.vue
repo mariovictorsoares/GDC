@@ -21,8 +21,8 @@ const props = withDefaults(defineProps<{
   size: 80,
   strokeWidth: 6,
   thresholds: () => [
-    { value: 25, color: '#4CC17A' },
-    { value: 32, color: '#F6A63A' },
+    { value: 25, color: '#0D9668' },
+    { value: 32, color: '#D97706' },
     { value: 100, color: '#EF4444' }
   ]
 })

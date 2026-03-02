@@ -3,10 +3,14 @@
     <!-- Header -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900">Produtos</h1>
-        <p class="text-sm text-gray-500">Gerencie o cadastro de produtos</p>
+        <h1 class="text-2xl font-bold text-operacao-800">Produtos</h1>
+        <p class="text-sm text-operacao-400">Gerencie o cadastro de produtos</p>
       </div>
       <div class="flex gap-2">
+        <UButton color="white" class="w-full sm:w-auto" @click="openGruposModal()">
+          <UIcon name="i-heroicons-folder" class="w-4 h-4 mr-2" />
+          Gerenciar Grupos
+        </UButton>
         <UButton color="white" class="w-full sm:w-auto" @click="openUnidadesModal()">
           <UIcon name="i-heroicons-cog-6-tooth" class="w-4 h-4 mr-2" />
           Gerenciar Unidades
@@ -73,20 +77,20 @@
         :rows="paginatedItems"
         :loading="loading"
         :ui="{
-          td: { color: 'text-gray-700 dark:text-gray-200' },
-          th: { color: 'text-gray-900 dark:text-white' }
+          td: { color: 'text-operacao-600 dark:text-operacao-200' },
+          th: { color: 'text-operacao-800 dark:text-white' }
         }"
       >
         <!-- Empty State -->
         <template #empty-state>
-          <div class="flex flex-col items-center justify-center py-6 text-gray-500">
+          <div class="flex flex-col items-center justify-center py-6 text-operacao-400">
             <UIcon name="i-heroicons-inbox" class="w-8 h-8 mb-2" />
             <p class="text-sm">Nenhum registro encontrado</p>
           </div>
         </template>
 
         <template #nome-data="{ row }">
-          <span class="font-semibold text-gray-900 dark:text-white">{{ row.nome }}</span>
+          <span class="font-semibold text-operacao-800 dark:text-white">{{ row.nome }}</span>
         </template>
 
         <template #subgrupo-data="{ row }">
@@ -94,7 +98,7 @@
             <UBadge color="gray" variant="soft">
               {{ row.subgrupo?.nome || '-' }}
             </UBadge>
-            <span class="text-xs text-gray-400 mt-1">{{ row.subgrupo?.grupo?.nome || '' }}</span>
+            <span class="text-xs text-operacao-400 mt-1">{{ row.subgrupo?.grupo?.nome || '' }}</span>
           </div>
         </template>
 
@@ -148,13 +152,13 @@
       v-model="modalOpen"
       :ui="{
         width: 'sm:max-w-2xl',
-        overlay: { background: 'bg-gray-900/50 backdrop-blur-sm' },
-        background: 'bg-white dark:bg-gray-800',
-        ring: 'ring-1 ring-gray-200 dark:ring-gray-700',
+        overlay: { background: 'bg-operacao-900/50 backdrop-blur-sm' },
+        background: 'bg-white dark:bg-operacao-800',
+        ring: 'ring-1 ring-operacao-200 dark:ring-operacao-700',
         shadow: 'shadow-2xl'
       }"
     >
-      <UCard :ui="{ background: 'bg-transparent', ring: 'ring-0', shadow: '', divide: 'divide-gray-100 dark:divide-gray-700' }">
+      <UCard :ui="{ background: 'bg-transparent', ring: 'ring-0', shadow: '', divide: 'divide-operacao-100 dark:divide-operacao-700' }">
         <template #header>
           <div class="flex items-center justify-between">
             <h3 class="text-lg font-semibold">
@@ -196,7 +200,7 @@
                 :options="gruposSelect"
                 placeholder="Selecione o grupo"
                 :disabled="!!editingProduto"
-                :ui="editingProduto ? { color: { white: { outline: 'bg-gray-100 text-gray-500 cursor-not-allowed' } } } : {}"
+                :ui="editingProduto ? { color: { white: { outline: 'bg-operacao-100 text-operacao-400 cursor-not-allowed' } } } : {}"
                 @change="form.subgrupo_id = ''"
               />
             </UFormGroup>
@@ -207,7 +211,7 @@
                 :options="subgruposSelectFiltered"
                 placeholder="Selecione o subgrupo"
                 :disabled="!!editingProduto || !form.grupo_id"
-                :ui="editingProduto || !form.grupo_id ? { color: { white: { outline: 'bg-gray-100 text-gray-500 cursor-not-allowed' } } } : {}"
+                :ui="editingProduto || !form.grupo_id ? { color: { white: { outline: 'bg-operacao-100 text-operacao-400 cursor-not-allowed' } } } : {}"
               />
             </UFormGroup>
 
@@ -219,7 +223,7 @@
                   placeholder="Selecione a unidade"
                   class="flex-1"
                   :disabled="!!editingProduto"
-                  :ui="editingProduto ? { color: { white: { outline: 'bg-gray-100 text-gray-500 cursor-not-allowed' } } } : {}"
+                  :ui="editingProduto ? { color: { white: { outline: 'bg-operacao-100 text-operacao-400 cursor-not-allowed' } } } : {}"
                 />
                 <UButton
                   v-if="!editingProduto"
@@ -235,7 +239,7 @@
             <UFormGroup label="Status">
               <div class="flex items-center gap-2">
                 <UToggle v-model="form.ativo" />
-                <span class="text-sm text-gray-600">{{ form.ativo ? 'Ativo' : 'Inativo' }}</span>
+                <span class="text-sm text-operacao-500">{{ form.ativo ? 'Ativo' : 'Inativo' }}</span>
               </div>
             </UFormGroup>
 
@@ -267,7 +271,7 @@
                 :ui="{ icon: { trailing: { pointer: '' } } }"
               >
                 <template #trailing>
-                  <span class="text-gray-400 text-xs">%</span>
+                  <span class="text-operacao-400 text-xs">%</span>
                 </template>
               </UInput>
             </UFormGroup>
@@ -275,9 +279,9 @@
 
           <!-- Produtos Finais do Beneficiamento -->
           <div v-if="form.beneficiavel === true || form.beneficiavel === 'true'" class="space-y-3 mt-2">
-            <div class="border-t border-gray-200 pt-4">
+            <div class="border-t border-operacao-200 pt-4">
               <div class="flex items-center justify-between mb-3">
-                <span class="text-sm font-medium text-gray-700">
+                <span class="text-sm font-medium text-operacao-600">
                   Produtos finais da produção
                 </span>
                 <UBadge
@@ -290,7 +294,7 @@
               </div>
 
               <!-- Loading -->
-              <div v-if="loadingProdutosFinais" class="flex items-center gap-2 py-4 justify-center text-gray-400">
+              <div v-if="loadingProdutosFinais" class="flex items-center gap-2 py-4 justify-center text-operacao-400">
                 <UIcon name="i-heroicons-arrow-path" class="w-4 h-4 animate-spin" />
                 <span class="text-sm">Carregando produtos finais...</span>
               </div>
@@ -313,10 +317,10 @@
                 <div class="flex items-center gap-3">
                   <UIcon name="i-heroicons-check-circle" class="w-5 h-5 text-purple-500 flex-shrink-0" />
                   <div>
-                    <p class="font-medium text-gray-900">{{ link.produto_final.nome }}</p>
-                    <p class="text-xs text-gray-500">
+                    <p class="font-medium text-operacao-800">{{ link.produto_final.nome }}</p>
+                    <p class="text-xs text-operacao-400">
                       {{ link.produto_final.subgrupo?.grupo?.nome }} / {{ link.produto_final.subgrupo?.nome }}
-                      <span class="ml-1 text-gray-400">· {{ link.produto_final.unidade?.sigla }}</span>
+                      <span class="ml-1 text-operacao-400">· {{ link.produto_final.unidade?.sigla }}</span>
                     </p>
                   </div>
                 </div>
@@ -326,7 +330,7 @@
               <div
                 v-for="(pf, index) in produtosFinais"
                 :key="'new-' + index"
-                class="relative group rounded-xl border border-gray-200 bg-gray-50/50 p-4 mb-3"
+                class="relative group rounded-xl border border-operacao-200 bg-operacao-50/50 p-4 mb-3"
               >
                 <button
                   v-if="produtosFinais.length > 1 || produtosFinaisExistentes.length > 0"
@@ -358,8 +362,8 @@
                     />
                   </UFormGroup>
                   <UFormGroup label="Unidade">
-                    <div class="h-[38px] flex items-center px-3 bg-gray-100 border border-gray-300 rounded-md">
-                      <span class="text-sm text-gray-600">UN - Unidade</span>
+                    <div class="h-[38px] flex items-center px-3 bg-operacao-100 border border-operacao-300 rounded-md">
+                      <span class="text-sm text-operacao-500">UN - Unidade</span>
                     </div>
                   </UFormGroup>
                 </div>
@@ -369,7 +373,7 @@
               <button
                 type="button"
                 @click="produtosFinais.push({ nome: '', grupo_id: '', subgrupo_id: '' })"
-                class="w-full py-3 border-2 border-dashed border-gray-300 rounded-xl text-sm text-gray-500 hover:border-purple-400 hover:text-purple-600 hover:bg-purple-50/50 transition-all flex items-center justify-center gap-2"
+                class="w-full py-3 border-2 border-dashed border-operacao-300 rounded-xl text-sm text-operacao-400 hover:border-purple-400 hover:text-purple-600 hover:bg-purple-50/50 transition-all flex items-center justify-center gap-2"
               >
                 <UIcon name="i-heroicons-plus-circle" class="w-5 h-5" />
                 Adicionar produto final
@@ -396,18 +400,18 @@
       v-model="custosModalOpen"
       :ui="{
         width: 'sm:max-w-4xl',
-        overlay: { background: 'bg-gray-900/50 backdrop-blur-sm' },
-        background: 'bg-white dark:bg-gray-800',
-        ring: 'ring-1 ring-gray-200 dark:ring-gray-700',
+        overlay: { background: 'bg-operacao-900/50 backdrop-blur-sm' },
+        background: 'bg-white dark:bg-operacao-800',
+        ring: 'ring-1 ring-operacao-200 dark:ring-operacao-700',
         shadow: 'shadow-2xl'
       }"
     >
-      <UCard :ui="{ background: 'bg-transparent', ring: 'ring-0', shadow: '', divide: 'divide-gray-100 dark:divide-gray-700' }">
+      <UCard :ui="{ background: 'bg-transparent', ring: 'ring-0', shadow: '', divide: 'divide-operacao-100 dark:divide-operacao-700' }">
         <template #header>
           <div class="flex items-center justify-between">
             <div>
               <h3 class="text-lg font-semibold">Custos Mensais</h3>
-              <p class="text-sm text-gray-500">{{ selectedProduto?.nome }}</p>
+              <p class="text-sm text-operacao-400">{{ selectedProduto?.nome }}</p>
             </div>
             <UButton
               color="gray"
@@ -435,10 +439,8 @@
               :key="mes"
               :label="mesesNomes[mes - 1]"
             >
-              <UInput
-                v-model.number="custosForm[mes]"
-                type="number"
-                step="0.01"
+              <CurrencyInput
+                v-model="custosForm[mes]"
                 placeholder="0,00"
                 @blur="saveCustoMensal(mes)"
               />
@@ -460,19 +462,19 @@
     <UModal
       v-model="deleteModalOpen"
       :ui="{
-        overlay: { background: 'bg-gray-900/50 backdrop-blur-sm' },
-        background: 'bg-white dark:bg-gray-800',
-        ring: 'ring-1 ring-gray-200 dark:ring-gray-700',
+        overlay: { background: 'bg-operacao-900/50 backdrop-blur-sm' },
+        background: 'bg-white dark:bg-operacao-800',
+        ring: 'ring-1 ring-operacao-200 dark:ring-operacao-700',
         shadow: 'shadow-2xl'
       }"
     >
-      <UCard :ui="{ background: 'bg-transparent', ring: 'ring-0', shadow: '', divide: 'divide-gray-100 dark:divide-gray-700' }">
+      <UCard :ui="{ background: 'bg-transparent', ring: 'ring-0', shadow: '', divide: 'divide-operacao-100 dark:divide-operacao-700' }">
         <template #header>
           <h3 class="text-lg font-semibold text-red-600">Confirmar Exclusão</h3>
         </template>
 
         <p>Tem certeza que deseja desativar o produto <strong>{{ deletingProduto?.nome }}</strong>?</p>
-        <p class="text-sm text-gray-500 mt-2">O produto será marcado como inativo.</p>
+        <p class="text-sm text-operacao-400 mt-2">O produto será marcado como inativo.</p>
 
         <template #footer>
           <div class="flex flex-col-reverse sm:flex-row justify-end gap-3">
@@ -487,20 +489,20 @@
       </UCard>
     </UModal>
 
-    <!-- Modal de Gerenciamento de Unidades -->
-    <UModal
+    <!-- Slideover de Gerenciamento de Unidades -->
+    <USlideover
       v-model="unidadesModalOpen"
       :prevent-close="deleteUnidadeModalOpen"
       :ui="{
-        width: 'sm:max-w-2xl',
-        overlay: { background: 'bg-gray-900/50 backdrop-blur-sm' },
-        background: 'bg-white dark:bg-gray-800',
-        ring: 'ring-1 ring-gray-200 dark:ring-gray-700',
+        width: 'max-w-2xl',
+        overlay: { background: 'bg-operacao-900/50 backdrop-blur-sm' },
+        background: 'bg-white dark:bg-operacao-800',
+        ring: 'ring-1 ring-operacao-200 dark:ring-operacao-700',
         shadow: 'shadow-2xl'
       }"
       @after-leave="onUnidadesModalClose"
     >
-      <UCard :ui="{ background: 'bg-transparent', ring: 'ring-0', shadow: '', divide: 'divide-gray-100 dark:divide-gray-700' }">
+      <UCard :ui="{ background: 'bg-transparent', ring: 'ring-0', shadow: '', divide: 'divide-operacao-100 dark:divide-operacao-700', body: { base: 'overflow-y-auto' } }">
         <template #header>
           <div class="flex items-center justify-between">
             <h3 class="text-lg font-semibold">Gerenciar Unidades</h3>
@@ -514,8 +516,8 @@
         </template>
 
         <!-- Formulário de Nova Unidade -->
-        <div class="mb-4 p-4 bg-gray-50 rounded-lg">
-          <h4 class="text-sm font-medium text-gray-700 mb-3">{{ editingUnidade ? 'Editar Unidade' : 'Nova Unidade' }}</h4>
+        <div class="mb-4 p-4 bg-operacao-50 rounded-lg">
+          <h4 class="text-sm font-medium text-operacao-600 mb-3">{{ editingUnidade ? 'Editar Unidade' : 'Nova Unidade' }}</h4>
           <div class="flex gap-2">
             <UInput
               v-model="unidadeForm.sigla"
@@ -547,29 +549,29 @@
         </div>
 
         <!-- Lista de Unidades -->
-        <div class="max-h-80 overflow-y-auto border rounded-lg">
+        <div class="overflow-y-auto border rounded-lg">
           <UTable
             :columns="unidadesColumns"
             :rows="unidades"
             :ui="{
-              td: { color: 'text-gray-700 dark:text-gray-200' },
-              th: { color: 'text-gray-900 dark:text-white' },
-              thead: 'sticky top-0 bg-white dark:bg-gray-800 z-10'
+              td: { color: 'text-operacao-600 dark:text-operacao-200' },
+              th: { color: 'text-operacao-800 dark:text-white' },
+              thead: 'sticky top-0 bg-white dark:bg-operacao-800 z-10'
             }"
           >
             <template #empty-state>
-              <div class="flex flex-col items-center justify-center py-6 text-gray-500">
+              <div class="flex flex-col items-center justify-center py-6 text-operacao-400">
                 <UIcon name="i-heroicons-inbox" class="w-8 h-8 mb-2" />
                 <p class="text-sm">Nenhuma unidade cadastrada</p>
               </div>
             </template>
 
             <template #sigla-data="{ row }">
-              <span class="font-semibold text-gray-900 dark:text-white">{{ row.sigla }}</span>
+              <span class="font-semibold text-operacao-800 dark:text-white">{{ row.sigla }}</span>
             </template>
 
             <template #descricao-data="{ row }">
-              <span class="text-gray-600">{{ row.descricao || '—' }}</span>
+              <span class="text-operacao-500">{{ row.descricao || '—' }}</span>
             </template>
 
             <template #actions-data="{ row }">
@@ -601,25 +603,25 @@
           </div>
         </template>
       </UCard>
-    </UModal>
+    </USlideover>
 
     <!-- Modal de Confirmação de Exclusão de Unidade -->
     <UModal
       v-model="deleteUnidadeModalOpen"
       :ui="{
-        overlay: { background: 'bg-gray-900/50 backdrop-blur-sm' },
-        background: 'bg-white dark:bg-gray-800',
-        ring: 'ring-1 ring-gray-200 dark:ring-gray-700',
+        overlay: { background: 'bg-operacao-900/50 backdrop-blur-sm' },
+        background: 'bg-white dark:bg-operacao-800',
+        ring: 'ring-1 ring-operacao-200 dark:ring-operacao-700',
         shadow: 'shadow-2xl'
       }"
     >
-      <UCard :ui="{ background: 'bg-transparent', ring: 'ring-0', shadow: '', divide: 'divide-gray-100 dark:divide-gray-700' }">
+      <UCard :ui="{ background: 'bg-transparent', ring: 'ring-0', shadow: '', divide: 'divide-operacao-100 dark:divide-operacao-700' }">
         <template #header>
           <h3 class="text-lg font-semibold text-red-600">Confirmar Exclusão</h3>
         </template>
 
         <p>Tem certeza que deseja excluir a unidade <strong>{{ deletingUnidade?.sigla }}</strong>?</p>
-        <p class="text-sm text-gray-500 mt-2">Esta ação não pode ser desfeita.</p>
+        <p class="text-sm text-operacao-400 mt-2">Esta ação não pode ser desfeita.</p>
 
         <template #footer>
           <div class="flex flex-col-reverse sm:flex-row justify-end gap-3">
@@ -627,6 +629,337 @@
               Cancelar
             </UButton>
             <UButton color="red" class="w-full sm:w-auto" :loading="deletingUnidadeLoading" @click="deleteUnidade">
+              Excluir
+            </UButton>
+          </div>
+        </template>
+      </UCard>
+    </UModal>
+
+    <!-- Slideover de Gerenciamento de Grupos e Subgrupos -->
+    <USlideover
+      v-model="gruposModalOpen"
+      :prevent-close="grupoEditModalOpen || subgrupoEditModalOpen || deleteGrupoModalOpen || deleteSubgrupoModalOpen"
+      :ui="{
+        width: 'max-w-2xl',
+        overlay: { background: 'bg-operacao-900/50 backdrop-blur-sm' },
+        background: 'bg-white dark:bg-operacao-800',
+        ring: 'ring-1 ring-operacao-200 dark:ring-operacao-700',
+        shadow: 'shadow-2xl'
+      }"
+      @after-leave="onGruposModalClose"
+    >
+      <UCard :ui="{ background: 'bg-transparent', ring: 'ring-0', shadow: '', divide: 'divide-operacao-100 dark:divide-operacao-700', body: { base: 'overflow-y-auto' } }">
+        <template #header>
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-semibold">Gerenciar Grupos e Subgrupos</h3>
+            <UButton
+              color="gray"
+              variant="ghost"
+              icon="i-heroicons-x-mark"
+              @click="gruposModalOpen = false"
+            />
+          </div>
+        </template>
+
+        <!-- Botão Novo Grupo -->
+        <div class="mb-4">
+          <UButton color="primary" size="sm" @click="openGrupoEditModal()">
+            <UIcon name="i-heroicons-plus" class="w-4 h-4 mr-1" />
+            Novo Grupo
+          </UButton>
+        </div>
+
+        <!-- Tabela estilo planilha -->
+        <div class="overflow-x-auto border rounded-lg">
+          <table class="w-full">
+            <thead class="sticky top-0 bg-white dark:bg-operacao-800 z-10">
+              <tr class="border-b border-operacao-200 dark:border-operacao-700">
+                <th class="px-4 py-3 text-left text-sm font-semibold text-operacao-800 dark:text-white w-48">Grupo</th>
+                <th class="px-4 py-3 text-left text-sm font-semibold text-operacao-800 dark:text-white">Subgrupo</th>
+                <th class="px-4 py-3 text-right text-sm font-semibold text-operacao-800 dark:text-white w-24">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template v-for="(grupo, grupoIndex) in gruposData" :key="grupo.id">
+                <tr
+                  class="border-b border-operacao-100"
+                  :class="grupoIndex % 2 === 0 ? 'bg-white' : 'bg-operacao-50'"
+                >
+                  <td
+                    class="px-4 py-2 font-semibold text-operacao-800 align-top border-r border-operacao-200"
+                    :class="grupoIndex % 2 === 0 ? 'bg-white' : 'bg-operacao-50'"
+                    :rowspan="Math.max(getSubgruposDoGrupo(grupo.id).length, 1)"
+                  >
+                    <div class="flex items-center justify-between">
+                      <span>{{ grupo.nome }}</span>
+                      <div class="flex gap-1">
+                        <UButton
+                          color="gray"
+                          variant="ghost"
+                          icon="i-heroicons-plus"
+                          size="xs"
+                          title="Adicionar subgrupo"
+                          @click="openSubgrupoEditModal(undefined, grupo.id)"
+                        />
+                        <UButton
+                          color="gray"
+                          variant="ghost"
+                          icon="i-heroicons-pencil-square"
+                          size="xs"
+                          @click="openGrupoEditModal(grupo)"
+                        />
+                        <UButton
+                          color="red"
+                          variant="ghost"
+                          icon="i-heroicons-trash"
+                          size="xs"
+                          @click="confirmDeleteGrupoItem(grupo)"
+                        />
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-4 py-2 text-operacao-600">
+                    <template v-if="getSubgruposDoGrupo(grupo.id).length > 0">
+                      {{ getSubgruposDoGrupo(grupo.id)[0].nome }}
+                    </template>
+                    <template v-else>
+                      <span class="text-operacao-400 italic text-sm">Nenhum subgrupo</span>
+                    </template>
+                  </td>
+                  <td class="px-4 py-2 text-right">
+                    <template v-if="getSubgruposDoGrupo(grupo.id).length > 0">
+                      <div class="flex gap-1 justify-end">
+                        <UButton
+                          color="gray"
+                          variant="ghost"
+                          icon="i-heroicons-pencil-square"
+                          size="xs"
+                          @click="openSubgrupoEditModal(getSubgruposDoGrupo(grupo.id)[0])"
+                        />
+                        <UButton
+                          color="red"
+                          variant="ghost"
+                          icon="i-heroicons-trash"
+                          size="xs"
+                          @click="confirmDeleteSubgrupoItem(getSubgruposDoGrupo(grupo.id)[0])"
+                        />
+                      </div>
+                    </template>
+                  </td>
+                </tr>
+                <tr
+                  v-for="subgrupo in getSubgruposDoGrupo(grupo.id).slice(1)"
+                  :key="subgrupo.id"
+                  class="border-b border-operacao-100"
+                  :class="grupoIndex % 2 === 0 ? 'bg-white' : 'bg-operacao-50'"
+                >
+                  <td class="px-4 py-2 text-operacao-600">{{ subgrupo.nome }}</td>
+                  <td class="px-4 py-2 text-right">
+                    <div class="flex gap-1 justify-end">
+                      <UButton
+                        color="gray"
+                        variant="ghost"
+                        icon="i-heroicons-pencil-square"
+                        size="xs"
+                        @click="openSubgrupoEditModal(subgrupo)"
+                      />
+                      <UButton
+                        color="red"
+                        variant="ghost"
+                        icon="i-heroicons-trash"
+                        size="xs"
+                        @click="confirmDeleteSubgrupoItem(subgrupo)"
+                      />
+                    </div>
+                  </td>
+                </tr>
+              </template>
+              <tr v-if="gruposData.length === 0 && !loadingGrupos">
+                <td colspan="3" class="px-4 py-12 text-center text-operacao-400">
+                  <UIcon name="i-heroicons-folder-open" class="w-12 h-12 mx-auto mb-4" />
+                  <p class="text-lg font-medium">Nenhum grupo cadastrado</p>
+                  <p class="text-sm mt-1">Comece criando um novo grupo</p>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <!-- Loading Skeleton -->
+          <div v-if="loadingGrupos" class="p-5 space-y-3">
+            <div v-for="i in 5" :key="i" class="flex items-center gap-4 py-2">
+              <USkeleton class="h-5 w-36" />
+              <USkeleton class="h-4 w-28" />
+              <USkeleton class="h-4 w-16 ml-auto" />
+            </div>
+          </div>
+        </div>
+
+        <template #footer>
+          <div class="flex justify-end">
+            <UButton color="gray" @click="gruposModalOpen = false">
+              Fechar
+            </UButton>
+          </div>
+        </template>
+      </UCard>
+    </USlideover>
+
+    <!-- Sub-Modal: Criar/Editar Grupo -->
+    <UModal
+      v-model="grupoEditModalOpen"
+      :ui="{
+        width: 'sm:max-w-md',
+        overlay: { background: 'bg-operacao-900/50 backdrop-blur-sm' },
+        background: 'bg-white dark:bg-operacao-800',
+        ring: 'ring-1 ring-operacao-200 dark:ring-operacao-700',
+        shadow: 'shadow-2xl'
+      }"
+    >
+      <UCard :ui="{ background: 'bg-transparent', ring: 'ring-0', shadow: '', divide: 'divide-operacao-100 dark:divide-operacao-700' }">
+        <template #header>
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-semibold">
+              {{ editingGrupoItem ? 'Editar Grupo' : 'Novo Grupo' }}
+            </h3>
+            <UButton
+              color="gray"
+              variant="ghost"
+              icon="i-heroicons-x-mark"
+              @click="grupoEditModalOpen = false"
+            />
+          </div>
+        </template>
+
+        <form @submit.prevent="saveGrupoItem" class="space-y-4">
+          <UFormGroup label="Nome do Grupo" required>
+            <UInput v-model="grupoEditForm.nome" placeholder="Ex: Alimentos" />
+          </UFormGroup>
+        </form>
+
+        <template #footer>
+          <div class="flex flex-col-reverse sm:flex-row justify-end gap-3">
+            <UButton color="gray" variant="ghost" class="w-full sm:w-auto" @click="grupoEditModalOpen = false">
+              Cancelar
+            </UButton>
+            <UButton color="primary" class="w-full sm:w-auto" :loading="savingGrupoItem" @click="saveGrupoItem">
+              {{ editingGrupoItem ? 'Salvar' : 'Criar' }}
+            </UButton>
+          </div>
+        </template>
+      </UCard>
+    </UModal>
+
+    <!-- Sub-Modal: Criar/Editar Subgrupo -->
+    <UModal
+      v-model="subgrupoEditModalOpen"
+      :ui="{
+        width: 'sm:max-w-md',
+        overlay: { background: 'bg-operacao-900/50 backdrop-blur-sm' },
+        background: 'bg-white dark:bg-operacao-800',
+        ring: 'ring-1 ring-operacao-200 dark:ring-operacao-700',
+        shadow: 'shadow-2xl'
+      }"
+    >
+      <UCard :ui="{ background: 'bg-transparent', ring: 'ring-0', shadow: '', divide: 'divide-operacao-100 dark:divide-operacao-700' }">
+        <template #header>
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-semibold">
+              {{ editingSubgrupoItem ? 'Editar Subgrupo' : 'Novo Subgrupo' }}
+            </h3>
+            <UButton
+              color="gray"
+              variant="ghost"
+              icon="i-heroicons-x-mark"
+              @click="subgrupoEditModalOpen = false"
+            />
+          </div>
+        </template>
+
+        <form @submit.prevent="saveSubgrupoItem" class="space-y-4">
+          <UFormGroup label="Grupo" required>
+            <USelect
+              v-model="subgrupoEditForm.grupo_id"
+              :options="gruposSelectForSubgrupo"
+              placeholder="Selecione o grupo"
+              :disabled="!!editingSubgrupoItem || !!preSelectedGrupoIdForEdit"
+              :ui="(editingSubgrupoItem || preSelectedGrupoIdForEdit) ? { color: { white: { outline: 'bg-operacao-100 text-operacao-400 cursor-not-allowed' } } } : {}"
+            />
+          </UFormGroup>
+
+          <UFormGroup label="Nome do Subgrupo" required>
+            <UInput v-model="subgrupoEditForm.nome" placeholder="Ex: Mercearia" />
+          </UFormGroup>
+        </form>
+
+        <template #footer>
+          <div class="flex flex-col-reverse sm:flex-row justify-end gap-3">
+            <UButton color="gray" variant="ghost" class="w-full sm:w-auto" @click="subgrupoEditModalOpen = false">
+              Cancelar
+            </UButton>
+            <UButton color="primary" class="w-full sm:w-auto" :loading="savingSubgrupoItem" @click="saveSubgrupoItem">
+              {{ editingSubgrupoItem ? 'Salvar' : 'Criar' }}
+            </UButton>
+          </div>
+        </template>
+      </UCard>
+    </UModal>
+
+    <!-- Sub-Modal: Confirmação Exclusão Grupo -->
+    <UModal
+      v-model="deleteGrupoModalOpen"
+      :ui="{
+        overlay: { background: 'bg-operacao-900/50 backdrop-blur-sm' },
+        background: 'bg-white dark:bg-operacao-800',
+        ring: 'ring-1 ring-operacao-200 dark:ring-operacao-700',
+        shadow: 'shadow-2xl'
+      }"
+    >
+      <UCard :ui="{ background: 'bg-transparent', ring: 'ring-0', shadow: '', divide: 'divide-operacao-100 dark:divide-operacao-700' }">
+        <template #header>
+          <h3 class="text-lg font-semibold text-red-600">Confirmar Exclusão</h3>
+        </template>
+
+        <p>Tem certeza que deseja excluir o grupo <strong>{{ deletingGrupoItem?.nome }}</strong>?</p>
+        <p class="text-sm text-operacao-400 mt-2">Todos os subgrupos vinculados também serão excluídos.</p>
+
+        <template #footer>
+          <div class="flex flex-col-reverse sm:flex-row justify-end gap-3">
+            <UButton color="gray" variant="ghost" class="w-full sm:w-auto" @click="deleteGrupoModalOpen = false">
+              Cancelar
+            </UButton>
+            <UButton color="red" class="w-full sm:w-auto" :loading="deletingGrupoItemLoading" @click="deleteGrupoItem">
+              Excluir
+            </UButton>
+          </div>
+        </template>
+      </UCard>
+    </UModal>
+
+    <!-- Sub-Modal: Confirmação Exclusão Subgrupo -->
+    <UModal
+      v-model="deleteSubgrupoModalOpen"
+      :ui="{
+        overlay: { background: 'bg-operacao-900/50 backdrop-blur-sm' },
+        background: 'bg-white dark:bg-operacao-800',
+        ring: 'ring-1 ring-operacao-200 dark:ring-operacao-700',
+        shadow: 'shadow-2xl'
+      }"
+    >
+      <UCard :ui="{ background: 'bg-transparent', ring: 'ring-0', shadow: '', divide: 'divide-operacao-100 dark:divide-operacao-700' }">
+        <template #header>
+          <h3 class="text-lg font-semibold text-red-600">Confirmar Exclusão</h3>
+        </template>
+
+        <p>Tem certeza que deseja excluir o subgrupo <strong>{{ deletingSubgrupoItem?.nome }}</strong>?</p>
+        <p class="text-sm text-operacao-400 mt-2">Esta ação não pode ser desfeita.</p>
+
+        <template #footer>
+          <div class="flex flex-col-reverse sm:flex-row justify-end gap-3">
+            <UButton color="gray" variant="ghost" class="w-full sm:w-auto" @click="deleteSubgrupoModalOpen = false">
+              Cancelar
+            </UButton>
+            <UButton color="red" class="w-full sm:w-auto" :loading="deletingSubgrupoItemLoading" @click="deleteSubgrupoItem">
               Excluir
             </UButton>
           </div>
@@ -654,7 +987,13 @@ const {
   upsertCustoMensal,
   createProdutoBeneficiamento,
   getProdutosBeneficiamento,
-  deleteProdutoBeneficiamento
+  deleteProdutoBeneficiamento,
+  createGrupo,
+  updateGrupo,
+  deleteGrupo: removeGrupo,
+  createSubgrupo,
+  updateSubgrupo,
+  deleteSubgrupo: removeSubgrupo
 } = useEstoque()
 const { empresaId } = useEmpresa()
 const toast = useToast()
@@ -686,7 +1025,6 @@ const editingUnidade = ref<Unidade | null>(null)
 const deletingUnidade = ref<Unidade | null>(null)
 const savingUnidade = ref(false)
 const deletingUnidadeLoading = ref(false)
-const openedFromProdutoModal = ref(false)
 const unidadeForm = ref({
   sigla: '',
   descricao: ''
@@ -883,14 +1221,7 @@ const formatNumber = (value: number) => {
   }).format(truncate2(value))
 }
 
-const formatCurrency = (value: number) => {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(truncate2(value))
-}
+const { formatCurrency } = useFormatters()
 
 const loadData = async () => {
   try {
@@ -1189,30 +1520,12 @@ const deleteProduto = async () => {
 const openUnidadesModal = () => {
   editingUnidade.value = null
   unidadeForm.value = { sigla: '', descricao: '' }
-
-  // Se o modal de produtos está aberto, fecha ele antes de abrir o de unidades
-  // para evitar conflito de FocusTrap entre dois Dialogs irmãos (Headless UI)
-  if (modalOpen.value) {
-    openedFromProdutoModal.value = true
-    modalOpen.value = false
-    // Aguarda a transição de saída do modal de produtos (300ms) antes de abrir o de unidades
-    setTimeout(() => {
-      unidadesModalOpen.value = true
-    }, 350)
-  } else {
-    openedFromProdutoModal.value = false
-    unidadesModalOpen.value = true
-  }
+  unidadesModalOpen.value = true
 }
 
 const onUnidadesModalClose = () => {
-  // Se foi aberto a partir do modal de produtos, reabre ele
-  if (openedFromProdutoModal.value) {
-    openedFromProdutoModal.value = false
-    nextTick(() => {
-      modalOpen.value = true
-    })
-  }
+  // Recarrega unidades caso tenham sido alteradas
+  loadData()
 }
 
 const editUnidade = (unidade: Unidade) => {
@@ -1305,6 +1618,255 @@ const deleteUnidade = async () => {
     })
   } finally {
     deletingUnidadeLoading.value = false
+  }
+}
+
+// ==========================================
+// Funções de Grupos e Subgrupos
+// ==========================================
+
+const gruposModalOpen = ref(false)
+const grupoEditModalOpen = ref(false)
+const subgrupoEditModalOpen = ref(false)
+const deleteGrupoModalOpen = ref(false)
+const deleteSubgrupoModalOpen = ref(false)
+const loadingGrupos = ref(false)
+const savingGrupoItem = ref(false)
+const savingSubgrupoItem = ref(false)
+const deletingGrupoItemLoading = ref(false)
+const deletingSubgrupoItemLoading = ref(false)
+const editingGrupoItem = ref<Grupo | null>(null)
+const editingSubgrupoItem = ref<Subgrupo | null>(null)
+const deletingGrupoItem = ref<Grupo | null>(null)
+const deletingSubgrupoItem = ref<Subgrupo | null>(null)
+const grupoEditForm = ref({ nome: '' })
+const subgrupoEditForm = ref({ grupo_id: '', nome: '' })
+const preSelectedGrupoIdForEdit = ref<string | null>(null)
+
+// Dados separados para o modal de grupos (para não misturar com os filtros)
+const gruposData = ref<Grupo[]>([])
+const subgruposData = ref<Subgrupo[]>([])
+
+const gruposSelectForSubgrupo = computed(() =>
+  gruposData.value.map(g => ({ label: g.nome, value: g.id }))
+)
+
+const getSubgruposDoGrupo = (grupoId: string) => {
+  return subgruposData.value.filter(s => s.grupo_id === grupoId)
+}
+
+const loadGruposData = async () => {
+  try {
+    loadingGrupos.value = true
+    const [grps, subgrps] = await Promise.all([
+      getGrupos(),
+      getSubgrupos()
+    ])
+    gruposData.value = grps
+    subgruposData.value = subgrps
+  } catch (error: any) {
+    toast.add({
+      title: 'Erro',
+      description: error.message || 'Erro ao carregar grupos',
+      color: 'red'
+    })
+  } finally {
+    loadingGrupos.value = false
+  }
+}
+
+const openGruposModal = () => {
+  gruposModalOpen.value = true
+  loadGruposData()
+}
+
+const onGruposModalClose = () => {
+  // Atualiza os dados da página principal (grupos e subgrupos podem ter mudado)
+  loadData()
+}
+
+// Grupo CRUD
+const openGrupoEditModal = (grupo?: Grupo) => {
+  if (grupo) {
+    editingGrupoItem.value = grupo
+    grupoEditForm.value = { nome: grupo.nome }
+  } else {
+    editingGrupoItem.value = null
+    grupoEditForm.value = { nome: '' }
+  }
+  grupoEditModalOpen.value = true
+}
+
+const saveGrupoItem = async () => {
+  if (!grupoEditForm.value.nome) {
+    toast.add({
+      title: 'Erro',
+      description: 'O nome é obrigatório',
+      color: 'red'
+    })
+    return
+  }
+
+  grupoEditForm.value.nome = formatarNome(grupoEditForm.value.nome)
+
+  try {
+    savingGrupoItem.value = true
+    if (editingGrupoItem.value) {
+      await updateGrupo(editingGrupoItem.value.id, grupoEditForm.value)
+      toast.add({
+        title: 'Sucesso',
+        description: 'Grupo atualizado com sucesso',
+        color: 'green'
+      })
+    } else {
+      await createGrupo(grupoEditForm.value)
+      toast.add({
+        title: 'Sucesso',
+        description: 'Grupo criado com sucesso',
+        color: 'green'
+      })
+    }
+    grupoEditModalOpen.value = false
+    await loadGruposData()
+  } catch (error: any) {
+    let mensagem = 'Erro ao salvar grupo'
+    if (error.message?.includes('grupos_nome_key') || error.code === '23505') {
+      mensagem = 'Já existe um grupo com esse nome'
+    }
+    toast.add({
+      title: 'Erro',
+      description: mensagem,
+      color: 'red'
+    })
+  } finally {
+    savingGrupoItem.value = false
+  }
+}
+
+const confirmDeleteGrupoItem = (grupo: Grupo) => {
+  deletingGrupoItem.value = grupo
+  deleteGrupoModalOpen.value = true
+}
+
+const deleteGrupoItem = async () => {
+  if (!deletingGrupoItem.value) return
+
+  try {
+    deletingGrupoItemLoading.value = true
+    await removeGrupo(deletingGrupoItem.value.id)
+    toast.add({
+      title: 'Sucesso',
+      description: 'Grupo excluído com sucesso',
+      color: 'green'
+    })
+    deleteGrupoModalOpen.value = false
+    await loadGruposData()
+  } catch (error: any) {
+    toast.add({
+      title: 'Erro',
+      description: error.message || 'Erro ao excluir grupo',
+      color: 'red'
+    })
+  } finally {
+    deletingGrupoItemLoading.value = false
+  }
+}
+
+// Subgrupo CRUD
+const openSubgrupoEditModal = (subgrupo?: Subgrupo, grupoId?: string) => {
+  preSelectedGrupoIdForEdit.value = null
+
+  if (subgrupo) {
+    editingSubgrupoItem.value = subgrupo
+    subgrupoEditForm.value = {
+      grupo_id: subgrupo.grupo_id,
+      nome: subgrupo.nome
+    }
+  } else {
+    editingSubgrupoItem.value = null
+    subgrupoEditForm.value = {
+      grupo_id: grupoId || '',
+      nome: ''
+    }
+    if (grupoId) {
+      preSelectedGrupoIdForEdit.value = grupoId
+    }
+  }
+  subgrupoEditModalOpen.value = true
+}
+
+const saveSubgrupoItem = async () => {
+  if (!subgrupoEditForm.value.grupo_id || !subgrupoEditForm.value.nome) {
+    toast.add({
+      title: 'Erro',
+      description: 'Grupo e nome são obrigatórios',
+      color: 'red'
+    })
+    return
+  }
+
+  subgrupoEditForm.value.nome = formatarNome(subgrupoEditForm.value.nome)
+
+  try {
+    savingSubgrupoItem.value = true
+    if (editingSubgrupoItem.value) {
+      await updateSubgrupo(editingSubgrupoItem.value.id, { nome: subgrupoEditForm.value.nome })
+      toast.add({
+        title: 'Sucesso',
+        description: 'Subgrupo atualizado com sucesso',
+        color: 'green'
+      })
+    } else {
+      await createSubgrupo(subgrupoEditForm.value)
+      toast.add({
+        title: 'Sucesso',
+        description: 'Subgrupo criado com sucesso',
+        color: 'green'
+      })
+    }
+    subgrupoEditModalOpen.value = false
+    await loadGruposData()
+  } catch (error: any) {
+    let mensagem = 'Erro ao salvar subgrupo'
+    if (error.code === '23505') {
+      mensagem = 'Já existe um subgrupo com esse nome neste grupo'
+    }
+    toast.add({
+      title: 'Erro',
+      description: mensagem,
+      color: 'red'
+    })
+  } finally {
+    savingSubgrupoItem.value = false
+  }
+}
+
+const confirmDeleteSubgrupoItem = (subgrupo: Subgrupo) => {
+  deletingSubgrupoItem.value = subgrupo
+  deleteSubgrupoModalOpen.value = true
+}
+
+const deleteSubgrupoItem = async () => {
+  if (!deletingSubgrupoItem.value) return
+
+  try {
+    deletingSubgrupoItemLoading.value = true
+    await removeSubgrupo(deletingSubgrupoItem.value.id)
+    toast.add({
+      title: 'Sucesso',
+      description: 'Subgrupo excluído com sucesso',
+      color: 'green'
+    })
+    deleteSubgrupoModalOpen.value = false
+    await loadGruposData()
+  } catch (error: any) {
+    toast.add({
+      title: 'Erro',
+      description: error.message || 'Erro ao excluir subgrupo',
+      color: 'red'
+    })
+  } finally {
+    deletingSubgrupoItemLoading.value = false
   }
 }
 

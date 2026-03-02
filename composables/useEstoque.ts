@@ -905,8 +905,18 @@ export const useEstoque = () => {
   }
 
   const createPedido = async (
-    pedido: { data: string; observacao?: string; status?: string },
-    itens: { produto_id: string; quantidade: number; fornecedor_id?: string; observacao?: string }[]
+    pedido: {
+      data: string
+      nome?: string
+      observacao?: string
+      status?: string
+      previsao_recebimento?: string
+      responsavel_nome?: string
+      responsavel_telefone?: string
+      valor_estimado?: number
+      origem?: string
+    },
+    itens: { produto_id: string; quantidade: number; fornecedor_id?: string; observacao?: string; preco_estimado?: number }[]
   ) => {
     // Criar pedido
     const { data: novoPedido, error: errPedido } = await client
@@ -914,8 +924,14 @@ export const useEstoque = () => {
       .insert({
         empresa_id: empresaId.value,
         data: pedido.data,
+        nome: pedido.nome || null,
         observacao: pedido.observacao || null,
-        status: pedido.status || 'rascunho'
+        status: pedido.status || 'rascunho',
+        previsao_recebimento: pedido.previsao_recebimento || null,
+        responsavel_nome: pedido.responsavel_nome || null,
+        responsavel_telefone: pedido.responsavel_telefone || null,
+        valor_estimado: pedido.valor_estimado || null,
+        origem: pedido.origem || 'manual'
       })
       .select()
       .single()
@@ -928,7 +944,8 @@ export const useEstoque = () => {
       produto_id: item.produto_id,
       quantidade: item.quantidade,
       fornecedor_id: item.fornecedor_id || null,
-      observacao: item.observacao || null
+      observacao: item.observacao || null,
+      preco_estimado: item.preco_estimado || null
     }))
 
     const { error: errItens } = await client
@@ -958,6 +975,62 @@ export const useEstoque = () => {
     if (error) throw error
   }
 
+  const updatePedido = async (id: string, updates: Partial<Pedido>) => {
+    const { error } = await client
+      .from('pedidos')
+      .update(updates)
+      .eq('id', id)
+
+    if (error) throw error
+  }
+
+  const updatePedidoItens = async (
+    pedidoId: string,
+    itens: { produto_id: string; quantidade: number; fornecedor_id?: string; observacao?: string; preco_estimado?: number }[]
+  ) => {
+    // Deletar itens existentes
+    await client.from('pedido_itens').delete().eq('pedido_id', pedidoId)
+    // Inserir novos
+    const payload = itens.map(item => ({
+      pedido_id: pedidoId,
+      produto_id: item.produto_id,
+      quantidade: item.quantidade,
+      fornecedor_id: item.fornecedor_id || null,
+      observacao: item.observacao || null,
+      preco_estimado: item.preco_estimado || null
+    }))
+    const { error } = await client.from('pedido_itens').insert(payload)
+    if (error) throw error
+  }
+
+  const confirmarRecebimento = async (pedidoId: string, dataRecebimento: string) => {
+    const { error } = await client
+      .from('pedidos')
+      .update({ status: 'finalizada', data_recebimento: dataRecebimento })
+      .eq('id', pedidoId)
+
+    if (error) throw error
+  }
+
+  const getUltimosPrecos = async (produtoIds: string[]): Promise<Record<string, number>> => {
+    if (!produtoIds.length) return {}
+    const { data, error } = await client
+      .from('entradas')
+      .select('produto_id, custo_unitario, data')
+      .eq('empresa_id', empresaId.value)
+      .in('produto_id', produtoIds)
+      .order('data', { ascending: false })
+
+    if (error) throw error
+    const precos: Record<string, number> = {}
+    data?.forEach((e: any) => {
+      if (!precos[e.produto_id]) {
+        precos[e.produto_id] = e.custo_unitario
+      }
+    })
+    return precos
+  }
+
   // ==========================================
   // CONTAGENS
   // ==========================================
@@ -965,7 +1038,7 @@ export const useEstoque = () => {
   const getContagens = async () => {
     let query = client
       .from('contagens')
-      .select('*, contagem_setores(id, contagem_id, setor_id, setor:setores(id, nome))')
+      .select('*, contagem_setores(id, contagem_id, setor_id, status, progresso, finalizado_em, setor:setores(id, nome))')
       .order('created_at', { ascending: false })
 
     if (empresaId.value) {
@@ -1057,6 +1130,118 @@ export const useEstoque = () => {
       .from('contagens')
       .delete()
       .eq('id', id)
+
+    if (error) throw error
+  }
+
+  const updateContagem = async (
+    id: string,
+    contagem: {
+      nome?: string
+      recorrencia?: string
+      horario_notificacao?: string
+      dias_semana?: string[]
+      mensal_posicao?: string
+      mensal_dia?: string
+      responsavel_nome?: string
+      responsavel_telefone?: string
+      responsavel_id?: string
+    },
+    setorIds?: string[]
+  ) => {
+    const { error } = await client
+      .from('contagens')
+      .update({ ...contagem, updated_at: new Date().toISOString() })
+      .eq('id', id)
+
+    if (error) throw error
+
+    if (setorIds !== undefined) {
+      await client.from('contagem_setores').delete().eq('contagem_id', id)
+      if (setorIds.length > 0) {
+        const rows = setorIds.map(sid => ({ contagem_id: id, setor_id: sid }))
+        const { error: errSetores } = await client
+          .from('contagem_setores')
+          .insert(rows)
+        if (errSetores) throw errSetores
+      }
+    }
+  }
+
+  // ==========================================
+  // CONTAGEM ITENS (persistência de contagens parciais)
+  // ==========================================
+
+  const getContagemItens = async (contagemId: string, setorId?: string) => {
+    let query = client
+      .from('contagem_itens')
+      .select('*')
+      .eq('contagem_id', contagemId)
+
+    if (setorId) {
+      query = query.eq('setor_id', setorId)
+    }
+
+    const { data, error } = await query
+    if (error) throw error
+    return data as import('~/types').ContagemItemDB[]
+  }
+
+  const upsertContagemItens = async (
+    contagemId: string,
+    setorId: string,
+    itens: { produto_id: string; quantidade_contada: number | null }[]
+  ) => {
+    const payload = itens
+      .filter(i => i.quantidade_contada !== null && i.quantidade_contada !== undefined)
+      .map(i => ({
+        contagem_id: contagemId,
+        setor_id: setorId,
+        produto_id: i.produto_id,
+        quantidade_contada: i.quantidade_contada,
+        empresa_id: empresaId.value,
+        updated_at: new Date().toISOString()
+      }))
+
+    if (!payload.length) return []
+
+    const { data, error } = await client
+      .from('contagem_itens')
+      .upsert(payload, { onConflict: 'contagem_id,setor_id,produto_id' })
+      .select()
+
+    if (error) throw error
+    return data as import('~/types').ContagemItemDB[]
+  }
+
+  const deleteContagemItens = async (contagemId: string) => {
+    const { error } = await client
+      .from('contagem_itens')
+      .delete()
+      .eq('contagem_id', contagemId)
+
+    if (error) throw error
+  }
+
+  const updateContagemSetor = async (
+    contagemId: string,
+    setorId: string,
+    updates: { status?: string; progresso?: number; finalizado_em?: string | null }
+  ) => {
+    const { error } = await client
+      .from('contagem_setores')
+      .update(updates)
+      .eq('contagem_id', contagemId)
+      .eq('setor_id', setorId)
+
+    if (error) throw error
+  }
+
+  const resetContagemSetores = async (contagemId: string) => {
+    const { error } = await client
+      .from('contagem_setores')
+      .update({ status: 'pendente', progresso: 0, finalizado_em: null })
+      .eq('contagem_id', contagemId)
 
     if (error) throw error
   }
@@ -1239,7 +1424,11 @@ export const useEstoque = () => {
     // Pedidos de Compra
     getPedidos,
     createPedido,
+    updatePedido,
     updatePedidoStatus,
+    updatePedidoItens,
+    confirmarRecebimento,
+    getUltimosPrecos,
     deletePedido,
     // Setores
     getSetores,
@@ -1254,8 +1443,15 @@ export const useEstoque = () => {
     // Contagens
     getContagens,
     createContagem,
+    updateContagem,
     updateContagemStatus,
     deleteContagem,
+    // Contagem Itens
+    getContagemItens,
+    upsertContagemItens,
+    deleteContagemItens,
+    updateContagemSetor,
+    resetContagemSetores,
     // Responsáveis
     getResponsaveis,
     createResponsavel

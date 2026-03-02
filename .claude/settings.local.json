@@ -33,7 +33,23 @@
       "Bash(grep -l \"contagem\\\\|setor\\\\|pedido\" /c/Users/mario/Desktop/estoque-cd/supabase/migrations/*.sql)",
       "Bash(wc -l /c/Users/mario/Desktop/estoque-cd/supabase/migrations/*.sql)",
       "Bash(cat /c/Users/mario/Desktop/estoque-cd/supabase/migrations/*.sql)",
-      "Bash(grep -l \"contagens\" C:/Users/mario/Desktop/estoque-cd/supabase/migrations/*.sql)"
+      "Bash(grep -l \"contagens\" C:/Users/mario/Desktop/estoque-cd/supabase/migrations/*.sql)",
+      "Bash(wc -l supabase/migrations/*.sql)",
+      "Bash(head -5 supabase/migrations/*.sql)",
+      "Bash(wc -l composables/*.ts)",
+      "mcp__plugin_playwright_playwright__browser_navigate",
+      "mcp__plugin_playwright_playwright__browser_fill_form",
+      "mcp__plugin_playwright_playwright__browser_click",
+      "mcp__plugin_playwright_playwright__browser_wait_for",
+      "mcp__plugin_playwright_playwright__browser_take_screenshot",
+      "mcp__plugin_playwright_playwright__browser_evaluate",
+      "mcp__plugin_playwright_playwright__browser_snapshot",
+      "mcp__plugin_playwright_playwright__browser_install",
+      "WebFetch(domain:app.alochefia.com.br)",
+      "mcp__plugin_playwright_playwright__browser_navigate_back",
+      "mcp__plugin_playwright_playwright__browser_press_key",
+      "Bash(npx nuxt typecheck)",
+      "mcp__plugin_playwright_playwright__browser_type"
     ]
   }
 }

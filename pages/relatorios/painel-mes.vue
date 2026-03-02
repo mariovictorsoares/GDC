@@ -3,8 +3,8 @@
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900">Painel de Controle</h1>
-        <p class="text-sm text-gray-500">Visão consolidada do estoque por produto com CMV</p>
+        <h1 class="text-2xl font-bold text-operacao-800">Painel de Controle</h1>
+        <p class="text-sm text-operacao-400">Visão consolidada do estoque por produto com CMV</p>
       </div>
     </div>
 
@@ -32,26 +32,26 @@
               <UPopover :popper="{ placement: 'top', offsetDistance: 8 }" mode="hover" :open-delay="200" :close-delay="100">
                 <UIcon
                   name="i-heroicons-question-mark-circle"
-                  class="w-3.5 h-3.5 text-gray-400 hover:text-primary-500 cursor-help transition-colors"
+                  class="w-3.5 h-3.5 text-operacao-400 hover:text-primary-500 cursor-help transition-colors"
                 />
                 <template #panel>
                   <div class="p-3 text-xs space-y-2 max-w-[280px]">
-                    <p class="font-semibold text-gray-900 border-b border-gray-200 pb-1.5">Modos de Visualização</p>
+                    <p class="font-semibold text-operacao-800 border-b border-operacao-200 pb-1.5">Modos de Visualização</p>
                     <div class="flex gap-2">
                       <span class="inline-block w-1.5 h-1.5 rounded-full bg-primary-500 mt-1.5 shrink-0" />
-                      <div><span class="font-medium text-gray-800">CMV Consumo:</span> <span class="text-gray-500">Transf. + Definitiva — custo total das saídas (exceto produção)</span></div>
+                      <div><span class="font-medium text-operacao-700">CMV Consumo:</span> <span class="text-operacao-400">Transf. + Definitiva — custo total das saídas (exceto produção)</span></div>
                     </div>
                     <div class="flex gap-2">
                       <span class="inline-block w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 shrink-0" />
-                      <div><span class="font-medium text-gray-800">Transferência:</span> <span class="text-gray-500">Apenas movimentações para o estoque de apoio</span></div>
+                      <div><span class="font-medium text-operacao-700">Transferência:</span> <span class="text-operacao-400">Apenas movimentações para o estoque de apoio</span></div>
                     </div>
                     <div class="flex gap-2">
                       <span class="inline-block w-1.5 h-1.5 rounded-full bg-red-500 mt-1.5 shrink-0" />
-                      <div><span class="font-medium text-gray-800">Definitiva:</span> <span class="text-gray-500">Apenas saídas finais (consumo, venda, perda)</span></div>
+                      <div><span class="font-medium text-operacao-700">Definitiva:</span> <span class="text-operacao-400">Apenas saídas finais (consumo, venda, perda)</span></div>
                     </div>
                     <div class="flex gap-2">
                       <span class="inline-block w-1.5 h-1.5 rounded-full bg-purple-500 mt-1.5 shrink-0" />
-                      <div><span class="font-medium text-gray-800">Produção:</span> <span class="text-gray-500">Saídas para beneficiamento / industrialização</span></div>
+                      <div><span class="font-medium text-operacao-700">Produção:</span> <span class="text-operacao-400">Saídas para beneficiamento / industrialização</span></div>
                     </div>
                   </div>
                 </template>
@@ -73,7 +73,7 @@
 
     <!-- Resumo Skeleton -->
     <div v-if="loading" class="grid grid-cols-1 gap-4" :class="showCmv ? 'md:grid-cols-4' : 'md:grid-cols-3'">
-      <div v-for="i in (showCmv ? 4 : 3)" :key="i" class="rounded-xl bg-white ring-1 ring-gray-100 shadow-sm p-5">
+      <div v-for="i in (showCmv ? 4 : 3)" :key="i" class="rounded-xl bg-white ring-1 ring-operacao-100 shadow-sm p-5">
         <div class="text-center space-y-2">
           <USkeleton class="h-4 w-24 mx-auto" />
           <USkeleton class="h-8 w-32 mx-auto" />
@@ -85,25 +85,25 @@
     <div v-if="!loading" class="grid grid-cols-1 gap-4" :class="showCmv ? 'md:grid-cols-4' : 'md:grid-cols-3'">
       <UCard>
         <div class="text-center">
-          <p class="text-sm text-gray-500">Estoque Inicial</p>
-          <p class="text-2xl font-bold text-gray-900">{{ formatCurrency(resumo.estoqueInicial) }}</p>
+          <p class="text-sm text-operacao-400">Estoque Inicial</p>
+          <p class="text-2xl font-bold text-operacao-800">{{ formatCurrency(resumo.estoqueInicial) }}</p>
         </div>
       </UCard>
       <UCard>
         <div class="text-center">
-          <p class="text-sm text-gray-500">Total Entradas</p>
-          <p class="text-2xl font-bold text-green-600">{{ formatCurrency(resumo.totalEntradas) }}</p>
+          <p class="text-sm text-operacao-400">Total Entradas</p>
+          <p class="text-2xl font-bold text-controle-600">{{ formatCurrency(resumo.totalEntradas) }}</p>
         </div>
       </UCard>
       <UCard>
         <div class="text-center">
-          <p class="text-sm text-gray-500">Estoque Total</p>
-          <p class="text-2xl font-bold text-blue-600">{{ formatCurrency(resumo.estoqueFinal) }}</p>
+          <p class="text-sm text-operacao-400">Estoque Total</p>
+          <p class="text-2xl font-bold text-guardian-600">{{ formatCurrency(resumo.estoqueFinal) }}</p>
         </div>
       </UCard>
       <UCard v-if="showCmv">
         <div class="text-center">
-          <p class="text-sm text-gray-500">{{ labelCmv }}</p>
+          <p class="text-sm text-operacao-400">{{ labelCmv }}</p>
           <p class="text-2xl font-bold text-orange-600">{{ formatCurrency(resumo.cmvTotal) }}</p>
         </div>
       </UCard>
@@ -133,32 +133,32 @@
         >
           <div v-if="loading" class="absolute inset-0 z-10 flex items-center justify-center bg-white/70 backdrop-blur-[1px] rounded-lg">
             <div class="flex flex-col items-center gap-2">
-              <div class="w-8 h-8 border-[3px] border-gray-200 border-t-primary-500 rounded-full animate-spin" />
-              <span class="text-sm text-gray-500 font-medium">Carregando dados...</span>
+              <div class="w-8 h-8 border-[3px] border-operacao-200 border-t-primary-500 rounded-full animate-spin" />
+              <span class="text-sm text-operacao-400 font-medium">Carregando dados...</span>
             </div>
           </div>
         </Transition>
 
-        <table class="min-w-full divide-y divide-gray-200">
-          <thead class="bg-gray-50">
+        <table class="min-w-full divide-y divide-operacao-200">
+          <thead class="bg-operacao-50">
             <tr>
-              <th rowspan="2" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r">Produto</th>
-              <th rowspan="2" class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-r">E.I.</th>
-              <th :colspan="semanas.length + 1" class="px-3 py-2 text-center text-xs font-medium text-green-600 uppercase tracking-wider border-r bg-green-50">Entradas</th>
+              <th rowspan="2" class="px-3 py-3 text-left text-xs font-medium text-operacao-400 uppercase tracking-wider border-r">Produto</th>
+              <th rowspan="2" class="px-3 py-3 text-center text-xs font-medium text-operacao-400 uppercase tracking-wider border-r">E.I.</th>
+              <th :colspan="semanas.length + 1" class="px-3 py-2 text-center text-xs font-medium text-controle-600 uppercase tracking-wider border-r bg-controle-50">Entradas</th>
               <th :colspan="semanas.length + 1" class="px-3 py-2 text-center text-xs font-medium text-red-600 uppercase tracking-wider border-r bg-red-50">Saídas</th>
-              <th rowspan="2" class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-r">E.F.</th>
-              <th rowspan="2" class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-r">C.Unit</th>
-              <th rowspan="2" class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-r">Est. Total</th>
+              <th rowspan="2" class="px-3 py-3 text-center text-xs font-medium text-operacao-400 uppercase tracking-wider border-r">E.F.</th>
+              <th rowspan="2" class="px-3 py-3 text-center text-xs font-medium text-operacao-400 uppercase tracking-wider border-r">C.Unit</th>
+              <th rowspan="2" class="px-3 py-3 text-center text-xs font-medium text-operacao-400 uppercase tracking-wider border-r">Est. Total</th>
               <th v-if="showCmv" rowspan="2" class="px-3 py-3 text-center text-xs font-medium text-orange-600 uppercase tracking-wider bg-orange-50">{{ labelCmv }}</th>
             </tr>
             <tr>
               <!-- Entradas por semana (dinâmico) -->
-              <th v-for="sem in semanas" :key="'ent-' + sem.label" class="px-2 py-1 text-center text-xs font-medium text-green-500 bg-green-50">
+              <th v-for="sem in semanas" :key="'ent-' + sem.label" class="px-2 py-1 text-center text-xs font-medium text-controle-500 bg-controle-50">
                 <MiniCalendar :mes="selectedMes" :ano="selectedAno" :data-inicio="sem.inicio" :data-fim="sem.fim">
                   {{ sem.label }}
                 </MiniCalendar>
               </th>
-              <th class="px-2 py-1 text-center text-xs font-medium text-green-600 bg-green-50 border-r">Tot</th>
+              <th class="px-2 py-1 text-center text-xs font-medium text-controle-600 bg-controle-50 border-r">Tot</th>
               <!-- Saídas por semana (dinâmico) -->
               <th v-for="sem in semanas" :key="'sai-' + sem.label" class="px-2 py-1 text-center text-xs font-medium text-red-500 bg-red-50">
                 <MiniCalendar :mes="selectedMes" :ano="selectedAno" :data-inicio="sem.inicio" :data-fim="sem.fim">
@@ -168,38 +168,38 @@
               <th class="px-2 py-1 text-center text-xs font-medium text-red-600 bg-red-50 border-r">Tot</th>
             </tr>
           </thead>
-          <tbody class="bg-white divide-y divide-gray-200">
+          <tbody class="bg-white divide-y divide-operacao-200">
             <tr v-if="!loading && filteredPainel.length === 0">
-              <td :colspan="totalColunas" class="px-3 py-8 text-center text-gray-500">
+              <td :colspan="totalColunas" class="px-3 py-8 text-center text-operacao-400">
                 Nenhum dado encontrado para o período selecionado
               </td>
             </tr>
-            <tr v-for="item in paginatedItems" :key="item.produto_id" class="hover:bg-gray-50">
-              <td class="px-2 py-2 text-xs font-medium text-gray-900 border-r truncate max-w-[120px]" :title="item.produto">{{ item.produto }}</td>
-              <td class="px-2 py-2 text-xs text-center text-gray-600 border-r">{{ formatQtd(item.estoque_inicial) }}</td>
+            <tr v-for="item in paginatedItems" :key="item.produto_id" class="hover:bg-operacao-50">
+              <td class="px-2 py-2 text-xs font-medium text-operacao-800 border-r truncate max-w-[120px]" :title="item.produto">{{ item.produto }}</td>
+              <td class="px-2 py-2 text-xs text-center text-operacao-500 border-r">{{ formatQtd(item.estoque_inicial) }}</td>
               <!-- Entradas por semana (dinâmico) -->
-              <td v-for="(_, idx) in semanas" :key="'ent-' + idx" class="px-1 py-2 text-xs text-center text-green-600 bg-green-50/50">{{ formatQtd(item.entradas_por_semana[idx]) }}</td>
-              <td class="px-1 py-2 text-xs text-center font-medium text-green-700 bg-green-100 border-r">{{ formatQtd(item.total_entradas) }}</td>
+              <td v-for="(_, idx) in semanas" :key="'ent-' + idx" class="px-1 py-2 text-xs text-center text-controle-600 bg-controle-50/50">{{ formatQtd(item.entradas_por_semana[idx]) }}</td>
+              <td class="px-1 py-2 text-xs text-center font-medium text-controle-700 bg-controle-100 border-r">{{ formatQtd(item.total_entradas) }}</td>
               <!-- Saídas por semana (dinâmico) -->
               <td v-for="(_, idx) in semanas" :key="'sai-' + idx" class="px-1 py-2 text-xs text-center text-red-600 bg-red-50/50">{{ formatQtd(item.saidas_por_semana[idx]) }}</td>
               <td class="px-1 py-2 text-xs text-center font-medium text-red-700 bg-red-100 border-r">{{ formatQtd(item.total_saidas) }}</td>
               <!-- Totais -->
-              <td class="px-2 py-2 text-xs text-center font-medium text-blue-600 border-r">{{ formatQtd(item.estoque_final) }}</td>
-              <td class="px-2 py-2 text-xs text-center text-gray-600 border-r">{{ formatCurrencyShort(item.custo) }}</td>
-              <td class="px-2 py-2 text-xs text-center font-medium text-gray-900 border-r">{{ formatCurrencyShort(item.valor_total) }}</td>
+              <td class="px-2 py-2 text-xs text-center font-medium text-guardian-600 border-r">{{ formatQtd(item.estoque_final) }}</td>
+              <td class="px-2 py-2 text-xs text-center text-operacao-500 border-r">{{ formatCurrencyShort(item.custo) }}</td>
+              <td class="px-2 py-2 text-xs text-center font-medium text-operacao-800 border-r">{{ formatCurrencyShort(item.valor_total) }}</td>
               <!-- CMV -->
               <td v-if="showCmv" class="px-2 py-2 text-xs text-center font-medium text-orange-600 bg-orange-50/50">{{ formatCurrencyShort(item.cmv || 0) }}</td>
             </tr>
           </tbody>
-          <tfoot class="bg-gray-100">
+          <tfoot class="bg-operacao-100">
             <tr class="font-semibold">
-              <td class="px-3 py-2 text-xs text-gray-700 border-r">TOTAL</td>
-              <td class="px-3 py-2 text-xs text-center text-gray-700 border-r">-</td>
-              <td :colspan="semanas.length + 1" class="px-3 py-2 text-xs text-center text-green-700 border-r bg-green-100">{{ formatQtd(totais.entradas) }}</td>
+              <td class="px-3 py-2 text-xs text-operacao-600 border-r">TOTAL</td>
+              <td class="px-3 py-2 text-xs text-center text-operacao-600 border-r">-</td>
+              <td :colspan="semanas.length + 1" class="px-3 py-2 text-xs text-center text-controle-700 border-r bg-controle-100">{{ formatQtd(totais.entradas) }}</td>
               <td :colspan="semanas.length + 1" class="px-3 py-2 text-xs text-center text-red-700 border-r bg-red-100">{{ formatQtd(totais.saidas) }}</td>
-              <td class="px-3 py-2 text-xs text-center text-blue-700 border-r">-</td>
-              <td class="px-3 py-2 text-xs text-center text-gray-700 border-r">-</td>
-              <td class="px-3 py-2 text-xs text-center text-gray-900 border-r">{{ formatCurrencyShort(totais.valor) }}</td>
+              <td class="px-3 py-2 text-xs text-center text-guardian-700 border-r">-</td>
+              <td class="px-3 py-2 text-xs text-center text-operacao-600 border-r">-</td>
+              <td class="px-3 py-2 text-xs text-center text-operacao-800 border-r">{{ formatCurrencyShort(totais.valor) }}</td>
               <td v-if="showCmv" class="px-3 py-2 text-xs text-center text-orange-700 bg-orange-100">{{ formatCurrencyShort(totais.cmv) }}</td>
             </tr>
           </tfoot>
@@ -318,14 +318,7 @@ const formatQtd = (value: number | null | undefined) => {
   }).format(truncate2(value))
 }
 
-const formatCurrency = (value: number) => {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(truncate2(value))
-}
+const { formatCurrency } = useFormatters()
 
 const formatCurrencyShort = (value: number) => {
   if (!value || value === 0) return '-'

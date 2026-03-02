@@ -74,7 +74,7 @@
     <!-- ========================================== -->
     <!-- LADO DIREITO - Formulário -->
     <!-- ========================================== -->
-    <div class="flex-1 flex items-center justify-center bg-gray-50 px-4 py-8 sm:px-8">
+    <div class="flex-1 flex items-center justify-center bg-operacao-50 px-4 py-8 sm:px-8">
       <div class="w-full max-w-md">
         <!-- Logo mobile -->
         <div class="lg:hidden text-center mb-8">
@@ -83,8 +83,8 @@
 
         <!-- Header -->
         <div class="mb-8">
-          <h2 class="text-2xl font-bold text-gray-900">Configure sua empresa</h2>
-          <p class="text-gray-500 mt-1.5">Preencha os dados abaixo para começar a usar o sistema.</p>
+          <h2 class="text-2xl font-bold text-operacao-800">Configure sua empresa</h2>
+          <p class="text-operacao-400 mt-1.5">Preencha os dados abaixo para começar a usar o sistema.</p>
         </div>
 
         <!-- Stepper -->
@@ -95,12 +95,12 @@
             </div>
             <span class="text-sm font-semibold text-guardian-700">Criar empresa</span>
           </div>
-          <div class="flex-1 h-px bg-gray-200" />
+          <div class="flex-1 h-px bg-operacao-200" />
           <div class="flex items-center gap-2">
-            <div class="w-8 h-8 rounded-full bg-gray-200 text-gray-400 flex items-center justify-center text-xs font-bold">
+            <div class="w-8 h-8 rounded-full bg-operacao-200 text-operacao-400 flex items-center justify-center text-xs font-bold">
               2
             </div>
-            <span class="text-sm text-gray-400">Começar</span>
+            <span class="text-sm text-operacao-400">Começar</span>
           </div>
         </div>
 
@@ -108,7 +108,7 @@
         <form @submit.prevent="criarPrimeiraEmpresa" class="space-y-5">
           <!-- Nome -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1.5">
+            <label class="block text-sm font-medium text-operacao-600 mb-1.5">
               Nome da Empresa <span class="text-red-500">*</span>
             </label>
             <UInput
@@ -119,15 +119,15 @@
               :ui="{ rounded: 'rounded-xl', color: { white: { outline: 'bg-white' } } }"
             >
               <template #leading>
-                <UIcon name="i-heroicons-building-office" class="w-5 h-5 text-gray-400" />
+                <UIcon name="i-heroicons-building-office" class="w-5 h-5 text-operacao-400" />
               </template>
             </UInput>
           </div>
 
           <!-- CNPJ -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1.5">
-              CNPJ <span class="text-gray-400 font-normal">(opcional)</span>
+            <label class="block text-sm font-medium text-operacao-600 mb-1.5">
+              CNPJ <span class="text-operacao-400 font-normal">(opcional)</span>
             </label>
             <UInput
               :value="cnpjFormatado"
@@ -138,32 +138,32 @@
               :ui="{ rounded: 'rounded-xl', color: { white: { outline: 'bg-white' } } }"
             >
               <template #leading>
-                <UIcon name="i-heroicons-identification" class="w-5 h-5 text-gray-400" />
+                <UIcon name="i-heroicons-identification" class="w-5 h-5 text-operacao-400" />
               </template>
             </UInput>
           </div>
 
           <!-- Upload de Logo -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1.5">
-              Logo <span class="text-gray-400 font-normal">(opcional)</span>
+            <label class="block text-sm font-medium text-operacao-600 mb-1.5">
+              Logo <span class="text-operacao-400 font-normal">(opcional)</span>
             </label>
             <div
               class="relative flex items-center gap-4 p-4 bg-white rounded-xl border-2 border-dashed transition-all duration-200 cursor-pointer"
-              :class="isDragging ? 'border-guardian-400 bg-guardian-50 shadow-md shadow-guardian-500/10' : 'border-gray-200 hover:border-guardian-300 hover:shadow-sm'"
+              :class="isDragging ? 'border-guardian-400 bg-guardian-50 shadow-md shadow-guardian-500/10' : 'border-operacao-200 hover:border-guardian-300 hover:shadow-sm'"
               @click="triggerFileInput"
               @dragover.prevent="isDragging = true"
               @dragleave="isDragging = false"
               @drop.prevent="handleDrop"
             >
-              <div class="w-14 h-14 rounded-xl bg-gray-50 border border-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
+              <div class="w-14 h-14 rounded-xl bg-operacao-50 border border-operacao-200 flex items-center justify-center overflow-hidden flex-shrink-0">
                 <img v-if="logoPreview" :src="logoPreview" class="w-full h-full object-cover" />
-                <UIcon v-else name="i-heroicons-cloud-arrow-up" class="w-6 h-6 text-gray-300" />
+                <UIcon v-else name="i-heroicons-cloud-arrow-up" class="w-6 h-6 text-operacao-300" />
               </div>
               <div class="text-sm flex-1 min-w-0">
-                <p v-if="logoFile" class="font-medium text-gray-700 truncate">{{ logoFile.name }}</p>
-                <p v-else class="font-medium text-gray-500">Clique ou arraste uma imagem</p>
-                <p class="text-xs text-gray-400 mt-0.5">PNG, JPG ou WebP - até 2MB</p>
+                <p v-if="logoFile" class="font-medium text-operacao-600 truncate">{{ logoFile.name }}</p>
+                <p v-else class="font-medium text-operacao-400">Clique ou arraste uma imagem</p>
+                <p class="text-xs text-operacao-400 mt-0.5">PNG, JPG ou WebP - até 2MB</p>
               </div>
               <!-- Botão remover -->
               <button
@@ -216,7 +216,7 @@
         <!-- Logout -->
         <div class="text-center mt-8">
           <button
-            class="text-sm text-gray-400 hover:text-gray-600 transition-colors inline-flex items-center gap-1.5"
+            class="text-sm text-operacao-400 hover:text-operacao-500 transition-colors inline-flex items-center gap-1.5"
             @click="logout"
           >
             <UIcon name="i-heroicons-arrow-left-on-rectangle" class="w-4 h-4" />

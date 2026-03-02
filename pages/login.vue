@@ -5,19 +5,19 @@
       <div class="inline-block bg-white rounded-xl p-3 mb-4">
         <img src="/logo.png" alt="Guardião do CMV" class="h-14 w-auto" />
       </div>
-      <h1 class="text-2xl font-bold text-gray-900">Bem-vindo de volta!</h1>
-      <p class="text-gray-500 mt-1">Entre com suas credenciais para acessar</p>
+      <h1 class="text-2xl font-bold text-operacao-800">Bem-vindo de volta!</h1>
+      <p class="text-operacao-400 mt-1">Entre com suas credenciais para acessar</p>
     </div>
 
     <!-- Formulario -->
     <form @submit.prevent="handleLogin" class="space-y-5">
       <div :class="{ 'animate-shake': emailError }">
-        <label class="block text-sm font-medium text-gray-700 mb-1.5">
+        <label class="block text-sm font-medium text-operacao-600 mb-1.5">
           Email <span class="text-red-500">*</span>
         </label>
         <div class="relative">
           <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <UIcon name="i-heroicons-envelope" class="w-5 h-5 text-gray-400" />
+            <UIcon name="i-heroicons-envelope" class="w-5 h-5 text-operacao-400" />
           </div>
           <input
             v-model="form.email"
@@ -31,12 +31,12 @@
       </div>
 
       <div :class="{ 'animate-shake': passwordError }">
-        <label class="block text-sm font-medium text-gray-700 mb-1.5">
+        <label class="block text-sm font-medium text-operacao-600 mb-1.5">
           Senha <span class="text-red-500">*</span>
         </label>
         <div class="relative">
           <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <UIcon name="i-heroicons-lock-closed" class="w-5 h-5 text-gray-400" />
+            <UIcon name="i-heroicons-lock-closed" class="w-5 h-5 text-operacao-400" />
           </div>
           <input
             v-model="form.password"
@@ -54,7 +54,7 @@
             <div class="eye-toggle">
               <UIcon
                 :name="showPassword ? 'i-heroicons-eye-slash' : 'i-heroicons-eye'"
-                class="w-5 h-5 text-gray-400 hover:text-gray-600 transition-colors"
+                class="w-5 h-5 text-operacao-400 hover:text-operacao-500 transition-colors"
               />
             </div>
           </button>
@@ -93,15 +93,15 @@
     <!-- Divisor -->
     <div class="relative my-8">
       <div class="absolute inset-0 flex items-center">
-        <div class="w-full border-t border-gray-200" />
+        <div class="w-full border-t border-operacao-200" />
       </div>
       <div class="relative flex justify-center text-sm">
-        <span class="px-4 bg-white text-gray-500">ou</span>
+        <span class="px-4 bg-white text-operacao-400">ou</span>
       </div>
     </div>
 
     <!-- Link Criar Conta -->
-    <p class="text-center text-gray-600">
+    <p class="text-center text-operacao-500">
       Não tem uma conta?
       <NuxtLink to="/register" class="text-guardian-500 hover:text-guardian-600 font-semibold transition-colors">
         Criar conta gratuita
@@ -236,15 +236,15 @@ const handleLogin = async () => {
 <style scoped>
 /* Input premium com micro-interações */
 .input-premium {
-  @apply w-full pl-10 pr-4 py-3 text-base rounded-xl border border-gray-200 bg-gray-50/50;
+  @apply w-full pl-10 pr-4 py-3 text-base rounded-xl border border-operacao-200 bg-operacao-50/50;
   @apply transition-all duration-300 ease-out;
   @apply focus:bg-white focus:border-guardian-400 focus:ring-4 focus:ring-guardian-100 focus:outline-none;
-  @apply placeholder-gray-400;
+  @apply placeholder-operacao-400;
   @apply disabled:opacity-50 disabled:cursor-not-allowed;
 }
 
 .input-premium:hover:not(:focus):not(:disabled) {
-  @apply border-gray-300 bg-white;
+  @apply border-operacao-300 bg-white;
 }
 
 /* Botão premium com micro-interações */

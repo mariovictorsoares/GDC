@@ -3,8 +3,8 @@
     <!-- Logo e Titulo -->
     <div class="text-center mb-8">
       <img src="/logo.png" alt="Guardião do CMV" class="h-16 w-auto mx-auto mb-4" />
-      <h1 class="text-2xl font-bold text-gray-900">Nova senha</h1>
-      <p class="text-gray-500 mt-1">Digite sua nova senha abaixo</p>
+      <h1 class="text-2xl font-bold text-operacao-800">Nova senha</h1>
+      <p class="text-operacao-400 mt-1">Digite sua nova senha abaixo</p>
     </div>
 
     <!-- Formulario -->
@@ -44,11 +44,11 @@
 
     <!-- Mensagem de sucesso -->
     <div v-else class="text-center py-8">
-      <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-        <UIcon name="i-heroicons-check" class="w-8 h-8 text-green-600" />
+      <div class="w-16 h-16 bg-controle-100 rounded-full flex items-center justify-center mx-auto mb-4">
+        <UIcon name="i-heroicons-check" class="w-8 h-8 text-controle-600" />
       </div>
-      <h2 class="text-xl font-semibold text-gray-900 mb-2">Senha alterada!</h2>
-      <p class="text-gray-500 mb-6">
+      <h2 class="text-xl font-semibold text-operacao-800 mb-2">Senha alterada!</h2>
+      <p class="text-operacao-400 mb-6">
         Sua senha foi alterada com sucesso.<br />
         Agora você pode fazer login com a nova senha.
       </p>
@@ -61,14 +61,14 @@
     <div v-if="!success" class="mt-8">
       <div class="relative my-8">
         <div class="absolute inset-0 flex items-center">
-          <div class="w-full border-t border-gray-200" />
+          <div class="w-full border-t border-operacao-200" />
         </div>
         <div class="relative flex justify-center text-sm">
-          <span class="px-4 bg-gray-50 text-gray-500">ou</span>
+          <span class="px-4 bg-operacao-50 text-operacao-400">ou</span>
         </div>
       </div>
 
-      <p class="text-center text-gray-600">
+      <p class="text-center text-operacao-500">
         <NuxtLink to="/login" class="text-guardian-500 hover:text-guardian-600 font-semibold">
           Voltar ao login
         </NuxtLink>

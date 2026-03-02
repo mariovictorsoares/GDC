@@ -424,7 +424,23 @@ export interface ContagemSetorRel {
   id: string
   contagem_id: string
   setor_id: string
+  status?: string
+  progresso?: number
+  finalizado_em?: string
   setor?: Setor
+}
+
+// Item de contagem persistido no banco (tabela contagem_itens)
+export interface ContagemItemDB {
+  id: string
+  contagem_id: string
+  setor_id: string
+  produto_id: string
+  quantidade_contada: number | null
+  empresa_id?: string
+  created_at?: string
+  updated_at?: string
+  produto?: Produto
 }
 
 // Tipos para Contagem de Estoque (inventário em lote)
@@ -462,8 +478,15 @@ export interface Pedido {
   id: string
   empresa_id?: string
   data: string
+  nome?: string
   observacao?: string
-  status: 'rascunho' | 'enviado' | 'concluido'
+  status: 'rascunho' | 'enviado' | 'em_andamento' | 'finalizada' | 'concluido'
+  previsao_recebimento?: string
+  responsavel_nome?: string
+  responsavel_telefone?: string
+  data_recebimento?: string
+  valor_estimado?: number
+  origem?: 'manual' | 'reposicao'
   created_at?: string
   // Relacionamentos
   itens?: PedidoItem[]
@@ -475,6 +498,7 @@ export interface PedidoItem {
   produto_id: string
   fornecedor_id?: string
   quantidade: number
+  preco_estimado?: number
   observacao?: string
   created_at?: string
   // Relacionamentos

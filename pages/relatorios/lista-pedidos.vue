@@ -3,8 +3,8 @@
     <!-- Header -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900">Lista de Pedidos</h1>
-        <p class="text-sm text-gray-500">Crie pedidos de compra por grupo/subgrupo e envie pelo WhatsApp</p>
+        <h1 class="text-2xl font-bold text-operacao-800">Lista de Pedidos</h1>
+        <p class="text-sm text-operacao-400">Crie pedidos de compra por grupo/subgrupo e envie pelo WhatsApp</p>
       </div>
       <UButton color="primary" class="w-full sm:w-auto" @click="abrirModalSetup">
         <UIcon name="i-heroicons-plus" class="w-4 h-4 mr-2" />
@@ -38,7 +38,7 @@
 
     <!-- Resumo Skeleton -->
     <div v-if="loadingHistorico" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <div v-for="i in 3" :key="i" class="rounded-xl bg-white ring-1 ring-gray-100 shadow-sm p-5">
+      <div v-for="i in 3" :key="i" class="rounded-xl bg-white ring-1 ring-operacao-100 shadow-sm p-5">
         <div class="flex items-center gap-4">
           <USkeleton class="h-12 w-12 rounded-lg" />
           <div class="space-y-2">
@@ -53,34 +53,34 @@
     <div v-if="!loadingHistorico" class="grid grid-cols-1 md:grid-cols-3 gap-4">
       <UCard>
         <div class="flex items-center gap-4">
-          <div class="p-3 bg-blue-100 rounded-lg flex items-center justify-center">
-            <UIcon name="i-heroicons-clipboard-document-list" class="w-6 h-6 text-blue-600" />
+          <div class="p-3 bg-guardian-100 rounded-lg flex items-center justify-center">
+            <UIcon name="i-heroicons-clipboard-document-list" class="w-6 h-6 text-guardian-600" />
           </div>
           <div>
-            <p class="text-sm text-gray-500">Total de Pedidos</p>
-            <p class="text-2xl font-bold text-gray-900">{{ pedidosFiltrados.length }}</p>
+            <p class="text-sm text-operacao-400">Total de Pedidos</p>
+            <p class="text-2xl font-bold text-operacao-800">{{ pedidosFiltrados.length }}</p>
           </div>
         </div>
       </UCard>
       <UCard>
         <div class="flex items-center gap-4">
-          <div class="p-3 bg-green-100 rounded-lg flex items-center justify-center">
-            <UIcon name="i-heroicons-check-circle" class="w-6 h-6 text-green-600" />
+          <div class="p-3 bg-controle-100 rounded-lg flex items-center justify-center">
+            <UIcon name="i-heroicons-check-circle" class="w-6 h-6 text-controle-600" />
           </div>
           <div>
-            <p class="text-sm text-gray-500">Enviados</p>
-            <p class="text-2xl font-bold text-green-600">{{ pedidosEnviados }}</p>
+            <p class="text-sm text-operacao-400">Enviados</p>
+            <p class="text-2xl font-bold text-controle-600">{{ pedidosEnviados }}</p>
           </div>
         </div>
       </UCard>
       <UCard>
         <div class="flex items-center gap-4">
           <div class="p-3 bg-yellow-100 rounded-lg flex items-center justify-center">
-            <UIcon name="i-heroicons-document-text" class="w-6 h-6 text-yellow-600" />
+            <UIcon name="i-heroicons-document-text" class="w-6 h-6 text-alerta-600" />
           </div>
           <div>
-            <p class="text-sm text-gray-500">Rascunhos</p>
-            <p class="text-2xl font-bold text-yellow-600">{{ pedidosRascunho }}</p>
+            <p class="text-sm text-operacao-400">Rascunhos</p>
+            <p class="text-2xl font-bold text-alerta-600">{{ pedidosRascunho }}</p>
           </div>
         </div>
       </UCard>
@@ -89,7 +89,7 @@
     <!-- Lista de pedidos -->
     <UCard :ui="{ body: { padding: '' } }">
       <template #header>
-        <h3 class="text-lg font-semibold text-gray-900">Histórico de Pedidos</h3>
+        <h3 class="text-lg font-semibold text-operacao-800">Histórico de Pedidos</h3>
       </template>
 
       <div v-if="loadingHistorico" class="p-5 space-y-4">
@@ -108,35 +108,35 @@
         </div>
       </div>
 
-      <div v-else-if="pedidosFiltrados.length === 0" class="flex flex-col items-center justify-center py-12 text-gray-500">
+      <div v-else-if="pedidosFiltrados.length === 0" class="flex flex-col items-center justify-center py-12 text-operacao-400">
         <UIcon name="i-heroicons-inbox" class="w-10 h-10 mb-3" />
         <p class="text-sm">Nenhum pedido registrado</p>
-        <p class="text-xs text-gray-400 mt-1">Clique em "Novo Pedido" para começar</p>
+        <p class="text-xs text-operacao-400 mt-1">Clique em "Novo Pedido" para começar</p>
       </div>
 
-      <div v-else class="divide-y divide-gray-100">
+      <div v-else class="divide-y divide-operacao-100">
         <div v-for="pedido in pedidosPaginados" :key="pedido.id">
           <!-- Linha principal -->
           <button
-            class="w-full flex items-center justify-between px-6 py-4 hover:bg-gray-50 transition-colors text-left"
+            class="w-full flex items-center justify-between px-6 py-4 hover:bg-operacao-50 transition-colors text-left"
             @click="togglePedido(pedido.id)"
           >
             <div class="flex items-center gap-4">
-              <div class="p-2 rounded-lg" :class="pedido.status === 'enviado' ? 'bg-green-50' : pedido.status === 'concluido' ? 'bg-blue-50' : 'bg-yellow-50'">
+              <div class="p-2 rounded-lg" :class="pedido.status === 'enviado' ? 'bg-controle-50' : pedido.status === 'concluido' ? 'bg-guardian-50' : 'bg-alerta-50'">
                 <UIcon
                   :name="pedido.status === 'enviado' ? 'i-heroicons-paper-airplane' : pedido.status === 'concluido' ? 'i-heroicons-check-circle' : 'i-heroicons-document-text'"
                   class="w-5 h-5"
-                  :class="pedido.status === 'enviado' ? 'text-green-600' : pedido.status === 'concluido' ? 'text-blue-600' : 'text-yellow-600'"
+                  :class="pedido.status === 'enviado' ? 'text-controle-600' : pedido.status === 'concluido' ? 'text-guardian-600' : 'text-alerta-600'"
                 />
               </div>
               <div>
-                <p class="font-semibold text-gray-900">
+                <p class="font-semibold text-operacao-800">
                   Pedido {{ formatDate(pedido.data) }}
                 </p>
-                <p class="text-sm text-gray-500">
+                <p class="text-sm text-operacao-400">
                   {{ pedido.itens?.length || 0 }} {{ (pedido.itens?.length || 0) === 1 ? 'item' : 'itens' }}
                   <span v-if="pedido.observacao" class="mx-1">&middot;</span>
-                  <span v-if="pedido.observacao" class="text-gray-400">{{ pedido.observacao }}</span>
+                  <span v-if="pedido.observacao" class="text-operacao-400">{{ pedido.observacao }}</span>
                 </p>
               </div>
             </div>
@@ -150,30 +150,30 @@
               </UBadge>
               <UIcon
                 name="i-heroicons-chevron-down"
-                class="w-5 h-5 text-gray-400 transition-transform"
+                class="w-5 h-5 text-operacao-400 transition-transform"
                 :class="{ 'rotate-180': expandedPedidos.has(pedido.id) }"
               />
             </div>
           </button>
 
           <!-- Detalhes expandidos -->
-          <div v-if="expandedPedidos.has(pedido.id)" class="bg-gray-50 px-6 py-4">
+          <div v-if="expandedPedidos.has(pedido.id)" class="bg-operacao-50 px-6 py-4">
             <div class="overflow-x-auto">
               <table class="w-full text-sm">
                 <thead>
-                  <tr class="text-left text-gray-500 border-b border-gray-200">
+                  <tr class="text-left text-operacao-400 border-b border-operacao-200">
                     <th class="pb-2 font-medium">Produto</th>
                     <th class="pb-2 font-medium text-right">Quantidade</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="item in pedido.itens" :key="item.id" class="border-b border-gray-100 last:border-0">
+                  <tr v-for="item in pedido.itens" :key="item.id" class="border-b border-operacao-100 last:border-0">
                     <td class="py-2">
-                      <p class="font-medium text-gray-900">{{ item.produto?.nome || '-' }}</p>
-                      <p class="text-xs text-gray-500">{{ item.produto?.subgrupo?.grupo?.nome }} / {{ item.produto?.subgrupo?.nome }}</p>
+                      <p class="font-medium text-operacao-800">{{ item.produto?.nome || '-' }}</p>
+                      <p class="text-xs text-operacao-400">{{ item.produto?.subgrupo?.grupo?.nome }} / {{ item.produto?.subgrupo?.nome }}</p>
                     </td>
                     <td class="py-2 text-right">
-                      <span class="font-semibold text-gray-900">
+                      <span class="font-semibold text-operacao-800">
                         {{ formatNumber(item.quantidade) }}
                         {{ item.produto?.unidade?.sigla || '' }}
                       </span>
@@ -251,29 +251,29 @@
       v-model="modalPedidoOpen"
       :ui="{
         width: 'sm:max-w-5xl',
-        overlay: { background: 'bg-gray-900/50 backdrop-blur-sm' },
-        background: 'bg-white dark:bg-gray-800',
-        ring: 'ring-1 ring-gray-200 dark:ring-gray-700',
+        overlay: { background: 'bg-operacao-900/50 backdrop-blur-sm' },
+        background: 'bg-white dark:bg-operacao-800',
+        ring: 'ring-1 ring-operacao-200 dark:ring-operacao-700',
         shadow: 'shadow-2xl'
       }"
       :prevent-close="itensPreenchidos > 0"
     >
-      <UCard :ui="{ background: 'bg-transparent', ring: 'ring-0', shadow: '', divide: 'divide-gray-100 dark:divide-gray-700' }">
+      <UCard :ui="{ background: 'bg-transparent', ring: 'ring-0', shadow: '', divide: 'divide-operacao-100 dark:divide-operacao-700' }">
         <template #header>
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
-              <div class="p-2 rounded-lg flex items-center justify-center" :class="faseModal === 3 ? 'bg-green-100' : 'bg-blue-100'">
+              <div class="p-2 rounded-lg flex items-center justify-center" :class="faseModal === 3 ? 'bg-controle-100' : 'bg-guardian-100'">
                 <UIcon
                   :name="faseModal === 1 ? 'i-heroicons-clipboard-document-list' : faseModal === 2 ? 'i-heroicons-pencil-square' : 'i-heroicons-check-circle'"
                   class="w-5 h-5"
-                  :class="faseModal === 3 ? 'text-green-600' : 'text-blue-600'"
+                  :class="faseModal === 3 ? 'text-controle-600' : 'text-guardian-600'"
                 />
               </div>
               <div>
-                <h3 class="text-lg font-semibold text-gray-900">
+                <h3 class="text-lg font-semibold text-operacao-800">
                   {{ faseModal === 1 ? 'Novo Pedido' : faseModal === 2 ? 'Quantidades' : 'Revisão do Pedido' }}
                 </h3>
-                <p class="text-xs text-gray-500">
+                <p class="text-xs text-operacao-400">
                   {{ faseModal === 1 ? 'Selecione grupos e subgrupos' : faseModal === 2 ? resumoSelecoes : `${itensParaSalvar.length} itens · ${formatDate(setupData)}` }}
                 </p>
               </div>
@@ -284,11 +284,11 @@
                 <div v-for="i in 3" :key="i" class="flex items-center gap-1.5">
                   <div
                     class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-colors"
-                    :class="i <= faseModal ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-400'"
+                    :class="i <= faseModal ? 'bg-blue-600 text-white' : 'bg-operacao-200 text-operacao-400'"
                   >
                     {{ i }}
                   </div>
-                  <div v-if="i < 3" class="w-4 h-0.5" :class="i < faseModal ? 'bg-blue-600' : 'bg-gray-200'" />
+                  <div v-if="i < 3" class="w-4 h-0.5" :class="i < faseModal ? 'bg-blue-600' : 'bg-operacao-200'" />
                 </div>
               </div>
               <UButton
@@ -307,11 +307,11 @@
             <UInput v-model="setupData" type="date" />
           </UFormGroup>
 
-          <div class="border-t border-gray-200 dark:border-gray-700" />
+          <div class="border-t border-operacao-200 dark:border-operacao-700" />
 
           <!-- Seleção de grupo/subgrupo para adicionar -->
           <div class="space-y-3">
-            <p class="text-sm font-medium text-gray-700">Adicionar Grupo / Subgrupo</p>
+            <p class="text-sm font-medium text-operacao-600">Adicionar Grupo / Subgrupo</p>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <UFormGroup label="Grupo">
                 <USelect
@@ -343,15 +343,15 @@
 
           <!-- Lista de grupo/subgrupo selecionados -->
           <div v-if="selecoes.length > 0" class="space-y-2">
-            <p class="text-sm font-medium text-gray-700">Grupos selecionados</p>
+            <p class="text-sm font-medium text-operacao-600">Grupos selecionados</p>
             <div class="flex flex-wrap gap-2">
               <div
                 v-for="(sel, idx) in selecoes"
                 :key="idx"
-                class="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-full text-sm text-blue-800"
+                class="flex items-center gap-1.5 px-3 py-1.5 bg-guardian-50 border border-blue-200 rounded-full text-sm text-blue-800"
               >
                 <span class="font-medium">{{ sel.grupoNome }}</span>
-                <span v-if="sel.subgrupoNome" class="text-blue-500">/ {{ sel.subgrupoNome }}</span>
+                <span v-if="sel.subgrupoNome" class="text-guardian-500">/ {{ sel.subgrupoNome }}</span>
                 <button
                   class="ml-1 p-0.5 rounded-full hover:bg-blue-200 transition-colors"
                   @click="removerSelecao(idx)"
@@ -362,9 +362,9 @@
             </div>
           </div>
 
-          <div v-if="selecoes.length > 0" class="p-3 bg-blue-50 rounded-lg border border-blue-200">
+          <div v-if="selecoes.length > 0" class="p-3 bg-guardian-50 rounded-lg border border-blue-200">
             <div class="flex items-center gap-2">
-              <UIcon name="i-heroicons-information-circle" class="w-5 h-5 text-blue-600" />
+              <UIcon name="i-heroicons-information-circle" class="w-5 h-5 text-guardian-600" />
               <span class="text-sm text-blue-800 font-medium">
                 {{ produtosParaMontar.length }} {{ produtosParaMontar.length === 1 ? 'produto será listado' : 'produtos serão listados' }}
               </span>
@@ -376,15 +376,15 @@
         <div v-if="faseModal === 2" class="space-y-4">
           <!-- Barra de progresso -->
           <div class="flex items-center justify-between">
-            <span class="text-sm font-medium text-gray-700">Progresso</span>
-            <span class="text-sm font-bold" :class="itensPreenchidos === itensPedido.length ? 'text-green-600' : 'text-blue-600'">
+            <span class="text-sm font-medium text-operacao-600">Progresso</span>
+            <span class="text-sm font-bold" :class="itensPreenchidos === itensPedido.length ? 'text-controle-600' : 'text-guardian-600'">
               {{ itensPreenchidos }} de {{ itensPedido.length }} produtos
             </span>
           </div>
-          <div class="w-full bg-gray-200 rounded-full h-2">
+          <div class="w-full bg-operacao-200 rounded-full h-2">
             <div
               class="h-2 rounded-full transition-all duration-300"
-              :class="itensPreenchidos === itensPedido.length ? 'bg-green-500' : 'bg-blue-500'"
+              :class="itensPreenchidos === itensPedido.length ? 'bg-controle-500' : 'bg-guardian-500'"
               :style="{ width: progressoPercent + '%' }"
             />
           </div>
@@ -397,26 +397,26 @@
           />
 
           <!-- Tabela -->
-          <div class="max-h-[55vh] overflow-y-auto border border-gray-200 rounded-lg">
+          <div class="max-h-[55vh] overflow-y-auto border border-operacao-200 rounded-lg">
             <!-- Header -->
-            <div class="hidden sm:grid sm:grid-cols-12 gap-3 px-4 py-2.5 bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wider sticky top-0 z-10">
+            <div class="hidden sm:grid sm:grid-cols-12 gap-3 px-4 py-2.5 bg-operacao-50 border-b border-operacao-200 text-xs font-semibold text-operacao-400 uppercase tracking-wider sticky top-0 z-10">
               <div class="col-span-5">Produto</div>
               <div class="col-span-3 text-center">Quantidade</div>
               <div class="col-span-4">Obs.</div>
             </div>
 
-            <div class="divide-y divide-gray-100">
+            <div class="divide-y divide-operacao-100">
               <div
                 v-for="(item, idx) in itensMontagemFiltrados"
                 :key="item.produto_id"
-                class="px-4 py-2.5 hover:bg-gray-50/50 transition-colors"
-                :class="{ 'bg-blue-50/30': item.quantidade !== null && item.quantidade > 0 }"
+                class="px-4 py-2.5 hover:bg-operacao-50/50 transition-colors"
+                :class="{ 'bg-guardian-50/30': item.quantidade !== null && item.quantidade > 0 }"
               >
                 <!-- Desktop -->
                 <div class="hidden sm:grid sm:grid-cols-12 gap-3 items-center">
                   <div class="col-span-5">
-                    <p class="font-medium text-gray-900 text-sm">{{ item.nome }}</p>
-                    <p class="text-xs text-gray-500">{{ item.subgrupo_nome }} &middot; {{ item.unidade_sigla }}</p>
+                    <p class="font-medium text-operacao-800 text-sm">{{ item.nome }}</p>
+                    <p class="text-xs text-operacao-400">{{ item.subgrupo_nome }} &middot; {{ item.unidade_sigla }}</p>
                   </div>
                   <div class="col-span-3 flex justify-center">
                     <UInput
@@ -447,10 +447,10 @@
                 <div class="sm:hidden space-y-2">
                   <div class="flex justify-between items-start">
                     <div>
-                      <p class="font-medium text-gray-900 text-sm">{{ item.nome }}</p>
-                      <p class="text-xs text-gray-500">{{ item.subgrupo_nome }} &middot; {{ item.unidade_sigla }}</p>
+                      <p class="font-medium text-operacao-800 text-sm">{{ item.nome }}</p>
+                      <p class="text-xs text-operacao-400">{{ item.subgrupo_nome }} &middot; {{ item.unidade_sigla }}</p>
                     </div>
-                    <span v-if="item.quantidade" class="text-sm font-bold text-blue-600">
+                    <span v-if="item.quantidade" class="text-sm font-bold text-guardian-600">
                       {{ formatNumber(item.quantidade) }}
                     </span>
                   </div>
@@ -476,7 +476,7 @@
               </div>
             </div>
 
-            <div v-if="itensMontagemFiltrados.length === 0 && buscaMontagem" class="flex flex-col items-center justify-center py-6 text-gray-500">
+            <div v-if="itensMontagemFiltrados.length === 0 && buscaMontagem" class="flex flex-col items-center justify-center py-6 text-operacao-400">
               <UIcon name="i-heroicons-magnifying-glass" class="w-6 h-6 mb-2" />
               <p class="text-sm">Nenhum produto encontrado para "{{ buscaMontagem }}"</p>
             </div>
@@ -486,27 +486,27 @@
         <!-- FASE 3: Revisão -->
         <div v-if="faseModal === 3" class="space-y-5">
           <!-- Card de resumo -->
-          <div class="p-4 bg-blue-50 rounded-lg text-center">
-            <p class="text-2xl font-bold text-blue-600">{{ itensParaSalvar.length }}</p>
-            <p class="text-xs text-blue-700 mt-1">Itens no pedido</p>
+          <div class="p-4 bg-guardian-50 rounded-lg text-center">
+            <p class="text-2xl font-bold text-guardian-600">{{ itensParaSalvar.length }}</p>
+            <p class="text-xs text-guardian-700 mt-1">Itens no pedido</p>
           </div>
 
           <!-- Lista dos itens -->
-          <div class="max-h-[40vh] overflow-y-auto border border-gray-200 rounded-lg divide-y divide-gray-100">
+          <div class="max-h-[40vh] overflow-y-auto border border-operacao-200 rounded-lg divide-y divide-operacao-100">
             <div
               v-for="item in itensParaSalvar"
               :key="item.produto_id"
               class="flex items-center justify-between px-4 py-2.5"
             >
               <div class="flex-1 min-w-0">
-                <p class="font-medium text-gray-900 text-sm">{{ item.nome }}</p>
-                <p class="text-xs text-gray-500">
+                <p class="font-medium text-operacao-800 text-sm">{{ item.nome }}</p>
+                <p class="text-xs text-operacao-400">
                   {{ item.subgrupo_nome }}
                   <span v-if="item.observacao" class="mx-1">&middot;</span>
                   <span v-if="item.observacao" class="italic">{{ item.observacao }}</span>
                 </p>
               </div>
-              <span class="font-bold text-sm text-blue-600 ml-3 whitespace-nowrap">
+              <span class="font-bold text-sm text-guardian-600 ml-3 whitespace-nowrap">
                 {{ formatNumber(item.quantidade!) }} {{ item.unidade_sigla }}
               </span>
             </div>
@@ -597,13 +597,13 @@
     <UModal
       v-model="modalSairOpen"
       :ui="{
-        overlay: { background: 'bg-gray-900/50 backdrop-blur-sm' },
-        background: 'bg-white dark:bg-gray-800',
-        ring: 'ring-1 ring-gray-200 dark:ring-gray-700',
+        overlay: { background: 'bg-operacao-900/50 backdrop-blur-sm' },
+        background: 'bg-white dark:bg-operacao-800',
+        ring: 'ring-1 ring-operacao-200 dark:ring-operacao-700',
         shadow: 'shadow-2xl'
       }"
     >
-      <UCard :ui="{ background: 'bg-transparent', ring: 'ring-0', shadow: '', divide: 'divide-gray-100 dark:divide-gray-700' }">
+      <UCard :ui="{ background: 'bg-transparent', ring: 'ring-0', shadow: '', divide: 'divide-operacao-100 dark:divide-operacao-700' }">
         <template #header>
           <h3 class="text-lg font-semibold text-yellow-700">Descartar pedido?</h3>
         </template>
@@ -621,23 +621,23 @@
     <UModal
       v-model="modalSucessoOpen"
       :ui="{
-        overlay: { background: 'bg-gray-900/50 backdrop-blur-sm' },
-        background: 'bg-white dark:bg-gray-800',
-        ring: 'ring-1 ring-gray-200 dark:ring-gray-700',
+        overlay: { background: 'bg-operacao-900/50 backdrop-blur-sm' },
+        background: 'bg-white dark:bg-operacao-800',
+        ring: 'ring-1 ring-operacao-200 dark:ring-operacao-700',
         shadow: 'shadow-2xl'
       }"
     >
-      <UCard :ui="{ background: 'bg-transparent', ring: 'ring-0', shadow: '', divide: 'divide-gray-100 dark:divide-gray-700' }">
+      <UCard :ui="{ background: 'bg-transparent', ring: 'ring-0', shadow: '', divide: 'divide-operacao-100 dark:divide-operacao-700' }">
         <template #header>
           <div class="flex items-center gap-3">
-            <div class="p-2 bg-green-100 rounded-lg flex items-center justify-center">
-              <UIcon name="i-heroicons-check-circle" class="w-6 h-6 text-green-600" />
+            <div class="p-2 bg-controle-100 rounded-lg flex items-center justify-center">
+              <UIcon name="i-heroicons-check-circle" class="w-6 h-6 text-controle-600" />
             </div>
             <h3 class="text-lg font-semibold">Pedido salvo!</h3>
           </div>
         </template>
         <p>{{ resumoSalvamento }}</p>
-        <p class="mt-2 text-sm text-gray-500">Deseja criar outro pedido?</p>
+        <p class="mt-2 text-sm text-operacao-400">Deseja criar outro pedido?</p>
         <template #footer>
           <div class="flex flex-col-reverse sm:flex-row justify-end gap-3">
             <UButton color="gray" variant="ghost" class="w-full sm:w-auto" @click="modalSucessoOpen = false">Não, finalizar</UButton>
@@ -651,18 +651,18 @@
     <UModal
       v-model="modalExcluirOpen"
       :ui="{
-        overlay: { background: 'bg-gray-900/50 backdrop-blur-sm' },
-        background: 'bg-white dark:bg-gray-800',
-        ring: 'ring-1 ring-gray-200 dark:ring-gray-700',
+        overlay: { background: 'bg-operacao-900/50 backdrop-blur-sm' },
+        background: 'bg-white dark:bg-operacao-800',
+        ring: 'ring-1 ring-operacao-200 dark:ring-operacao-700',
         shadow: 'shadow-2xl'
       }"
     >
-      <UCard :ui="{ background: 'bg-transparent', ring: 'ring-0', shadow: '', divide: 'divide-gray-100 dark:divide-gray-700' }">
+      <UCard :ui="{ background: 'bg-transparent', ring: 'ring-0', shadow: '', divide: 'divide-operacao-100 dark:divide-operacao-700' }">
         <template #header>
           <h3 class="text-lg font-semibold text-red-600">Excluir Pedido</h3>
         </template>
         <p>Tem certeza que deseja excluir este pedido?</p>
-        <div v-if="pedidoParaExcluir" class="mt-2 p-3 bg-gray-50 rounded-lg text-sm">
+        <div v-if="pedidoParaExcluir" class="mt-2 p-3 bg-operacao-50 rounded-lg text-sm">
           <p><strong>Data:</strong> {{ formatDate(pedidoParaExcluir.data) }}</p>
           <p><strong>Itens:</strong> {{ pedidoParaExcluir.itens?.length || 0 }}</p>
         </div>
@@ -1177,14 +1177,7 @@ const formatDate = (date: string | undefined) => {
   return new Date(date + 'T00:00:00').toLocaleDateString('pt-BR')
 }
 
-const truncate2 = (v: number) => Math.trunc((v || 0) * 100) / 100
-
-const formatNumber = (value: number | undefined | null) => {
-  return new Intl.NumberFormat('pt-BR', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(truncate2(value || 0))
-}
+const { formatNumber } = useFormatters()
 
 // ==========================================
 // INIT

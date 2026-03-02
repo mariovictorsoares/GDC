@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 border-t border-gray-200 bg-white dark:bg-gray-800 dark:border-gray-700 rounded-b-lg">
+  <div class="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 border-t border-operacao-200 bg-white dark:bg-operacao-800 dark:border-operacao-700 rounded-b-lg">
     <!-- Esquerda: Seletor de linhas + Total de registros -->
     <div class="flex items-center gap-3">
       <USelect
@@ -8,7 +8,7 @@
         size="sm"
         class="w-28"
       />
-      <span class="text-sm text-gray-600">
+      <span class="text-sm text-operacao-500">
         {{ totalItems }} registros encontrados
       </span>
     </div>
@@ -23,7 +23,7 @@
         :disabled="modelValue === 1"
         @click="prevPage"
       />
-      <span class="text-sm text-gray-600">Página</span>
+      <span class="text-sm text-operacao-500">Página</span>
       <UInput
         v-model="pageInput"
         type="number"
@@ -33,7 +33,7 @@
         @blur="validateAndGoToPage"
         @keyup.enter="validateAndGoToPage"
       />
-      <span class="text-sm text-gray-600">de {{ totalPages }}</span>
+      <span class="text-sm text-operacao-500">de {{ totalPages }}</span>
       <UButton
         icon="i-heroicons-chevron-right"
         variant="ghost"

@@ -5,19 +5,19 @@
       <div class="inline-block bg-white rounded-xl p-3 mb-4">
         <img src="/logo.png" alt="Guardião do CMV" class="h-14 w-auto" />
       </div>
-      <h1 class="text-2xl font-bold text-gray-900">Crie sua conta</h1>
-      <p class="text-gray-500 mt-1">Comece a controlar seu estoque agora mesmo</p>
+      <h1 class="text-2xl font-bold text-operacao-800">Crie sua conta</h1>
+      <p class="text-operacao-400 mt-1">Comece a controlar seu estoque agora mesmo</p>
     </div>
 
     <!-- Formulario -->
     <form @submit.prevent="handleRegister" class="space-y-4">
       <div :class="{ 'animate-shake': nameError }">
-        <label class="block text-sm font-medium text-gray-700 mb-1.5">
+        <label class="block text-sm font-medium text-operacao-600 mb-1.5">
           Nome completo <span class="text-red-500">*</span>
         </label>
         <div class="relative">
           <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <UIcon name="i-heroicons-user" class="w-5 h-5 text-gray-400" />
+            <UIcon name="i-heroicons-user" class="w-5 h-5 text-operacao-400" />
           </div>
           <input
             v-model="form.name"
@@ -31,12 +31,12 @@
       </div>
 
       <div :class="{ 'animate-shake': emailError }">
-        <label class="block text-sm font-medium text-gray-700 mb-1.5">
+        <label class="block text-sm font-medium text-operacao-600 mb-1.5">
           Email <span class="text-red-500">*</span>
         </label>
         <div class="relative">
           <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <UIcon name="i-heroicons-envelope" class="w-5 h-5 text-gray-400" />
+            <UIcon name="i-heroicons-envelope" class="w-5 h-5 text-operacao-400" />
           </div>
           <input
             v-model="form.email"
@@ -50,12 +50,12 @@
       </div>
 
       <div :class="{ 'animate-shake': passwordError }">
-        <label class="block text-sm font-medium text-gray-700 mb-1.5">
+        <label class="block text-sm font-medium text-operacao-600 mb-1.5">
           Senha <span class="text-red-500">*</span>
         </label>
         <div class="relative">
           <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <UIcon name="i-heroicons-lock-closed" class="w-5 h-5 text-gray-400" />
+            <UIcon name="i-heroicons-lock-closed" class="w-5 h-5 text-operacao-400" />
           </div>
           <input
             v-model="form.password"
@@ -73,7 +73,7 @@
             <div class="eye-toggle">
               <UIcon
                 :name="showPassword ? 'i-heroicons-eye-slash' : 'i-heroicons-eye'"
-                class="w-5 h-5 text-gray-400 hover:text-gray-600 transition-colors"
+                class="w-5 h-5 text-operacao-400 hover:text-operacao-500 transition-colors"
               />
             </div>
           </button>
@@ -93,12 +93,12 @@
       </div>
 
       <div :class="{ 'animate-shake': confirmPasswordError }">
-        <label class="block text-sm font-medium text-gray-700 mb-1.5">
+        <label class="block text-sm font-medium text-operacao-600 mb-1.5">
           Confirmar senha <span class="text-red-500">*</span>
         </label>
         <div class="relative">
           <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <UIcon name="i-heroicons-lock-closed" class="w-5 h-5 text-gray-400" />
+            <UIcon name="i-heroicons-lock-closed" class="w-5 h-5 text-operacao-400" />
           </div>
           <input
             v-model="form.confirmPassword"
@@ -116,7 +116,7 @@
             <div class="eye-toggle">
               <UIcon
                 :name="showConfirmPassword ? 'i-heroicons-eye-slash' : 'i-heroicons-eye'"
-                class="w-5 h-5 text-gray-400 hover:text-gray-600 transition-colors"
+                class="w-5 h-5 text-operacao-400 hover:text-operacao-500 transition-colors"
               />
             </div>
           </button>
@@ -156,15 +156,15 @@
     <!-- Divisor -->
     <div class="relative my-8">
       <div class="absolute inset-0 flex items-center">
-        <div class="w-full border-t border-gray-200" />
+        <div class="w-full border-t border-operacao-200" />
       </div>
       <div class="relative flex justify-center text-sm">
-        <span class="px-4 bg-white text-gray-500">ou</span>
+        <span class="px-4 bg-white text-operacao-400">ou</span>
       </div>
     </div>
 
     <!-- Link Login -->
-    <p class="text-center text-gray-600">
+    <p class="text-center text-operacao-500">
       Já tem uma conta?
       <NuxtLink to="/login" class="text-guardian-500 hover:text-guardian-600 font-semibold transition-colors">
         Fazer login
@@ -238,9 +238,9 @@ const passwordStrengthColor = computed(() => {
 const getPasswordStrengthClass = (index: number) => {
   if (index <= passwordStrength.value) {
     const colors = ['bg-red-400', 'bg-alerta-400', 'bg-controle-400', 'bg-controle-500']
-    return colors[passwordStrength.value - 1] || 'bg-gray-200'
+    return colors[passwordStrength.value - 1] || 'bg-operacao-200'
   }
-  return 'bg-gray-200'
+  return 'bg-operacao-200'
 }
 
 const passwordsMatch = computed(() => {
@@ -392,15 +392,15 @@ const handleRegister = async () => {
 <style scoped>
 /* Input premium com micro-interações */
 .input-premium {
-  @apply w-full pl-10 pr-4 py-3 text-base rounded-xl border border-gray-200 bg-gray-50/50;
+  @apply w-full pl-10 pr-4 py-3 text-base rounded-xl border border-operacao-200 bg-operacao-50/50;
   @apply transition-all duration-300 ease-out;
   @apply focus:bg-white focus:border-guardian-400 focus:ring-4 focus:ring-guardian-100 focus:outline-none;
-  @apply placeholder-gray-400;
+  @apply placeholder-operacao-400;
   @apply disabled:opacity-50 disabled:cursor-not-allowed;
 }
 
 .input-premium:hover:not(:focus):not(:disabled) {
-  @apply border-gray-300 bg-white;
+  @apply border-operacao-300 bg-white;
 }
 
 /* Botão premium com micro-interações */

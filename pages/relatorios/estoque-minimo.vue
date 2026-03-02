@@ -3,8 +3,8 @@
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900">Planejamento de Compras</h1>
-        <p class="text-sm text-gray-500">Ponto de reposição, CMC e variação de custo</p>
+        <h1 class="text-2xl font-bold text-operacao-800">Planejamento de Compras</h1>
+        <p class="text-sm text-operacao-400">Ponto de reposição, CMC e variação de custo</p>
       </div>
       <div class="flex gap-2">
         <UButton color="primary" variant="outline" @click="gerarCompra" v-if="activeTab === 0" :disabled="produtosEmReposicao.length === 0">
@@ -44,7 +44,7 @@
         :ui="{ td: { base: '' } }"
       >
         <template #empty-state>
-          <div class="flex flex-col items-center justify-center py-6 text-gray-500">
+          <div class="flex flex-col items-center justify-center py-6 text-operacao-400">
             <UIcon name="i-heroicons-inbox" class="w-8 h-8 mb-2" />
             <p class="text-sm">Nenhum registro encontrado</p>
           </div>
@@ -59,54 +59,54 @@
         <template #media_semanal-data="{ row }">
           <UPopover :popper="{ placement: 'bottom' }" mode="hover" :open-delay="150">
             <button class="flex items-center gap-1.5 cursor-default group">
-              <span class="font-semibold text-gray-900">{{ formatNumber(row.media_semanas) }}</span>
-              <span class="text-xs text-gray-500">{{ row.unidade }}</span>
-              <UIcon name="i-heroicons-information-circle" class="w-3.5 h-3.5 text-gray-300 group-hover:text-guardian-500 transition-colors" />
+              <span class="font-semibold text-operacao-800">{{ formatNumber(row.media_semanas) }}</span>
+              <span class="text-xs text-operacao-400">{{ row.unidade }}</span>
+              <UIcon name="i-heroicons-information-circle" class="w-3.5 h-3.5 text-operacao-300 group-hover:text-guardian-500 transition-colors" />
             </button>
 
             <template #panel>
               <div class="w-72">
                 <!-- Header -->
                 <div class="flex items-center gap-2 px-4 pt-3 pb-2">
-                  <div class="p-1.5 bg-green-100 rounded-md">
-                    <UIcon name="i-heroicons-chart-bar" class="w-4 h-4 text-green-600" />
+                  <div class="p-1.5 bg-controle-100 rounded-md">
+                    <UIcon name="i-heroicons-chart-bar" class="w-4 h-4 text-controle-600" />
                   </div>
                   <div>
-                    <p class="text-sm font-semibold text-gray-900">{{ row.nome }}</p>
-                    <p class="text-[10px] text-gray-400">Consumo semanal · saídas definitivas</p>
+                    <p class="text-sm font-semibold text-operacao-800">{{ row.nome }}</p>
+                    <p class="text-[10px] text-operacao-400">Consumo semanal · saídas definitivas</p>
                   </div>
                 </div>
 
                 <!-- Tabela estilo painel -->
                 <table class="w-full text-xs">
                   <thead>
-                    <tr class="bg-green-50">
-                      <th class="px-3 py-1.5 text-left font-medium text-green-600">Semana</th>
-                      <th class="px-3 py-1.5 text-left font-medium text-green-600">Período</th>
-                      <th class="px-3 py-1.5 text-right font-medium text-green-600">Consumo</th>
+                    <tr class="bg-controle-50">
+                      <th class="px-3 py-1.5 text-left font-medium text-controle-600">Semana</th>
+                      <th class="px-3 py-1.5 text-left font-medium text-controle-600">Período</th>
+                      <th class="px-3 py-1.5 text-right font-medium text-controle-600">Consumo</th>
                     </tr>
                   </thead>
-                  <tbody class="divide-y divide-gray-100">
-                    <tr class="hover:bg-gray-50">
-                      <td class="px-3 py-2 text-gray-700 font-medium">S -3</td>
-                      <td class="px-3 py-2 text-gray-400">{{ row.semana3_periodo }}</td>
-                      <td class="px-3 py-2 text-right text-green-600 font-medium">{{ formatNumber(row.semana3) }} {{ row.unidade }}</td>
+                  <tbody class="divide-y divide-operacao-100">
+                    <tr class="hover:bg-operacao-50">
+                      <td class="px-3 py-2 text-operacao-600 font-medium">S -3</td>
+                      <td class="px-3 py-2 text-operacao-400">{{ row.semana3_periodo }}</td>
+                      <td class="px-3 py-2 text-right text-controle-600 font-medium">{{ formatNumber(row.semana3) }} {{ row.unidade }}</td>
                     </tr>
-                    <tr class="hover:bg-gray-50">
-                      <td class="px-3 py-2 text-gray-700 font-medium">S -2</td>
-                      <td class="px-3 py-2 text-gray-400">{{ row.semana2_periodo }}</td>
-                      <td class="px-3 py-2 text-right text-green-600 font-medium">{{ formatNumber(row.semana2) }} {{ row.unidade }}</td>
+                    <tr class="hover:bg-operacao-50">
+                      <td class="px-3 py-2 text-operacao-600 font-medium">S -2</td>
+                      <td class="px-3 py-2 text-operacao-400">{{ row.semana2_periodo }}</td>
+                      <td class="px-3 py-2 text-right text-controle-600 font-medium">{{ formatNumber(row.semana2) }} {{ row.unidade }}</td>
                     </tr>
-                    <tr class="hover:bg-gray-50">
-                      <td class="px-3 py-2 text-gray-700 font-medium">S -1</td>
-                      <td class="px-3 py-2 text-gray-400">{{ row.semana1_periodo }}</td>
-                      <td class="px-3 py-2 text-right text-green-600 font-medium">{{ formatNumber(row.semana1) }} {{ row.unidade }}</td>
+                    <tr class="hover:bg-operacao-50">
+                      <td class="px-3 py-2 text-operacao-600 font-medium">S -1</td>
+                      <td class="px-3 py-2 text-operacao-400">{{ row.semana1_periodo }}</td>
+                      <td class="px-3 py-2 text-right text-controle-600 font-medium">{{ formatNumber(row.semana1) }} {{ row.unidade }}</td>
                     </tr>
                   </tbody>
                   <tfoot>
-                    <tr class="bg-green-50/70 border-t border-green-200">
-                      <td colspan="2" class="px-3 py-2 font-semibold text-gray-900">Média</td>
-                      <td class="px-3 py-2 text-right font-bold text-green-700">{{ formatNumber(row.media_semanas) }} {{ row.unidade }}</td>
+                    <tr class="bg-controle-50/70 border-t border-green-200">
+                      <td colspan="2" class="px-3 py-2 font-semibold text-operacao-800">Média</td>
+                      <td class="px-3 py-2 text-right font-bold text-controle-700">{{ formatNumber(row.media_semanas) }} {{ row.unidade }}</td>
                     </tr>
                   </tfoot>
                 </table>
@@ -124,12 +124,12 @@
               class="w-20"
               :ui="{ base: 'text-center' }"
             />
-            <span class="text-xs text-gray-400">%</span>
+            <span class="text-xs text-operacao-400">%</span>
           </div>
         </template>
         <template #ponto_reposicao-data="{ row }">
           <div style="text-align: right; width: 100%;">
-            <span class="font-semibold text-blue-600">
+            <span class="font-semibold text-guardian-600">
               {{ formatNumber(calcPontoReposicao(row)) }}
             </span>
           </div>
@@ -137,7 +137,7 @@
         <template #previsao_compras-data="{ row }">
           <div style="text-align: right; width: 100%;">
             <span
-              :class="calcPrevisaoCompras(row) > 0 ? 'font-semibold text-red-600' : 'text-green-600'"
+              :class="calcPrevisaoCompras(row) > 0 ? 'font-semibold text-red-600' : 'text-controle-600'"
             >
               {{ calcPrevisaoCompras(row) > 0 ? formatNumber(calcPrevisaoCompras(row)) : 'OK' }}
             </span>
@@ -162,53 +162,59 @@
         <div class="overflow-x-auto">
           <table class="w-full text-sm">
             <thead>
-              <tr class="bg-gray-50 border-b border-gray-200">
-                <th class="px-4 py-3 text-left font-semibold text-gray-700 min-w-[250px]">Grupo / Subgrupo</th>
+              <tr class="bg-operacao-50 border-b border-operacao-200">
+                <th class="px-4 py-3 text-left font-semibold text-operacao-600 min-w-[250px]">Grupo / Subgrupo</th>
                 <th
                   v-for="(semana, idx) in cmcData?.semanas || []"
                   :key="idx"
-                  class="px-3 py-3 text-right font-semibold text-gray-700 min-w-[120px]"
+                  class="px-3 py-3 text-right font-semibold text-operacao-600 min-w-[120px]"
                 >
                   {{ semana.inicio }} - {{ semana.fim }}
                 </th>
-                <th class="px-3 py-3 text-right font-semibold text-gray-700 min-w-[120px]">Total</th>
+                <th class="px-3 py-3 text-right font-semibold text-operacao-600 min-w-[120px]">Total</th>
               </tr>
             </thead>
 
             <!-- Resumo no topo: Total Compras, Faturamento (inline input), CMC % -->
-            <tbody v-if="cmcData?.grupos?.length" class="border-b-2 border-gray-300">
+            <tbody v-if="cmcData?.grupos?.length" class="border-b-2 border-operacao-300">
               <!-- Total Compras -->
-              <tr class="bg-gray-50">
-                <td class="px-4 py-2.5 font-bold text-gray-900">Total Compras</td>
+              <tr class="bg-operacao-50">
+                <td class="px-4 py-2.5 font-bold text-operacao-800">Total Compras</td>
                 <td
                   v-for="(semana, idx) in cmcData.semanas"
                   :key="'total-'+idx"
-                  class="px-3 py-2.5 text-right font-bold text-gray-900"
+                  class="px-3 py-2.5 text-right font-bold text-operacao-800"
                 >
                   {{ formatCurrency(calcTotalCompraSemana(idx)) }}
                 </td>
-                <td class="px-3 py-2.5 text-right font-bold text-blue-700">
+                <td class="px-3 py-2.5 text-right font-bold text-guardian-700">
                   {{ formatCurrency(cmcData.semanas.reduce((_: number, __: any, idx: number) => _ + calcTotalCompraSemana(idx), 0)) }}
                 </td>
               </tr>
-              <!-- Faturamento -->
-              <tr class="bg-gray-50/50">
-                <td class="px-4 py-2.5 font-medium text-gray-700">
-                  <NuxtLink to="/cadastro/faturamentos" class="flex items-center gap-1 hover:text-blue-600 transition-colors">
+              <!-- Faturamento (editável inline) -->
+              <tr class="bg-guardian-50/30">
+                <td class="px-4 py-2.5 font-medium text-guardian-700">
+                  <div class="flex items-center gap-1.5">
+                    <UIcon name="i-heroicons-pencil-square" class="w-3.5 h-3.5" />
                     Faturamento
-                    <UIcon name="i-heroicons-arrow-top-right-on-square" class="w-3 h-3 text-gray-400" />
-                  </NuxtLink>
+                  </div>
                 </td>
                 <td
-                  v-for="(fat, idx) in cmcData.faturamentos"
+                  v-for="(_, idx) in cmcData.semanas"
                   :key="'fat-'+idx"
-                  class="px-3 py-2.5 text-right"
-                  :class="fat > 0 ? 'text-gray-700' : 'text-gray-400 italic'"
+                  class="px-1.5 py-1.5"
                 >
-                  {{ fat > 0 ? formatCurrency(fat) : 'não informado' }}
+                  <CurrencyInput
+                    :model-value="Number(cmcFatInputs[idx]) || 0"
+                    @update:model-value="cmcFatInputs[idx] = $event"
+                    @blur="salvarFaturamentoSemanal(idx)"
+                    size="xs"
+                    placeholder="0,00"
+                    :ui="{ base: 'text-right' }"
+                  />
                 </td>
-                <td class="px-3 py-2.5 text-right font-bold text-gray-700">
-                  {{ formatCurrency(cmcData.faturamentos.reduce((a: number, b: number) => a + b, 0)) }}
+                <td class="px-3 py-2.5 text-right font-bold text-guardian-600">
+                  {{ formatCurrency(cmcFatInputs.reduce((a: number, b: any) => a + (Number(b) || 0), 0)) }}
                 </td>
               </tr>
               <!-- CMC % -->
@@ -249,27 +255,27 @@
             </tbody>
 
             <!-- Dados agrupados -->
-            <tbody v-if="cmcData?.grupos?.length" class="divide-y divide-gray-100">
+            <tbody v-if="cmcData?.grupos?.length" class="divide-y divide-operacao-100">
               <template v-for="grupo in cmcData.grupos" :key="grupo.grupo_id">
                 <!-- Linha do Grupo -->
-                <tr class="bg-blue-50/50 hover:bg-blue-50 cursor-pointer" @click="toggleGrupo(grupo.grupo_id)">
+                <tr class="bg-guardian-50/50 hover:bg-guardian-50 cursor-pointer" @click="toggleGrupo(grupo.grupo_id)">
                   <td class="px-4 py-2.5">
                     <div class="flex items-center gap-2">
                       <UIcon
                         :name="gruposAbertos.has(grupo.grupo_id) ? 'i-heroicons-chevron-down' : 'i-heroicons-chevron-right'"
-                        class="w-4 h-4 text-blue-500"
+                        class="w-4 h-4 text-guardian-500"
                       />
-                      <span class="font-semibold text-gray-900">{{ grupo.grupo_nome }}</span>
+                      <span class="font-semibold text-operacao-800">{{ grupo.grupo_nome }}</span>
                     </div>
                   </td>
                   <td
                     v-for="(val, idx) in grupo.totais_semanas"
                     :key="idx"
-                    class="px-3 py-2.5 text-right font-semibold text-gray-900"
+                    class="px-3 py-2.5 text-right font-semibold text-operacao-800"
                   >
                     {{ formatCurrency(val) }}
                   </td>
-                  <td class="px-3 py-2.5 text-right font-bold text-blue-700">
+                  <td class="px-3 py-2.5 text-right font-bold text-guardian-700">
                     {{ formatCurrency(grupo.totais_semanas.reduce((a: number, b: number) => a + b, 0)) }}
                   </td>
                 </tr>
@@ -278,19 +284,19 @@
                   <tr
                     v-for="sub in grupo.subgrupos"
                     :key="sub.subgrupo_id"
-                    class="hover:bg-gray-50"
+                    class="hover:bg-operacao-50"
                   >
                     <td class="px-4 py-2 pl-10">
-                      <span class="text-gray-600">{{ sub.subgrupo_nome }}</span>
+                      <span class="text-operacao-500">{{ sub.subgrupo_nome }}</span>
                     </td>
                     <td
                       v-for="(val, idx) in sub.totais_semanas"
                       :key="idx"
-                      class="px-3 py-2 text-right text-gray-700"
+                      class="px-3 py-2 text-right text-operacao-600"
                     >
                       {{ val > 0 ? formatCurrency(val) : '-' }}
                     </td>
-                    <td class="px-3 py-2 text-right font-medium text-gray-900">
+                    <td class="px-3 py-2 text-right font-medium text-operacao-800">
                       {{ formatCurrency(sub.totais_semanas.reduce((a: number, b: number) => a + b, 0)) }}
                     </td>
                   </tr>
@@ -299,7 +305,7 @@
             </tbody>
             <tbody v-else>
               <tr>
-                <td :colspan="(cmcData?.semanas?.length || 4) + 2" class="py-8 text-center text-gray-400">
+                <td :colspan="(cmcData?.semanas?.length || 4) + 2" class="py-8 text-center text-operacao-400">
                   <UIcon name="i-heroicons-inbox" class="w-8 h-8 mb-2 mx-auto" />
                   <p class="text-sm">Nenhuma entrada encontrada no período</p>
                 </td>
@@ -339,50 +345,50 @@
       <UCard :ui="{ body: { padding: '' } }">
         <div class="overflow-x-auto">
           <table class="min-w-full text-sm">
-            <thead class="bg-gray-50">
+            <thead class="bg-operacao-50">
               <tr>
-                <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 bg-gray-50 min-w-[200px] z-10">Produto</th>
-                <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-[200px] bg-gray-50 min-w-[50px] z-10">Un.</th>
+                <th class="px-3 py-3 text-left text-xs font-medium text-operacao-400 uppercase tracking-wider sticky left-0 bg-operacao-50 min-w-[200px] z-10">Produto</th>
+                <th class="px-3 py-3 text-left text-xs font-medium text-operacao-400 uppercase tracking-wider sticky left-[200px] bg-operacao-50 min-w-[50px] z-10">Un.</th>
                 <th
                   v-for="dia in vcData?.dias || []"
                   :key="dia.data"
-                  class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[90px]"
+                  class="px-3 py-3 text-center text-xs font-medium text-operacao-400 uppercase tracking-wider min-w-[90px]"
                 >
                   {{ dia.label }}
                 </th>
               </tr>
             </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
+            <tbody class="bg-white divide-y divide-operacao-200">
               <tr v-if="vcLoading">
-                <td :colspan="2 + (vcData?.dias?.length || 0)" class="px-3 py-8 text-center text-gray-500">
+                <td :colspan="2 + (vcData?.dias?.length || 0)" class="px-3 py-8 text-center text-operacao-400">
                   <UIcon name="i-heroicons-arrow-path" class="w-6 h-6 animate-spin mx-auto mb-2" />
                   Carregando...
                 </td>
               </tr>
               <tr v-else-if="vcFilteredData.length === 0">
-                <td :colspan="2 + (vcData?.dias?.length || 0)" class="px-3 py-8 text-center text-gray-400">
+                <td :colspan="2 + (vcData?.dias?.length || 0)" class="px-3 py-8 text-center text-operacao-400">
                   <UIcon name="i-heroicons-inbox" class="w-8 h-8 mb-2 mx-auto" />
                   <p class="text-sm">Nenhum dado encontrado</p>
                 </td>
               </tr>
               <template v-for="item in vcFilteredData" :key="item.produto_id">
                 <!-- Linha de Custo -->
-                <tr class="hover:bg-gray-50">
+                <tr class="hover:bg-operacao-50">
                   <td class="px-3 py-1.5 sticky left-0 bg-white z-10">
-                    <span class="text-sm font-medium text-gray-900">{{ item.produto }}</span>
-                    <div class="flex items-center gap-2 mt-0.5 text-[10px] text-gray-400 leading-tight">
-                      <span v-if="item.menor_valor > 0" class="text-green-600">↓{{ formatCurrency(item.menor_valor) }}</span>
+                    <span class="text-sm font-medium text-operacao-800">{{ item.produto }}</span>
+                    <div class="flex items-center gap-2 mt-0.5 text-[10px] text-operacao-400 leading-tight">
+                      <span v-if="item.menor_valor > 0" class="text-controle-600">↓{{ formatCurrency(item.menor_valor) }}</span>
                       <span v-if="item.maior_valor > 0" class="text-red-500">↑{{ formatCurrency(item.maior_valor) }}</span>
                     </div>
                   </td>
-                  <td class="px-3 py-1.5 text-xs text-gray-400 sticky left-[200px] bg-white z-10">{{ item.unidade }}</td>
+                  <td class="px-3 py-1.5 text-xs text-operacao-400 sticky left-[200px] bg-white z-10">{{ item.unidade }}</td>
                   <td
                     v-for="(custo, index) in item.custos"
                     :key="index"
                     class="px-3 py-1.5 text-sm text-center"
                   >
                     <span v-if="custo > 0" class="font-medium">{{ formatCurrency(custo) }}</span>
-                    <span v-else class="text-gray-300">-</span>
+                    <span v-else class="text-operacao-300">-</span>
                   </td>
                 </tr>
               </template>
@@ -398,47 +404,47 @@
       v-model="modalGerarCompraOpen"
       :ui="{
         width: 'sm:max-w-lg',
-        overlay: { background: 'bg-gray-900/50 backdrop-blur-sm' },
-        background: 'bg-white dark:bg-gray-800',
-        ring: 'ring-1 ring-gray-200 dark:ring-gray-700',
+        overlay: { background: 'bg-operacao-900/50 backdrop-blur-sm' },
+        background: 'bg-white dark:bg-operacao-800',
+        ring: 'ring-1 ring-operacao-200 dark:ring-operacao-700',
         shadow: 'shadow-2xl'
       }"
     >
-      <UCard :ui="{ background: 'bg-transparent', ring: 'ring-0', shadow: '', divide: 'divide-gray-100 dark:divide-gray-700' }">
+      <UCard :ui="{ background: 'bg-transparent', ring: 'ring-0', shadow: '', divide: 'divide-operacao-100 dark:divide-operacao-700' }">
         <template #header>
           <div class="flex items-center gap-3">
-            <div class="p-2 bg-blue-100 rounded-lg flex items-center justify-center">
-              <UIcon name="i-heroicons-shopping-cart" class="w-5 h-5 text-blue-600" />
+            <div class="p-2 bg-guardian-100 rounded-lg flex items-center justify-center">
+              <UIcon name="i-heroicons-shopping-cart" class="w-5 h-5 text-guardian-600" />
             </div>
             <div>
-              <h3 class="text-lg font-semibold text-gray-900">Gerar Lista de Compras</h3>
-              <p class="text-xs text-gray-500">{{ produtosEmReposicao.length }} produto(s) em reposição</p>
+              <h3 class="text-lg font-semibold text-operacao-800">Gerar Lista de Compras</h3>
+              <p class="text-xs text-operacao-400">{{ produtosEmReposicao.length }} produto(s) em reposição</p>
             </div>
           </div>
         </template>
 
         <!-- Resumo dos itens -->
         <div class="space-y-4">
-          <div class="p-4 bg-blue-50 rounded-lg">
+          <div class="p-4 bg-guardian-50 rounded-lg">
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-2">
-                <UIcon name="i-heroicons-cube" class="w-5 h-5 text-blue-600" />
+                <UIcon name="i-heroicons-cube" class="w-5 h-5 text-guardian-600" />
                 <span class="text-sm font-medium text-blue-800">Produtos para compra</span>
               </div>
-              <span class="text-2xl font-bold text-blue-600">{{ produtosEmReposicao.length }}</span>
+              <span class="text-2xl font-bold text-guardian-600">{{ produtosEmReposicao.length }}</span>
             </div>
           </div>
 
           <!-- Lista resumida -->
-          <div class="max-h-[30vh] overflow-y-auto border border-gray-200 rounded-lg divide-y divide-gray-100">
+          <div class="max-h-[30vh] overflow-y-auto border border-operacao-200 rounded-lg divide-y divide-operacao-100">
             <div
               v-for="row in produtosEmReposicao"
               :key="row.produto_id"
               class="flex items-center justify-between px-4 py-2.5"
             >
               <div class="flex-1 min-w-0">
-                <p class="font-medium text-gray-900 text-sm">{{ row.nome }}</p>
-                <p class="text-xs text-gray-500">{{ row.subgrupo }} &middot; {{ row.unidade }}</p>
+                <p class="font-medium text-operacao-800 text-sm">{{ row.nome }}</p>
+                <p class="text-xs text-operacao-400">{{ row.subgrupo }} &middot; {{ row.unidade }}</p>
               </div>
               <span class="font-bold text-sm text-red-600 ml-3 whitespace-nowrap">
                 {{ formatNumber(calcPrevisaoCompras(row)) }} {{ row.unidade }}
@@ -491,7 +497,7 @@
 <script setup lang="ts">
 import type { EstoqueMinimo, CmcSemanalResumo } from '~/types'
 
-const { getEstoqueMinimo, getCmcSemanal, getVariacaoCustoDiaria } = useRelatorios()
+const { getEstoqueMinimo, getCmcSemanal, getVariacaoCustoDiaria, upsertFaturamentoSemanal } = useRelatorios()
 const { createPedido } = useEstoque()
 const { empresaId, empresaAtiva } = useEmpresa()
 const toast = useToast()
@@ -762,6 +768,7 @@ const { page, pageSize, paginatedItems } = usePagination(filteredEstoque)
 const cmcData = ref<CmcSemanalResumo | null>(null)
 const cmcLoading = ref(false)
 const gruposAbertos = ref<Set<string>>(new Set())
+const cmcFatInputs = ref<(number | string)[]>([])
 
 const toggleGrupo = (grupoId: string) => {
   if (gruposAbertos.value.has(grupoId)) {
@@ -785,9 +792,9 @@ const cmcMediaGeral = computed(() => {
 
 // CMC color/icon helpers
 const getCmcColorClass = (pct: number) => {
-  if (pct <= 0) return 'text-gray-400'
-  if (pct < 25) return 'text-blue-600'
-  if (pct <= 30) return 'text-green-600'
+  if (pct <= 0) return 'text-operacao-400'
+  if (pct < 25) return 'text-guardian-600'
+  if (pct <= 30) return 'text-controle-600'
   if (pct <= 35) return 'text-orange-600'
   return 'text-red-600'
 }
@@ -807,10 +814,27 @@ const getCmcTooltip = (pct: number) => {
   return 'CMC acima de 35% — Risco! Custo de compras elevado'
 }
 
+const salvarFaturamentoSemanal = async (idx: number) => {
+  if (!cmcData.value) return
+  const semana = cmcData.value.semanas[idx]
+  if (!semana) return
+  const valor = Number(cmcFatInputs.value[idx]) || 0
+  try {
+    await upsertFaturamentoSemanal(semana.inicio_date, semana.fim_date, valor)
+    toast.add({ title: 'Salvo', description: `Faturamento da semana atualizado`, color: 'green', timeout: 2000 })
+    // Reload CMC to recalculate CMC%
+    await loadCmcSemanal()
+  } catch (error: any) {
+    toast.add({ title: 'Erro', description: error.message || 'Erro ao salvar faturamento', color: 'red' })
+  }
+}
+
 const loadCmcSemanal = async () => {
   try {
     cmcLoading.value = true
     cmcData.value = await getCmcSemanal(4)
+    // Sync faturamento inputs
+    cmcFatInputs.value = cmcData.value.faturamentos.map(f => f || '')
     // Abrir todos os grupos por padrão
     cmcData.value.grupos.forEach(g => gruposAbertos.value.add(g.grupo_id))
   } catch (error: any) {
@@ -861,9 +885,9 @@ const vcFilteredData = computed(() => {
 const getVariacaoClass = (variacao: number) => {
   if (variacao > 10) return 'text-red-600 font-medium'
   if (variacao > 0) return 'text-red-500'
-  if (variacao < -10) return 'text-green-600 font-medium'
-  if (variacao < 0) return 'text-green-500'
-  return 'text-gray-500'
+  if (variacao < -10) return 'text-controle-600 font-medium'
+  if (variacao < 0) return 'text-controle-500'
+  return 'text-operacao-400'
 }
 
 const loadVariacaoCusto = async () => {
@@ -889,23 +913,7 @@ watch(vcMesSelecionado, () => {
 // ==========================================
 // FORMATAÇÃO
 // ==========================================
-const truncate2 = (v: number) => Math.trunc((v || 0) * 100) / 100
-
-const formatNumber = (value: number) => {
-  return new Intl.NumberFormat('pt-BR', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(truncate2(value))
-}
-
-const formatCurrency = (value: number) => {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(truncate2(value))
-}
+const { formatCurrency, formatNumber } = useFormatters()
 
 const formatPercent = (value: number) => {
   return `${value.toFixed(1)}%`

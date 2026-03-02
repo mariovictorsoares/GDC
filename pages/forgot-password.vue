@@ -5,19 +5,19 @@
       <div class="inline-block bg-white rounded-xl p-3 mb-4">
         <img src="/logo.png" alt="Guardião do CMV" class="h-14 w-auto" />
       </div>
-      <h1 class="text-2xl font-bold text-gray-900">Esqueceu a senha?</h1>
-      <p class="text-gray-500 mt-1">Digite seu email para receber o link de recuperação</p>
+      <h1 class="text-2xl font-bold text-operacao-800">Esqueceu a senha?</h1>
+      <p class="text-operacao-400 mt-1">Digite seu email para receber o link de recuperação</p>
     </div>
 
     <!-- Formulario -->
     <form v-if="!emailSent" @submit.prevent="handleForgotPassword" class="space-y-5">
       <div :class="{ 'animate-shake': emailError }">
-        <label class="block text-sm font-medium text-gray-700 mb-1.5">
+        <label class="block text-sm font-medium text-operacao-600 mb-1.5">
           Email <span class="text-red-500">*</span>
         </label>
         <div class="relative">
           <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <UIcon name="i-heroicons-envelope" class="w-5 h-5 text-gray-400" />
+            <UIcon name="i-heroicons-envelope" class="w-5 h-5 text-operacao-400" />
           </div>
           <input
             v-model="email"
@@ -56,15 +56,15 @@
           <UIcon name="i-heroicons-envelope-open" class="w-8 h-8 text-white" />
         </div>
       </div>
-      <h2 class="text-xl font-bold text-gray-900 mb-2">Email enviado!</h2>
-      <p class="text-gray-500 mb-2">
+      <h2 class="text-xl font-bold text-operacao-800 mb-2">Email enviado!</h2>
+      <p class="text-operacao-400 mb-2">
         Enviamos um link de recuperação para
       </p>
       <p class="font-semibold text-guardian-600 mb-6">{{ email }}</p>
 
-      <div class="bg-gray-50 rounded-xl p-4 mb-6 border border-gray-100">
-        <p class="text-sm text-gray-500 flex items-center justify-center gap-2">
-          <UIcon name="i-heroicons-information-circle" class="w-5 h-5 text-gray-400" />
+      <div class="bg-operacao-50 rounded-xl p-4 mb-6 border border-operacao-100">
+        <p class="text-sm text-operacao-400 flex items-center justify-center gap-2">
+          <UIcon name="i-heroicons-information-circle" class="w-5 h-5 text-operacao-400" />
           Não recebeu? Verifique a pasta de spam
         </p>
       </div>
@@ -88,15 +88,15 @@
     <!-- Divisor -->
     <div class="relative my-8">
       <div class="absolute inset-0 flex items-center">
-        <div class="w-full border-t border-gray-200" />
+        <div class="w-full border-t border-operacao-200" />
       </div>
       <div class="relative flex justify-center text-sm">
-        <span class="px-4 bg-white text-gray-500">ou</span>
+        <span class="px-4 bg-white text-operacao-400">ou</span>
       </div>
     </div>
 
     <!-- Link Voltar -->
-    <p class="text-center text-gray-600">
+    <p class="text-center text-operacao-500">
       Lembrou a senha?
       <NuxtLink to="/login" class="text-guardian-500 hover:text-guardian-600 font-semibold transition-colors">
         Voltar ao login
@@ -229,15 +229,15 @@ const handleForgotPassword = async () => {
 <style scoped>
 /* Input premium com micro-interações */
 .input-premium {
-  @apply w-full pl-10 pr-4 py-3 text-base rounded-xl border border-gray-200 bg-gray-50/50;
+  @apply w-full pl-10 pr-4 py-3 text-base rounded-xl border border-operacao-200 bg-operacao-50/50;
   @apply transition-all duration-300 ease-out;
   @apply focus:bg-white focus:border-guardian-400 focus:ring-4 focus:ring-guardian-100 focus:outline-none;
-  @apply placeholder-gray-400;
+  @apply placeholder-operacao-400;
   @apply disabled:opacity-50 disabled:cursor-not-allowed;
 }
 
 .input-premium:hover:not(:focus):not(:disabled) {
-  @apply border-gray-300 bg-white;
+  @apply border-operacao-300 bg-white;
 }
 
 /* Botão premium com micro-interações */

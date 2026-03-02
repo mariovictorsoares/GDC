@@ -3,8 +3,8 @@
     <!-- Header -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900">Grupos e Subgrupos</h1>
-        <p class="text-sm text-gray-500">Gerencie a hierarquia de categorização dos produtos</p>
+        <h1 class="text-2xl font-bold text-operacao-800">Grupos e Subgrupos</h1>
+        <p class="text-sm text-operacao-400">Gerencie a hierarquia de categorização dos produtos</p>
       </div>
       <UButton color="primary" class="w-full sm:w-auto" @click="openGrupoModal()">
         <UIcon name="i-heroicons-plus" class="w-4 h-4 mr-2" />
@@ -17,23 +17,23 @@
       <div class="overflow-x-auto">
         <table class="w-full">
           <thead>
-            <tr class="border-b border-gray-200 dark:border-gray-700">
-              <th class="px-4 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white w-48">Grupo</th>
-              <th class="px-4 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white">Subgrupo</th>
-              <th class="px-4 py-3.5 text-right text-sm font-semibold text-gray-900 dark:text-white w-24">Ações</th>
+            <tr class="border-b border-operacao-200 dark:border-operacao-700">
+              <th class="px-4 py-3.5 text-left text-sm font-semibold text-operacao-800 dark:text-white w-48">Grupo</th>
+              <th class="px-4 py-3.5 text-left text-sm font-semibold text-operacao-800 dark:text-white">Subgrupo</th>
+              <th class="px-4 py-3.5 text-right text-sm font-semibold text-operacao-800 dark:text-white w-24">Ações</th>
             </tr>
           </thead>
           <tbody>
             <template v-for="(grupo, grupoIndex) in grupos" :key="grupo.id">
               <!-- Linha do grupo com primeiro subgrupo ou vazia -->
               <tr
-                class="border-b border-gray-100"
-                :class="grupoIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50'"
+                class="border-b border-operacao-100"
+                :class="grupoIndex % 2 === 0 ? 'bg-white' : 'bg-operacao-50'"
               >
                 <!-- Célula do Grupo (rowspan) -->
                 <td
-                  class="px-4 py-2 font-semibold text-gray-900 align-top border-r border-gray-200"
-                  :class="grupoIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50'"
+                  class="px-4 py-2 font-semibold text-operacao-800 align-top border-r border-operacao-200"
+                  :class="grupoIndex % 2 === 0 ? 'bg-white' : 'bg-operacao-50'"
                   :rowspan="Math.max(getSubgruposDoGrupo(grupo.id).length, 1)"
                 >
                   <div class="flex items-center justify-between">
@@ -65,12 +65,12 @@
                   </div>
                 </td>
                 <!-- Primeiro subgrupo ou célula vazia -->
-                <td class="px-4 py-2 text-gray-700">
+                <td class="px-4 py-2 text-operacao-600">
                   <template v-if="getSubgruposDoGrupo(grupo.id).length > 0">
                     {{ getSubgruposDoGrupo(grupo.id)[0].nome }}
                   </template>
                   <template v-else>
-                    <span class="text-gray-400 italic text-sm">Nenhum subgrupo</span>
+                    <span class="text-operacao-400 italic text-sm">Nenhum subgrupo</span>
                   </template>
                 </td>
                 <td class="px-4 py-2 text-right">
@@ -98,10 +98,10 @@
               <tr
                 v-for="(subgrupo, index) in getSubgruposDoGrupo(grupo.id).slice(1)"
                 :key="subgrupo.id"
-                class="border-b border-gray-100"
-                :class="grupoIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50'"
+                class="border-b border-operacao-100"
+                :class="grupoIndex % 2 === 0 ? 'bg-white' : 'bg-operacao-50'"
               >
-                <td class="px-4 py-2 text-gray-700">{{ subgrupo.nome }}</td>
+                <td class="px-4 py-2 text-operacao-600">{{ subgrupo.nome }}</td>
                 <td class="px-4 py-2 text-right">
                   <div class="flex gap-1 justify-end">
                     <UButton
@@ -124,7 +124,7 @@
             </template>
             <!-- Estado vazio -->
             <tr v-if="grupos.length === 0 && !loading">
-              <td colspan="3" class="px-4 py-12 text-center text-gray-500">
+              <td colspan="3" class="px-4 py-12 text-center text-operacao-400">
                 <UIcon name="i-heroicons-folder-open" class="w-12 h-12 mx-auto mb-4" />
                 <p class="text-lg font-medium">Nenhum grupo cadastrado</p>
                 <p class="text-sm mt-1">Comece criando um novo grupo</p>
@@ -149,13 +149,13 @@
       v-model="grupoModalOpen"
       :ui="{
         width: 'sm:max-w-md',
-        overlay: { background: 'bg-gray-900/50 backdrop-blur-sm' },
-        background: 'bg-white dark:bg-gray-800',
-        ring: 'ring-1 ring-gray-200 dark:ring-gray-700',
+        overlay: { background: 'bg-operacao-900/50 backdrop-blur-sm' },
+        background: 'bg-white dark:bg-operacao-800',
+        ring: 'ring-1 ring-operacao-200 dark:ring-operacao-700',
         shadow: 'shadow-2xl'
       }"
     >
-      <UCard :ui="{ background: 'bg-transparent', ring: 'ring-0', shadow: '', divide: 'divide-gray-100 dark:divide-gray-700' }">
+      <UCard :ui="{ background: 'bg-transparent', ring: 'ring-0', shadow: '', divide: 'divide-operacao-100 dark:divide-operacao-700' }">
         <template #header>
           <div class="flex items-center justify-between">
             <h3 class="text-lg font-semibold">
@@ -194,13 +194,13 @@
       v-model="subgrupoModalOpen"
       :ui="{
         width: 'sm:max-w-md',
-        overlay: { background: 'bg-gray-900/50 backdrop-blur-sm' },
-        background: 'bg-white dark:bg-gray-800',
-        ring: 'ring-1 ring-gray-200 dark:ring-gray-700',
+        overlay: { background: 'bg-operacao-900/50 backdrop-blur-sm' },
+        background: 'bg-white dark:bg-operacao-800',
+        ring: 'ring-1 ring-operacao-200 dark:ring-operacao-700',
         shadow: 'shadow-2xl'
       }"
     >
-      <UCard :ui="{ background: 'bg-transparent', ring: 'ring-0', shadow: '', divide: 'divide-gray-100 dark:divide-gray-700' }">
+      <UCard :ui="{ background: 'bg-transparent', ring: 'ring-0', shadow: '', divide: 'divide-operacao-100 dark:divide-operacao-700' }">
         <template #header>
           <div class="flex items-center justify-between">
             <h3 class="text-lg font-semibold">
@@ -222,7 +222,7 @@
               :options="gruposSelect"
               placeholder="Selecione o grupo"
               :disabled="!!editingSubgrupo || !!preSelectedGrupoId"
-              :ui="(editingSubgrupo || preSelectedGrupoId) ? { color: { white: { outline: 'bg-gray-100 text-gray-500 cursor-not-allowed' } } } : {}"
+              :ui="(editingSubgrupo || preSelectedGrupoId) ? { color: { white: { outline: 'bg-operacao-100 text-operacao-400 cursor-not-allowed' } } } : {}"
             />
           </UFormGroup>
 
@@ -248,19 +248,19 @@
     <UModal
       v-model="deleteGrupoModalOpen"
       :ui="{
-        overlay: { background: 'bg-gray-900/50 backdrop-blur-sm' },
-        background: 'bg-white dark:bg-gray-800',
-        ring: 'ring-1 ring-gray-200 dark:ring-gray-700',
+        overlay: { background: 'bg-operacao-900/50 backdrop-blur-sm' },
+        background: 'bg-white dark:bg-operacao-800',
+        ring: 'ring-1 ring-operacao-200 dark:ring-operacao-700',
         shadow: 'shadow-2xl'
       }"
     >
-      <UCard :ui="{ background: 'bg-transparent', ring: 'ring-0', shadow: '', divide: 'divide-gray-100 dark:divide-gray-700' }">
+      <UCard :ui="{ background: 'bg-transparent', ring: 'ring-0', shadow: '', divide: 'divide-operacao-100 dark:divide-operacao-700' }">
         <template #header>
           <h3 class="text-lg font-semibold text-red-600">Confirmar Exclusão</h3>
         </template>
 
         <p>Tem certeza que deseja excluir o grupo <strong>{{ deletingGrupo?.nome }}</strong>?</p>
-        <p class="text-sm text-gray-500 mt-2">Todos os subgrupos vinculados também serão excluídos.</p>
+        <p class="text-sm text-operacao-400 mt-2">Todos os subgrupos vinculados também serão excluídos.</p>
 
         <template #footer>
           <div class="flex flex-col-reverse sm:flex-row justify-end gap-3">
@@ -279,19 +279,19 @@
     <UModal
       v-model="deleteSubgrupoModalOpen"
       :ui="{
-        overlay: { background: 'bg-gray-900/50 backdrop-blur-sm' },
-        background: 'bg-white dark:bg-gray-800',
-        ring: 'ring-1 ring-gray-200 dark:ring-gray-700',
+        overlay: { background: 'bg-operacao-900/50 backdrop-blur-sm' },
+        background: 'bg-white dark:bg-operacao-800',
+        ring: 'ring-1 ring-operacao-200 dark:ring-operacao-700',
         shadow: 'shadow-2xl'
       }"
     >
-      <UCard :ui="{ background: 'bg-transparent', ring: 'ring-0', shadow: '', divide: 'divide-gray-100 dark:divide-gray-700' }">
+      <UCard :ui="{ background: 'bg-transparent', ring: 'ring-0', shadow: '', divide: 'divide-operacao-100 dark:divide-operacao-700' }">
         <template #header>
           <h3 class="text-lg font-semibold text-red-600">Confirmar Exclusão</h3>
         </template>
 
         <p>Tem certeza que deseja excluir o subgrupo <strong>{{ deletingSubgrupo?.nome }}</strong>?</p>
-        <p class="text-sm text-gray-500 mt-2">Esta ação não pode ser desfeita.</p>
+        <p class="text-sm text-operacao-400 mt-2">Esta ação não pode ser desfeita.</p>
 
         <template #footer>
           <div class="flex flex-col-reverse sm:flex-row justify-end gap-3">

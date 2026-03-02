@@ -17,9 +17,9 @@
           class="fixed z-[9999] pointer-events-none"
           :style="floatingStyle"
         >
-          <div class="bg-white rounded-lg shadow-lg border border-gray-200 p-2.5 w-[196px]">
+          <div class="bg-white rounded-lg shadow-lg border border-operacao-200 p-2.5 w-[196px]">
             <!-- Mês / Ano -->
-            <div class="text-center text-[10px] font-semibold text-gray-700 mb-1.5">
+            <div class="text-center text-[10px] font-semibold text-operacao-600 mb-1.5">
               {{ nomeMes }} {{ anoExibicao }}
             </div>
             <!-- Dias da semana header -->
@@ -27,7 +27,7 @@
               <div
                 v-for="dia in diasSemanaHeader"
                 :key="dia"
-                class="text-[9px] font-medium text-gray-400 text-center leading-5"
+                class="text-[9px] font-medium text-operacao-400 text-center leading-5"
               >
                 {{ dia }}
               </div>
@@ -43,7 +43,7 @@
             </div>
           </div>
           <!-- Seta -->
-          <div class="absolute left-1/2 -translate-x-1/2 -bottom-1 w-2 h-2 bg-white border-r border-b border-gray-200 rotate-45" />
+          <div class="absolute left-1/2 -translate-x-1/2 -bottom-1 w-2 h-2 bg-white border-r border-b border-operacao-200 rotate-45" />
         </div>
       </Transition>
     </Teleport>
@@ -178,7 +178,7 @@ const cellClass = (cell: CalendarCell) => {
   if (cell.highlighted && cell.outOfMonth) return 'bg-primary-50 text-primary-400 font-medium'
   if (cell.highlighted) return 'bg-primary-100 text-primary-700 font-semibold'
   if (cell.today) return 'font-bold text-primary-600 ring-1 ring-primary-300 rounded-full'
-  if (cell.outOfMonth) return 'text-gray-300'
-  return 'text-gray-500'
+  if (cell.outOfMonth) return 'text-operacao-300'
+  return 'text-operacao-400'
 }
 </script>
