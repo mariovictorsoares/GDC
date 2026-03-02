@@ -22,6 +22,12 @@ export default defineEventHandler(async (event) => {
     })
   }
 
+  // Debug temporário - verificar credenciais em uso
+  console.log('[Z-API Debug] instanceId:', config.zapiInstanceId?.slice(0, 8) + '...')
+  console.log('[Z-API Debug] token:', config.zapiToken?.slice(0, 8) + '...')
+  console.log('[Z-API Debug] clientToken:', config.zapiClientToken?.slice(0, 8) + '...')
+  console.log('[Z-API Debug] baseUrl:', config.zapiBaseUrl)
+
   const result = await sendWhatsAppText(
     {
       instanceId: config.zapiInstanceId,

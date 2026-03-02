@@ -65,10 +65,11 @@ export async function sendWhatsAppText(
       messageId: response?.messageId || response?.id
     }
   } catch (error: any) {
-    console.error('[Z-API] Erro ao enviar mensagem:', error?.data || error?.message)
+    console.error('[Z-API] Erro ao enviar mensagem:', JSON.stringify(error?.data || error?.message))
+    console.error('[Z-API] Status:', error?.statusCode || error?.status)
     return {
       success: false,
-      error: error?.data?.message || error?.message || 'Erro desconhecido ao enviar WhatsApp'
+      error: error?.data?.error || error?.data?.message || error?.message || 'Erro desconhecido ao enviar WhatsApp'
     }
   }
 }
