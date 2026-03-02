@@ -1,7 +1,7 @@
 /**
  * GET /api/cron/lembretes-contagem
  *
- * Rota para ser chamada por um cron job (ex: a cada 15 min).
+ * Rota para ser chamada por um cron job (a cada 5 min via pg_cron no Supabase).
  * Verifica quais contagens precisam de lembrete agora e envia via WhatsApp.
  *
  * Pode ser acionado por:
@@ -73,9 +73,9 @@ export default defineEventHandler(async (event) => {
     const horario = contagem.horario_notificacao || '07:00'
     const [horaNotif, minNotif] = horario.split(':').map(Number)
 
-    // Só envia se estiver na janela de horário (±15 min)
+    // Só envia se estiver na janela de horário (±5 min)
     const diffMinutos = Math.abs((horaAtual * 60 + minutoAtual) - (horaNotif * 60 + (minNotif || 0)))
-    if (diffMinutos > 15) continue
+    if (diffMinutos > 5) continue
 
     // Verificar dia da semana para recorrência semanal/quinzenal
     if (contagem.recorrencia === 'semanal' || contagem.recorrencia === 'quinzenal') {
