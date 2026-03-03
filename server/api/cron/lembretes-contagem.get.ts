@@ -55,13 +55,21 @@ export default defineEventHandler(async (event) => {
   }
 
   if (!contagens || contagens.length === 0) {
+    console.log('[Cron] Nenhuma contagem com recorrência e status pendente encontrada')
     return { enviados: 0, mensagem: 'Nenhuma contagem pendente de lembrete' }
   }
 
+  console.log(`[Cron] ${contagens.length} contagem(ns) encontrada(s) com recorrência ativa`)
+
+  // Usar horário de Brasília (UTC-3) pois o servidor Vercel roda em UTC
   const agora = new Date()
-  const horaAtual = agora.getHours()
-  const minutoAtual = agora.getMinutes()
-  const diaSemanaAtual = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'][agora.getDay()]
+  const brasiliaStr = agora.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' })
+  const brasilia = new Date(brasiliaStr)
+  const horaAtual = brasilia.getHours()
+  const minutoAtual = brasilia.getMinutes()
+  const diaSemanaAtual = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'][brasilia.getDay()]
+
+  console.log(`[Cron] Horário Brasília: ${String(horaAtual).padStart(2, '0')}:${String(minutoAtual).padStart(2, '0')} | Dia: ${diaSemanaAtual}`)
 
   const resultados: { contagem: string; sucesso: boolean; erro?: string }[] = []
 
