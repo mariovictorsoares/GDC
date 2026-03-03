@@ -29,16 +29,13 @@ export const useEstoque = () => {
   // ==========================================
 
   const getGrupos = async () => {
-    let query = client
+    if (!empresaId.value) return [] as Grupo[]
+
+    const { data, error } = await client
       .from('grupos')
       .select('*')
+      .eq('empresa_id', empresaId.value)
       .order('created_at', { ascending: false })
-
-    if (empresaId.value) {
-      query = query.eq('empresa_id', empresaId.value)
-    }
-
-    const { data, error } = await query
 
     if (error) throw error
     return data as Grupo[]
@@ -81,17 +78,16 @@ export const useEstoque = () => {
   // ==========================================
 
   const getSubgrupos = async (grupoId?: string) => {
+    if (!empresaId.value) return [] as Subgrupo[]
+
     let query = client
       .from('subgrupos')
       .select(`
         *,
         grupo:grupos(*)
       `)
+      .eq('empresa_id', empresaId.value)
       .order('created_at', { ascending: false })
-
-    if (empresaId.value) {
-      query = query.eq('empresa_id', empresaId.value)
-    }
 
     if (grupoId) {
       query = query.eq('grupo_id', grupoId)
@@ -146,16 +142,13 @@ export const useEstoque = () => {
   // ==========================================
 
   const getCategorias = async () => {
-    let query = client
+    if (!empresaId.value) return [] as Categoria[]
+
+    const { data, error } = await client
       .from('categorias')
       .select('*')
+      .eq('empresa_id', empresaId.value)
       .order('created_at', { ascending: false })
-
-    if (empresaId.value) {
-      query = query.eq('empresa_id', empresaId.value)
-    }
-
-    const { data, error } = await query
 
     if (error) throw error
     return data as Categoria[]
@@ -198,16 +191,13 @@ export const useEstoque = () => {
   // ==========================================
 
   const getUnidades = async () => {
-    let query = client
+    if (!empresaId.value) return [] as Unidade[]
+
+    const { data, error } = await client
       .from('unidades')
       .select('*')
+      .eq('empresa_id', empresaId.value)
       .order('created_at', { ascending: false })
-
-    if (empresaId.value) {
-      query = query.eq('empresa_id', empresaId.value)
-    }
-
-    const { data, error } = await query
 
     if (error) throw error
     return data as Unidade[]
@@ -250,14 +240,13 @@ export const useEstoque = () => {
   // ==========================================
 
   const getFornecedores = async (apenasAtivos = true) => {
+    if (!empresaId.value) return [] as Fornecedor[]
+
     let query = client
       .from('fornecedores')
       .select('*')
+      .eq('empresa_id', empresaId.value)
       .order('created_at', { ascending: false })
-
-    if (empresaId.value) {
-      query = query.eq('empresa_id', empresaId.value)
-    }
 
     if (apenasAtivos) {
       query = query.eq('ativo', true)
@@ -306,6 +295,8 @@ export const useEstoque = () => {
   // ==========================================
 
   const getProdutos = async (apenasAtivos = true) => {
+    if (!empresaId.value) return [] as Produto[]
+
     let query = client
       .from('produtos')
       .select(`
@@ -314,11 +305,8 @@ export const useEstoque = () => {
         subgrupo:subgrupos(*, grupo:grupos(*)),
         unidade:unidades(*)
       `)
+      .eq('empresa_id', empresaId.value)
       .order('created_at', { ascending: false })
-
-    if (empresaId.value) {
-      query = query.eq('empresa_id', empresaId.value)
-    }
 
     if (apenasAtivos) {
       query = query.eq('ativo', true)
@@ -419,6 +407,8 @@ export const useEstoque = () => {
   // ==========================================
 
   const getEntradas = async (filtro?: FiltroData) => {
+    if (!empresaId.value) return [] as Entrada[]
+
     let query = client
       .from('entradas')
       .select(`
@@ -426,12 +416,9 @@ export const useEstoque = () => {
         produto:produtos(*, categoria:categorias(*), unidade:unidades(*)),
         fornecedor:fornecedores(*)
       `)
+      .eq('empresa_id', empresaId.value)
       .order('data', { ascending: false })
       .order('created_at', { ascending: false })
-
-    if (empresaId.value) {
-      query = query.eq('empresa_id', empresaId.value)
-    }
 
     if (filtro?.dataInicio) {
       query = query.gte('data', filtro.dataInicio)
@@ -487,17 +474,18 @@ export const useEstoque = () => {
   // ==========================================
 
   const getSaidas = async (filtro?: FiltroData & { tipo?: TipoSaida | 'todos' }) => {
+    if (!empresaId.value) return [] as Saida[]
+
     let query = client
       .from('saidas')
       .select(`
         *,
-        produto:produtos(*, categoria:categorias(*), unidade:unidades(*))
+        produto:produtos(*, categoria:categorias(*), unidade:unidades(*)),
+        empresa_destino:empresas!saidas_empresa_destino_id_fkey(id, nome)
       `)
+      .eq('empresa_id', empresaId.value)
       .order('data', { ascending: false })
-
-    if (empresaId.value) {
-      query = query.eq('empresa_id', empresaId.value)
-    }
+      .order('created_at', { ascending: false })
 
     if (filtro?.tipo && filtro.tipo !== 'todos') {
       query = query.eq('tipo', filtro.tipo)
@@ -551,22 +539,51 @@ export const useEstoque = () => {
     if (error) throw error
   }
 
+  // Transferência entre lojas: cria saída na empresa atual + entrada na empresa destino
+  const createSaidaTransferenciaLoja = async (
+    saida: Partial<Saida>,
+    empresaDestinoId: string,
+    produtoDestinoId: string
+  ) => {
+    // 1. Criar a saída na empresa atual com empresa_destino_id
+    const saidaCriada = await createSaida({
+      ...saida,
+      tipo: 'transferencia',
+      empresa_destino_id: empresaDestinoId
+    })
+
+    // 2. Criar entrada na empresa destino com o produto escolhido pelo usuário
+    const custoUnit = Number(saidaCriada.custo_saida) / saida.quantidade!
+    await client
+      .from('entradas')
+      .insert({
+        produto_id: produtoDestinoId,
+        empresa_id: empresaDestinoId,
+        data: saida.data,
+        quantidade: saida.quantidade,
+        custo_unitario: custoUnit,
+        valor_total: Number(saidaCriada.custo_saida),
+        observacao: `Transferência recebida`
+      })
+
+    return saidaCriada
+  }
+
   // ==========================================
   // AJUSTES
   // ==========================================
 
   const getAjustes = async (filtro?: FiltroData) => {
+    if (!empresaId.value) return [] as Ajuste[]
+
     let query = client
       .from('ajustes')
       .select(`
         *,
         produto:produtos(*, categoria:categorias(*), subgrupo:subgrupos(*, grupo:grupos(*)), unidade:unidades(*))
       `)
+      .eq('empresa_id', empresaId.value)
       .order('data', { ascending: false })
-
-    if (empresaId.value) {
-      query = query.eq('empresa_id', empresaId.value)
-    }
 
     if (filtro?.dataInicio) {
       query = query.gte('data', filtro.dataInicio)
@@ -652,15 +669,14 @@ export const useEstoque = () => {
   // ==========================================
 
   const getFaturamentos = async (ano?: number) => {
+    if (!empresaId.value) return [] as Faturamento[]
+
     let query = client
       .from('faturamentos')
       .select('*')
+      .eq('empresa_id', empresaId.value)
       .order('ano', { ascending: false })
       .order('mes', { ascending: false })
-
-    if (empresaId.value) {
-      query = query.eq('empresa_id', empresaId.value)
-    }
 
     if (ano) {
       query = query.eq('ano', ano)
@@ -775,7 +791,9 @@ export const useEstoque = () => {
   // ==========================================
 
   const getBeneficiamentosPendentes = async () => {
-    let query = client
+    if (!empresaId.value) return [] as Beneficiamento[]
+
+    const { data, error } = await client
       .from('beneficiamentos')
       .select(`
         *,
@@ -789,28 +807,22 @@ export const useEstoque = () => {
         )
       `)
       .eq('status', 'pendente')
+      .eq('empresa_id', empresaId.value)
       .order('created_at', { ascending: false })
 
-    if (empresaId.value) {
-      query = query.eq('empresa_id', empresaId.value)
-    }
-
-    const { data, error } = await query
     if (error) throw error
     return data as Beneficiamento[]
   }
 
   const countBeneficiamentosPendentes = async (): Promise<number> => {
-    let query = client
+    if (!empresaId.value) return 0
+
+    const { count, error } = await client
       .from('beneficiamentos')
       .select('*', { count: 'exact', head: true })
       .eq('status', 'pendente')
+      .eq('empresa_id', empresaId.value)
 
-    if (empresaId.value) {
-      query = query.eq('empresa_id', empresaId.value)
-    }
-
-    const { count, error } = await query
     if (error) throw error
     return count || 0
   }
@@ -1036,16 +1048,14 @@ export const useEstoque = () => {
   // ==========================================
 
   const getContagens = async () => {
-    let query = client
+    if (!empresaId.value) return [] as import('~/types').Contagem[]
+
+    const { data, error } = await client
       .from('contagens')
       .select('*, contagem_setores(id, contagem_id, setor_id, status, progresso, finalizado_em, setor:setores(id, nome))')
+      .eq('empresa_id', empresaId.value)
       .order('created_at', { ascending: false })
 
-    if (empresaId.value) {
-      query = query.eq('empresa_id', empresaId.value)
-    }
-
-    const { data, error } = await query
     if (error) throw error
     return data as import('~/types').Contagem[]
   }
@@ -1091,16 +1101,14 @@ export const useEstoque = () => {
   // ==========================================
 
   const getResponsaveis = async () => {
-    let query = client
+    if (!empresaId.value) return [] as { id: string; nome: string; telefone: string }[]
+
+    const { data, error } = await client
       .from('responsaveis')
       .select('*')
+      .eq('empresa_id', empresaId.value)
       .order('nome')
 
-    if (empresaId.value) {
-      query = query.eq('empresa_id', empresaId.value)
-    }
-
-    const { data, error } = await query
     if (error) throw error
     return data as { id: string; nome: string; telefone: string }[]
   }
@@ -1251,16 +1259,14 @@ export const useEstoque = () => {
   // ==========================================
 
   const getSetores = async () => {
-    let query = client
+    if (!empresaId.value) return [] as import('~/types').Setor[]
+
+    const { data, error } = await client
       .from('setores')
       .select('*')
+      .eq('empresa_id', empresaId.value)
       .order('nome', { ascending: true })
 
-    if (empresaId.value) {
-      query = query.eq('empresa_id', empresaId.value)
-    }
-
-    const { data, error } = await query
     if (error) throw error
     return data as import('~/types').Setor[]
   }
@@ -1326,16 +1332,14 @@ export const useEstoque = () => {
   }
 
   const getAllSetorProdutos = async () => {
-    let query = client
+    if (!empresaId.value) return [] as { id: string; setor_id: string; produto_id: string; produto: { id: string; nome: string } | null }[]
+
+    const { data, error } = await client
       .from('setor_produtos')
       .select('id, setor_id, produto_id, produto:produtos(id, nome)')
+      .eq('empresa_id', empresaId.value)
       .order('created_at', { ascending: true })
 
-    if (empresaId.value) {
-      query = query.eq('empresa_id', empresaId.value)
-    }
-
-    const { data, error } = await query
     if (error) throw error
     return data as { id: string; setor_id: string; produto_id: string; produto: { id: string; nome: string } | null }[]
   }
@@ -1397,6 +1401,7 @@ export const useEstoque = () => {
     // Saídas
     getSaidas,
     createSaida,
+    createSaidaTransferenciaLoja,
     updateSaida,
     deleteSaida,
     // Ajustes

@@ -39,34 +39,34 @@
       <!-- Navigation -->
       <nav class="flex-1 overflow-y-auto overflow-x-hidden" :class="sidebarCollapsed ? 'py-3' : 'p-4 pb-0'">
         <!-- Dashboard + Empresas -->
-        <div v-for="item in menuDashboard" :key="item.to">
-          <div v-if="sidebarCollapsed" class="flex justify-center">
-            <UTooltip :text="item.label" :popper="{ placement: 'right' }">
-              <NuxtLink
-                :to="item.to"
-                class="flex items-center justify-center w-10 h-10 rounded-lg transition-colors"
-                :class="isActive(item.to) ? 'bg-guardian-50 text-guardian-700' : 'text-operacao-400 hover:bg-operacao-100'"
-              >
-                <UIcon :name="item.icon" class="w-5 h-5" />
-              </NuxtLink>
-            </UTooltip>
+        <div :class="sidebarCollapsed ? 'flex flex-col items-center space-y-1' : 'space-y-1'">
+          <div v-for="item in menuDashboard" :key="item.to">
+            <div v-if="sidebarCollapsed" class="flex justify-center">
+              <UTooltip :text="item.label" :popper="{ placement: 'right' }">
+                <NuxtLink
+                  :to="item.to"
+                  class="flex items-center justify-center w-10 h-10 rounded-lg transition-colors"
+                  :class="isActive(item.to) ? 'bg-guardian-50 text-guardian-700' : 'text-operacao-400 hover:bg-operacao-100'"
+                >
+                  <UIcon :name="item.icon" class="w-5 h-5" />
+                </NuxtLink>
+              </UTooltip>
+            </div>
+            <NuxtLink
+              v-else
+              :to="item.to"
+              class="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-colors"
+              :class="isActive(item.to) ? 'bg-guardian-50 text-guardian-700' : 'text-operacao-600 hover:bg-operacao-100'"
+            >
+              <UIcon :name="item.icon" class="w-5 h-5 flex-shrink-0" />
+              <span>{{ item.label }}</span>
+            </NuxtLink>
           </div>
-          <NuxtLink
-            v-else
-            :to="item.to"
-            class="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-colors"
-            :class="isActive(item.to) ? 'bg-guardian-50 text-guardian-700' : 'text-operacao-600 hover:bg-operacao-100'"
-          >
-            <UIcon :name="item.icon" class="w-5 h-5 flex-shrink-0" />
-            <span>{{ item.label }}</span>
-          </NuxtLink>
         </div>
 
         <!-- Cadastros -->
-        <div :class="sidebarCollapsed ? 'mt-3' : 'mt-5'">
-          <p v-if="!sidebarCollapsed" class="px-3 mb-2 text-xs font-semibold text-operacao-400 uppercase tracking-wider">Cadastros</p>
-          <div v-else class="mb-2 mx-3 border-t border-operacao-100" />
-          <div :class="sidebarCollapsed ? 'flex flex-col items-center space-y-0.5' : 'space-y-0.5'">
+        <div :class="sidebarCollapsed ? 'mt-1' : 'mt-1'">
+          <div :class="sidebarCollapsed ? 'flex flex-col items-center space-y-1' : 'space-y-1'">
             <div v-for="item in menuCadastros" :key="item.to">
               <div v-if="sidebarCollapsed" class="flex justify-center">
                 <UTooltip :text="item.label" :popper="{ placement: 'right' }">
@@ -93,117 +93,64 @@
           </div>
         </div>
 
-        <!-- Controle de Estoque -->
-        <div :class="sidebarCollapsed ? 'mt-3' : 'mt-5'">
-          <p v-if="!sidebarCollapsed" class="px-3 mb-2 text-xs font-semibold text-operacao-400 uppercase tracking-wider">Controle de Estoque</p>
-          <div v-else class="mb-2 mx-3 border-t border-operacao-100" />
-          <div :class="sidebarCollapsed ? 'flex flex-col items-center space-y-0.5' : 'space-y-0.5'">
-            <div v-for="item in menuEstoque" :key="item.to">
-              <div v-if="sidebarCollapsed" class="flex justify-center">
-                <UTooltip :text="item.label" :popper="{ placement: 'right' }">
-                  <NuxtLink
-                    :to="item.to"
-                    class="flex items-center justify-center w-10 h-10 rounded-lg transition-colors"
-                    :class="isActive(item.to) ? 'bg-guardian-50 text-guardian-700' : 'text-operacao-400 hover:bg-operacao-100'"
-                  >
-                    <UIcon :name="item.icon" class="w-5 h-5" :class="!isActive(item.to) ? item.iconColor : ''" />
-                  </NuxtLink>
-                </UTooltip>
-              </div>
-              <NuxtLink
-                v-else
-                :to="item.to"
-                class="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-colors"
-                :class="isActive(item.to) ? 'bg-guardian-50 text-guardian-700' : 'text-operacao-600 hover:bg-operacao-100'"
+        <!-- Relatórios (collapsible) -->
+        <div class="mt-1">
+          <!-- Header toggle -->
+          <div v-if="sidebarCollapsed" class="flex justify-center">
+            <UTooltip text="Relatórios" :popper="{ placement: 'right' }">
+              <button
+                class="flex items-center justify-center w-10 h-10 rounded-lg transition-colors"
+                :class="isRelatorioActive ? 'bg-guardian-50 text-guardian-700' : 'text-operacao-400 hover:bg-operacao-100'"
+                @click="toggleRelatorios"
               >
-                <UIcon :name="item.icon" class="w-5 h-5 flex-shrink-0" :class="!isActive(item.to) ? item.iconColor : ''" />
-                <span>{{ item.label }}</span>
-              </NuxtLink>
-            </div>
+                <UIcon name="i-heroicons-document-chart-bar" class="w-5 h-5" />
+              </button>
+            </UTooltip>
+          </div>
+          <button
+            v-else
+            class="flex items-center justify-between w-full px-3 py-2 text-sm font-medium rounded-lg transition-colors"
+            :class="isRelatorioActive && !relatoriosOpen ? 'bg-guardian-50 text-guardian-700' : 'text-operacao-600 hover:bg-operacao-100'"
+            @click="toggleRelatorios"
+          >
+            <span class="flex items-center gap-3">
+              <UIcon name="i-heroicons-document-chart-bar" class="w-5 h-5 flex-shrink-0" />
+              <span>Relatórios</span>
+            </span>
+            <UIcon
+              name="i-heroicons-chevron-down"
+              class="w-4 h-4 transition-transform duration-200"
+              :class="relatoriosOpen ? '' : '-rotate-90'"
+            />
+          </button>
 
+          <!-- Sub-items (animated) -->
+          <div
+            v-if="!sidebarCollapsed"
+            class="grid transition-[grid-template-rows] duration-200 ease-in-out"
+            :class="relatoriosOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'"
+          >
+            <div class="overflow-hidden">
+              <div class="mt-0.5 space-y-0.5 pl-5">
+                <NuxtLink
+                  v-for="item in menuRelatorios"
+                  :key="item.to"
+                  :to="item.to"
+                  class="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-colors"
+                  :class="isActive(item.to) ? 'bg-guardian-50 text-guardian-700' : 'text-operacao-600 hover:bg-operacao-100'"
+                >
+                  <UIcon :name="item.icon" class="w-4 h-4 flex-shrink-0" />
+                  <span>{{ item.label }}</span>
+                </NuxtLink>
+              </div>
+            </div>
           </div>
         </div>
 
-        <!-- Relatórios -->
-        <div :class="sidebarCollapsed ? 'mt-3' : 'mt-5'">
-          <p v-if="!sidebarCollapsed" class="px-3 mb-2 text-xs font-semibold text-operacao-400 uppercase tracking-wider">Relatórios</p>
-          <div v-else class="mb-2 mx-3 border-t border-operacao-100" />
-          <div :class="sidebarCollapsed ? 'flex flex-col items-center space-y-0.5' : 'space-y-0.5'">
-
-            <!-- CMV -->
-            <div>
-              <div v-if="sidebarCollapsed" class="flex justify-center">
-                <UTooltip text="CMV" :popper="{ placement: 'right' }">
-                  <NuxtLink
-                    to="/relatorios/cmv"
-                    class="flex items-center justify-center w-10 h-10 rounded-lg transition-colors"
-                    :class="isActive('/relatorios/cmv') ? 'bg-guardian-50 text-guardian-700' : 'text-operacao-400 hover:bg-operacao-100'"
-                  >
-                    <UIcon name="i-heroicons-calculator" class="w-5 h-5" />
-                  </NuxtLink>
-                </UTooltip>
-              </div>
-              <NuxtLink
-                v-else
-                to="/relatorios/cmv"
-                class="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-colors"
-                :class="isActive('/relatorios/cmv') ? 'bg-guardian-50 text-guardian-700' : 'text-operacao-600 hover:bg-operacao-100'"
-              >
-                <UIcon name="i-heroicons-calculator" class="w-5 h-5 flex-shrink-0" />
-                <span>CMV</span>
-              </NuxtLink>
-            </div>
-
-            <!-- Planej. Inventário -->
-            <div v-for="item in menuPlanejInventario" :key="item.to">
-              <div v-if="sidebarCollapsed" class="flex justify-center">
-                <UTooltip :text="item.label" :popper="{ placement: 'right' }">
-                  <NuxtLink
-                    :to="item.to"
-                    class="flex items-center justify-center w-10 h-10 rounded-lg transition-colors"
-                    :class="isActive(item.to) ? 'bg-guardian-50 text-guardian-700' : 'text-operacao-400 hover:bg-operacao-100'"
-                  >
-                    <UIcon :name="item.icon" class="w-5 h-5" />
-                  </NuxtLink>
-                </UTooltip>
-              </div>
-              <NuxtLink
-                v-else
-                :to="item.to"
-                class="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-colors"
-                :class="isActive(item.to) ? 'bg-guardian-50 text-guardian-700' : 'text-operacao-600 hover:bg-operacao-100'"
-              >
-                <UIcon :name="item.icon" class="w-5 h-5 flex-shrink-0" />
-                <span>{{ item.label }}</span>
-              </NuxtLink>
-            </div>
-
-            <!-- Planejamento de Estoque -->
-            <div v-for="item in menuPlanejamentoEstoque" :key="item.to">
-              <div v-if="sidebarCollapsed" class="flex justify-center">
-                <UTooltip :text="item.label" :popper="{ placement: 'right' }">
-                  <NuxtLink
-                    :to="item.to"
-                    class="flex items-center justify-center w-10 h-10 rounded-lg transition-colors"
-                    :class="isActive(item.to) ? 'bg-guardian-50 text-guardian-700' : 'text-operacao-400 hover:bg-operacao-100'"
-                  >
-                    <UIcon :name="item.icon" class="w-5 h-5" />
-                  </NuxtLink>
-                </UTooltip>
-              </div>
-              <NuxtLink
-                v-else
-                :to="item.to"
-                class="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-colors"
-                :class="isActive(item.to) ? 'bg-guardian-50 text-guardian-700' : 'text-operacao-600 hover:bg-operacao-100'"
-              >
-                <UIcon :name="item.icon" class="w-5 h-5 flex-shrink-0" />
-                <span>{{ item.label }}</span>
-              </NuxtLink>
-            </div>
-
-            <!-- Planej. Compras -->
-            <div v-for="item in menuPlanejCompras" :key="item.to">
+        <!-- Admin (super-admin only) -->
+        <div v-if="isSuperAdmin" :class="sidebarCollapsed ? 'mt-1' : 'mt-1'">
+          <div :class="sidebarCollapsed ? 'flex flex-col items-center space-y-1' : 'space-y-1'">
+            <div v-for="item in menuAdmin" :key="item.to">
               <div v-if="sidebarCollapsed" class="flex justify-center">
                 <UTooltip :text="item.label" :popper="{ placement: 'right' }">
                   <NuxtLink
@@ -227,7 +174,6 @@
             </div>
           </div>
         </div>
-
 
       </nav>
 
@@ -341,6 +287,44 @@
         <!-- Divider -->
         <div :class="sidebarCollapsed ? 'mx-2' : 'mx-3'" class="border-t border-operacao-100" />
 
+        <!-- Assinatura / Trial info -->
+        <div v-if="showAssinaturaBanner && !sidebarCollapsed" class="px-2.5 pt-2">
+          <NuxtLink
+            to="/assinatura"
+            class="flex items-center gap-2.5 px-2.5 py-2 rounded-xl transition-colors"
+            :class="sidebarAssinaturaStyle.bgClass"
+          >
+            <div
+              class="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center"
+              :class="sidebarAssinaturaStyle.iconBgClass"
+            >
+              <UIcon :name="sidebarAssinaturaStyle.icon" class="w-3.5 h-3.5" :class="sidebarAssinaturaStyle.iconClass" />
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-[11px] font-semibold truncate" :class="sidebarAssinaturaStyle.textClass">
+                {{ sidebarAssinaturaLabel }}
+              </p>
+              <p class="text-[10px] truncate" :class="sidebarAssinaturaStyle.subtextClass">
+                {{ sidebarAssinaturaSub }}
+              </p>
+            </div>
+          </NuxtLink>
+        </div>
+        <div v-else-if="showAssinaturaBanner && sidebarCollapsed" class="flex justify-center pt-2 px-1.5">
+          <UTooltip :text="sidebarAssinaturaLabel" :popper="{ placement: 'right' }">
+            <NuxtLink
+              to="/assinatura"
+              class="w-7 h-7 rounded-lg flex items-center justify-center"
+              :class="sidebarAssinaturaStyle.iconBgClass"
+            >
+              <UIcon :name="sidebarAssinaturaStyle.icon" class="w-3.5 h-3.5" :class="sidebarAssinaturaStyle.iconClass" />
+            </NuxtLink>
+          </UTooltip>
+        </div>
+
+        <!-- Divider assinatura/user -->
+        <div v-if="showAssinaturaBanner" :class="sidebarCollapsed ? 'mx-2 mt-2' : 'mx-3 mt-2'" class="border-t border-operacao-100" />
+
         <!-- Linha do User -->
         <div :class="sidebarCollapsed ? 'p-1.5 flex justify-center' : 'px-2.5 pt-2 pb-2.5'">
           <div :class="sidebarCollapsed ? 'flex items-center justify-center' : 'flex items-center gap-2.5 px-2 py-1'">
@@ -365,6 +349,7 @@
               </button>
               <button class="flex-1 min-w-0 text-left" @click="showPerfilModal = true">
                 <p class="text-[13px] font-semibold text-operacao-800 truncate leading-none uppercase hover:text-guardian-700 transition-colors">{{ nomeCompletoUsuario }}</p>
+                <p v-if="sidebarPlanoLabel" class="text-[10px] mt-1 truncate leading-none" :class="sidebarPlanoLabelClass">{{ sidebarPlanoLabel }}</p>
               </button>
               <button
                 v-if="user"
@@ -416,16 +401,8 @@
     >
       <UCard :ui="{ background: 'bg-transparent', ring: 'ring-0', shadow: '', divide: 'divide-operacao-100 dark:divide-operacao-700' }">
         <template #header>
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-3">
-              <div class="w-9 h-9 bg-guardian-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                <UIcon name="i-heroicons-user-circle" class="w-5 h-5 text-guardian-600" />
-              </div>
-              <div>
-                <h3 class="text-lg font-semibold text-operacao-800">Meu Perfil</h3>
-                <p class="text-xs text-operacao-400">Edite suas informações pessoais</p>
-              </div>
-            </div>
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-lg font-semibold text-operacao-800">Configurações</h3>
             <UButton
               color="gray"
               variant="ghost"
@@ -433,9 +410,41 @@
               @click="showPerfilModal = false"
             />
           </div>
+          <!-- Tabs -->
+          <div class="flex gap-1 border-b border-operacao-100 -mx-1">
+            <button
+              class="px-4 py-2 text-sm font-medium transition-colors relative"
+              :class="perfilModalTab === 0 ? 'text-guardian-700' : 'text-operacao-400 hover:text-operacao-600'"
+              @click="perfilModalTab = 0"
+            >
+              <span class="flex items-center gap-1.5">
+                <UIcon name="i-heroicons-user-circle" class="w-4 h-4" />
+                Perfil
+              </span>
+              <div
+                v-if="perfilModalTab === 0"
+                class="absolute bottom-0 left-2 right-2 h-0.5 bg-guardian-600 rounded-full"
+              />
+            </button>
+            <button
+              class="px-4 py-2 text-sm font-medium transition-colors relative"
+              :class="perfilModalTab === 1 ? 'text-guardian-700' : 'text-operacao-400 hover:text-operacao-600'"
+              @click="perfilModalTab = 1; carregarDadosAssinatura()"
+            >
+              <span class="flex items-center gap-1.5">
+                <UIcon name="i-heroicons-credit-card" class="w-4 h-4" />
+                Assinatura
+              </span>
+              <div
+                v-if="perfilModalTab === 1"
+                class="absolute bottom-0 left-2 right-2 h-0.5 bg-guardian-600 rounded-full"
+              />
+            </button>
+          </div>
         </template>
 
-        <form @submit.prevent="salvarPerfil" class="space-y-4">
+        <!-- ==================== TAB: PERFIL ==================== -->
+        <form v-if="perfilModalTab === 0" @submit.prevent="salvarPerfil" class="space-y-4">
           <!-- Foto de perfil -->
           <div class="flex items-center gap-4">
             <button
@@ -547,8 +556,107 @@
           </div>
         </form>
 
+        <!-- ==================== TAB: ASSINATURA ==================== -->
+        <div v-else-if="perfilModalTab === 1" class="space-y-5">
+          <!-- Status Card -->
+          <div class="flex items-start gap-3">
+            <div
+              class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center"
+              :class="assinaturaStatusIcon.bgClass"
+            >
+              <UIcon :name="assinaturaStatusIcon.icon" class="w-5 h-5" :class="assinaturaStatusIcon.iconClass" />
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 mb-0.5">
+                <h4 class="text-sm font-bold text-operacao-800">
+                  {{ assinaturaData?.plano?.nome || 'Período de teste' }}
+                </h4>
+                <span
+                  class="inline-flex items-center px-2 py-0.5 text-[11px] font-semibold rounded-full"
+                  :class="assinaturaStatusBadge.class"
+                >
+                  {{ assinaturaStatusBadge.label }}
+                </span>
+              </div>
+              <p class="text-xs text-operacao-400">
+                <template v-if="subscriptionState.state === 'active'">
+                  Assinatura ativa.
+                  <span v-if="assinaturaData?.plano">R$ {{ formatarPrecoAssinatura(assinaturaData.plano.preco_mensal) }}/mês</span>
+                </template>
+                <template v-else-if="isTrial">
+                  {{ subscriptionState.diasRestantes }} dia{{ subscriptionState.diasRestantes! > 1 ? 's' : '' }} restantes no teste grátis.
+                </template>
+                <template v-else-if="subscriptionState.state === 'grace'">
+                  Teste expirado. Assine para continuar.
+                </template>
+                <template v-else-if="subscriptionState.state === 'past_due'">
+                  Pagamento pendente.
+                </template>
+                <template v-else-if="subscriptionState.state === 'cancelled'">
+                  Assinatura cancelada.
+                </template>
+                <template v-else>
+                  Acesso bloqueado.
+                </template>
+              </p>
+            </div>
+          </div>
+
+          <!-- Plano atual (se ativo) -->
+          <div v-if="assinaturaData?.plano" class="bg-operacao-50 rounded-xl p-4 space-y-3">
+            <p class="text-[11px] font-semibold text-operacao-400 uppercase tracking-wider">Detalhes do plano</p>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <p class="text-[11px] text-operacao-400">Plano</p>
+                <p class="text-sm font-semibold text-operacao-800">{{ assinaturaData.plano.nome }}</p>
+              </div>
+              <div>
+                <p class="text-[11px] text-operacao-400">Valor mensal</p>
+                <p class="text-sm font-semibold text-operacao-800">R$ {{ formatarPrecoAssinatura(assinaturaData.plano.preco_mensal) }}</p>
+              </div>
+            </div>
+            <!-- Recursos -->
+            <div v-if="assinaturaData.plano.recursos?.length" class="pt-2 border-t border-operacao-200/60">
+              <p class="text-[11px] text-operacao-400 mb-2">Recursos incluídos</p>
+              <div class="flex flex-wrap gap-1.5">
+                <span
+                  v-for="recurso in assinaturaData.plano.recursos"
+                  :key="recurso"
+                  class="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium bg-guardian-50 text-guardian-700 rounded-md"
+                >
+                  <UIcon name="i-heroicons-check" class="w-3 h-3" />
+                  {{ recurso }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Ações -->
+          <div class="flex flex-wrap gap-2 pt-1">
+            <button
+              v-if="assinaturaData?.stripe_customer_id"
+              class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold rounded-xl bg-operacao-800 text-white hover:bg-operacao-900 transition-colors"
+              :disabled="abrindoPortal"
+              @click="handleAbrirPortalModal"
+            >
+              <UIcon name="i-heroicons-cog-6-tooth" class="w-4 h-4" />
+              {{ abrindoPortal ? 'Abrindo...' : 'Gerenciar assinatura' }}
+            </button>
+            <NuxtLink
+              v-if="!isAssinaturaActive || subscriptionState.state === 'cancelled'"
+              to="/assinatura"
+              class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold rounded-xl bg-guardian-600 text-white hover:bg-guardian-700 transition-colors"
+              @click="showPerfilModal = false"
+            >
+              <UIcon name="i-heroicons-sparkles" class="w-4 h-4" />
+              {{ isAssinaturaActive ? 'Trocar de plano' : 'Assinar plano' }}
+            </NuxtLink>
+          </div>
+        </div>
+
         <template #footer>
-          <div class="flex flex-col-reverse sm:flex-row justify-end gap-3">
+          <!-- Footer só para aba Perfil -->
+          <div v-if="perfilModalTab === 0" class="flex flex-col-reverse sm:flex-row justify-end gap-3">
             <UButton color="gray" variant="ghost" class="w-full sm:w-auto" @click="showPerfilModal = false">
               Cancelar
             </UButton>
@@ -772,6 +880,175 @@ const {
   getEmpresas
 } = useEmpresa()
 
+// Assinatura
+const {
+  isSuperAdmin,
+  verificarSuperAdmin,
+  assinatura: assinaturaData,
+  subscriptionState,
+  isTrial,
+  isActive: isAssinaturaActive,
+  carregarAssinatura,
+  carregarPlanos,
+  planos: planosDisponiveis,
+  iniciarCheckout,
+  abrirPortal,
+  showBanner: showAssinaturaBanner
+} = useAssinatura()
+verificarSuperAdmin()
+
+// Aba do modal de perfil
+const perfilModalTab = ref(0) // 0 = Perfil, 1 = Assinatura
+const assinandoPlano = ref<string | null>(null)
+const abrindoPortal = ref(false)
+
+// Computed helpers para aba Assinatura
+const assinaturaStatusIcon = computed(() => {
+  const state = subscriptionState.value.state
+  const map: Record<string, { icon: string; bgClass: string; iconClass: string }> = {
+    active: { icon: 'i-heroicons-check-circle', bgClass: 'bg-green-100', iconClass: 'text-green-600' },
+    trial: { icon: 'i-heroicons-clock', bgClass: 'bg-blue-100', iconClass: 'text-blue-600' },
+    trial_warning: { icon: 'i-heroicons-clock', bgClass: 'bg-amber-100', iconClass: 'text-amber-600' },
+    grace: { icon: 'i-heroicons-exclamation-triangle', bgClass: 'bg-amber-100', iconClass: 'text-amber-600' },
+    past_due: { icon: 'i-heroicons-credit-card', bgClass: 'bg-orange-100', iconClass: 'text-orange-600' },
+    cancelled: { icon: 'i-heroicons-x-circle', bgClass: 'bg-red-100', iconClass: 'text-red-600' },
+  }
+  return map[state] || { icon: 'i-heroicons-lock-closed', bgClass: 'bg-operacao-100', iconClass: 'text-operacao-600' }
+})
+
+const assinaturaStatusBadge = computed(() => {
+  const state = subscriptionState.value.state
+  const map: Record<string, { label: string; class: string }> = {
+    active: { label: 'Ativa', class: 'bg-green-100 text-green-700' },
+    trial: { label: 'Teste grátis', class: 'bg-blue-100 text-blue-700' },
+    trial_warning: { label: 'Teste expirando', class: 'bg-amber-100 text-amber-700' },
+    grace: { label: 'Expirado', class: 'bg-amber-100 text-amber-700' },
+    past_due: { label: 'Pagamento pendente', class: 'bg-orange-100 text-orange-700' },
+    cancelled: { label: 'Cancelada', class: 'bg-red-100 text-red-700' },
+    blocked: { label: 'Bloqueada', class: 'bg-red-100 text-red-700' },
+  }
+  return map[state] || { label: state, class: 'bg-operacao-100 text-operacao-700' }
+})
+
+const formatarPrecoAssinatura = (valor: number): string => {
+  return valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })
+}
+
+const carregarDadosAssinatura = async () => {
+  await carregarAssinatura()
+}
+
+// Sidebar: label do plano abaixo do nome
+const sidebarPlanoLabel = computed(() => {
+  const state = subscriptionState.value.state
+  if (state === 'active') return assinaturaData.value?.plano?.nome || 'Plano ativo'
+  if (state === 'trial' || state === 'trial_warning') return 'Teste grátis'
+  if (state === 'grace') return 'Teste expirado'
+  if (state === 'past_due') return 'Pgto. pendente'
+  if (state === 'cancelled') return 'Cancelada'
+  if (state === 'blocked') return 'Bloqueada'
+  return ''
+})
+
+const sidebarPlanoLabelClass = computed(() => {
+  const state = subscriptionState.value.state
+  if (state === 'active') return 'text-green-600'
+  if (state === 'trial') return 'text-blue-500'
+  if (state === 'trial_warning') return 'text-amber-500'
+  if (state === 'grace' || state === 'cancelled' || state === 'blocked') return 'text-red-500'
+  if (state === 'past_due') return 'text-orange-500'
+  return 'text-operacao-400'
+})
+
+// Sidebar: card de assinatura/trial
+const sidebarAssinaturaLabel = computed(() => {
+  const state = subscriptionState.value.state
+  const dias = subscriptionState.value.diasRestantes
+  if (state === 'trial') return `Teste grátis — ${dias} dia${dias! > 1 ? 's' : ''}`
+  if (state === 'trial_warning') return `Teste expira em ${dias} dia${dias! > 1 ? 's' : ''}!`
+  if (state === 'grace') return 'Teste expirado'
+  if (state === 'past_due') return 'Pagamento pendente'
+  if (state === 'cancelled') return 'Assinatura cancelada'
+  return ''
+})
+
+const sidebarAssinaturaSub = computed(() => {
+  const state = subscriptionState.value.state
+  if (state === 'trial') return 'Assinar plano'
+  if (state === 'trial_warning') return 'Assinar agora'
+  if (state === 'grace') return 'Escolher plano'
+  if (state === 'past_due') return 'Atualizar pagamento'
+  if (state === 'cancelled') return 'Reativar'
+  return ''
+})
+
+const sidebarAssinaturaStyle = computed(() => {
+  const state = subscriptionState.value.state
+  if (state === 'trial') {
+    return {
+      bgClass: 'bg-blue-50/80 hover:bg-blue-100/80',
+      iconBgClass: 'bg-blue-100',
+      icon: 'i-heroicons-sparkles',
+      iconClass: 'text-blue-600',
+      textClass: 'text-blue-800',
+      subtextClass: 'text-blue-500',
+    }
+  }
+  if (state === 'trial_warning') {
+    return {
+      bgClass: 'bg-amber-50/80 hover:bg-amber-100/80',
+      iconBgClass: 'bg-amber-100',
+      icon: 'i-heroicons-clock',
+      iconClass: 'text-amber-600',
+      textClass: 'text-amber-800',
+      subtextClass: 'text-amber-500',
+    }
+  }
+  if (state === 'grace' || state === 'cancelled') {
+    return {
+      bgClass: 'bg-red-50/80 hover:bg-red-100/80',
+      iconBgClass: 'bg-red-100',
+      icon: 'i-heroicons-exclamation-triangle',
+      iconClass: 'text-red-600',
+      textClass: 'text-red-800',
+      subtextClass: 'text-red-500',
+    }
+  }
+  if (state === 'past_due') {
+    return {
+      bgClass: 'bg-orange-50/80 hover:bg-orange-100/80',
+      iconBgClass: 'bg-orange-100',
+      icon: 'i-heroicons-credit-card',
+      iconClass: 'text-orange-600',
+      textClass: 'text-orange-800',
+      subtextClass: 'text-orange-500',
+    }
+  }
+  return {
+    bgClass: 'bg-operacao-50 hover:bg-operacao-100',
+    iconBgClass: 'bg-operacao-100',
+    icon: 'i-heroicons-sparkles',
+    iconClass: 'text-operacao-600',
+    textClass: 'text-operacao-800',
+    subtextClass: 'text-operacao-500',
+  }
+})
+
+const handleAbrirPortalModal = async () => {
+  abrindoPortal.value = true
+  try {
+    await abrirPortal()
+  } catch (error: any) {
+    toast.add({
+      title: 'Erro',
+      description: error?.data?.statusMessage || 'Não foi possível abrir o portal.',
+      color: 'red'
+    })
+  } finally {
+    abrindoPortal.value = false
+  }
+}
+
 const empresaPopoverOpen = ref(false)
 
 // Empresa CRUD modal state
@@ -811,6 +1088,7 @@ const fotoPerfilUsuario = computed(() => {
 
 watch(showPerfilModal, (abriu) => {
   if (abriu) {
+    perfilModalTab.value = 0
     const meta = user.value?.user_metadata || {}
     perfilForm.nome = meta.nome || meta.name || meta.full_name || ''
     perfilForm.foto_url = meta.foto_url || ''
@@ -932,33 +1210,24 @@ const menuDashboard = [
 ]
 
 const menuCadastros = [
-  { to: '/cadastro/produtos', icon: 'i-heroicons-cube', label: 'Produtos' }
+  { to: '/cadastro/produtos', icon: 'i-heroicons-cube', label: 'Produtos' },
+  { to: '/movimentos/controle-estoque', icon: 'i-heroicons-clipboard-document-list', label: 'Controle de Estoque', iconColor: 'text-guardian-500' },
+  { to: '/movimentos/ajustes', icon: 'i-heroicons-clipboard-document-check', label: 'Contagem' },
+  { to: '/compras', icon: 'i-heroicons-shopping-cart', label: 'Compras' }
 ]
 
-
-const menuEstoque = [
-  { to: '/relatorios/painel-mes', icon: 'i-heroicons-calendar-days', label: 'Painel de Controle' },
-  { to: '/movimentos/entradas', icon: 'i-heroicons-arrow-down-tray', label: 'Entradas', iconColor: 'text-controle-500' },
-  { to: '/movimentos/saidas', icon: 'i-heroicons-arrow-up-tray', label: 'Saídas', iconColor: 'text-red-500' }
-]
-
-const menuPlanejInventario = [
+const menuRelatorios = [
+  { to: '/relatorios/cmv', icon: 'i-heroicons-calculator', label: 'CMV' },
   { to: '/relatorios/gestao-inventario', icon: 'i-heroicons-clipboard-document-list', label: 'Inventário' },
-  { to: '/movimentos/ajustes', icon: 'i-heroicons-clipboard-document-check', label: 'Contagem' }
-]
-
-const menuPlanejamentoEstoque = [
   { to: '/relatorios/giro-estoque', icon: 'i-heroicons-arrow-path', label: 'Giro de Estoque' },
-  { to: '/relatorios/curva-abc', icon: 'i-heroicons-chart-bar', label: 'Curva ABC' }
+  { to: '/relatorios/curva-abc', icon: 'i-heroicons-chart-bar', label: 'Curva ABC' },
+  { to: '/relatorios/estoque-minimo?tab=1', icon: 'i-heroicons-currency-dollar', label: 'CMC Semanal' }
 ]
 
-const menuPlanejCompras = [
-  { to: '/compras', icon: 'i-heroicons-shopping-cart', label: 'Compras' },
-  { to: '/compras/analises?tab=0', icon: 'i-heroicons-arrow-uturn-down', label: 'Ponto de Reposição' },
-  { to: '/compras/analises?tab=1', icon: 'i-heroicons-currency-dollar', label: 'CMC Semanal' },
-  { to: '/compras/analises?tab=2', icon: 'i-heroicons-arrow-trending-up', label: 'Variação de Custo' },
-  { to: '/relatorios/estoque-minimo?tab=0', icon: 'i-heroicons-arrow-uturn-down', label: 'Ponto de Reposição (antigo)' },
-  { to: '/relatorios/lista-pedidos', icon: 'i-heroicons-clipboard-document-list', label: 'Lista de Pedidos (antigo)' }
+const relatoriosOpen = ref(false)
+
+const menuAdmin = [
+  { to: '/admin', icon: 'i-heroicons-cog-6-tooth', label: 'Painel Admin' }
 ]
 
 
@@ -977,7 +1246,26 @@ const isActive = (fullPath: string) => {
   return route.path.startsWith(path + '/')
 }
 
+const isRelatorioActive = computed(() => {
+  return menuRelatorios.some(item => isActive(item.to))
+})
 
+// Auto-open when a relatório route is active
+watch(isRelatorioActive, (active) => {
+  if (active) relatoriosOpen.value = true
+}, { immediate: true })
+
+const toggleRelatorios = () => {
+  if (sidebarCollapsed.value) {
+    sidebarCollapsed.value = false
+    if (import.meta.client) {
+      localStorage.setItem('sidebar_collapsed', 'false')
+    }
+    relatoriosOpen.value = true
+  } else {
+    relatoriosOpen.value = !relatoriosOpen.value
+  }
+}
 
 const toggleCollapse = () => {
   sidebarCollapsed.value = !sidebarCollapsed.value

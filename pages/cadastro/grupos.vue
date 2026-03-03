@@ -1,11 +1,8 @@
 <template>
   <div class="space-y-6">
     <!-- Header -->
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-      <div>
-        <h1 class="text-2xl font-bold text-operacao-800">Grupos e Subgrupos</h1>
-        <p class="text-sm text-operacao-400">Gerencie a hierarquia de categorização dos produtos</p>
-      </div>
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2">
+      <h1 class="text-2xl font-semibold text-[#5a5a66] mb-2">Grupos e Subgrupos</h1>
       <UButton color="primary" class="w-full sm:w-auto" @click="openGrupoModal()">
         <UIcon name="i-heroicons-plus" class="w-4 h-4 mr-2" />
         Novo Grupo
@@ -13,14 +10,14 @@
     </div>
 
     <!-- Tabela estilo planilha -->
-    <UCard :ui="{ body: { padding: '' } }">
+    <UCard :ui="{ base: 'overflow-hidden', body: { padding: '' }, ring: 'ring-1 ring-[#EBEBED]', shadow: 'shadow-sm' }">
       <div class="overflow-x-auto">
         <table class="w-full">
           <thead>
-            <tr class="border-b border-operacao-200 dark:border-operacao-700">
-              <th class="px-4 py-3.5 text-left text-sm font-semibold text-operacao-800 dark:text-white w-48">Grupo</th>
-              <th class="px-4 py-3.5 text-left text-sm font-semibold text-operacao-800 dark:text-white">Subgrupo</th>
-              <th class="px-4 py-3.5 text-right text-sm font-semibold text-operacao-800 dark:text-white w-24">Ações</th>
+            <tr class="border-b border-operacao-200/60">
+              <th class="bg-operacao-100/70 px-4 py-3.5 text-left text-xs font-medium text-[#5a5a66] uppercase tracking-wider w-48">Grupo</th>
+              <th class="bg-operacao-100/70 px-4 py-3.5 text-left text-xs font-medium text-[#5a5a66] uppercase tracking-wider">Subgrupo</th>
+              <th class="bg-operacao-100/70 px-4 py-3.5 text-right text-xs font-medium text-[#5a5a66] uppercase tracking-wider w-24">Ações</th>
             </tr>
           </thead>
           <tbody>
@@ -134,14 +131,6 @@
         </table>
       </div>
 
-      <!-- Loading Skeleton -->
-      <div v-if="loading" class="p-5 space-y-3">
-        <div v-for="i in 5" :key="i" class="flex items-center gap-4 py-2">
-          <USkeleton class="h-5 w-36" />
-          <USkeleton class="h-4 w-28" />
-          <USkeleton class="h-4 w-16 ml-auto" />
-        </div>
-      </div>
     </UCard>
 
     <!-- Modal de Grupo -->

@@ -57,7 +57,28 @@
       "Bash(git commit:*)",
       "Bash(git push origin main)",
       "Bash(npx vercel login)",
-      "Bash(git add .)"
+      "Bash(git add .)",
+      "Bash(npx vercel whoami)",
+      "Bash(npx vercel --prod --yes)",
+      "Bash(git add vercel.json)",
+      "Bash(git add server/api/cron/lembretes-contagem.get.ts)",
+      "Bash(git add server/api/whatsapp/enviar.post.ts server/utils/zapi.ts)",
+      "Bash(git add pages/movimentos/ajustes.vue components/contagem/ContagemEditarModal.vue)",
+      "Bash(curl -s \"https://gdcnew.vercel.app/api/cron/lembretes-contagem\")",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); [print\\(k,v\\) for k,v in {**d.get\\(''dependencies'',{}\\), **d.get\\(''devDependencies'',{}\\)}.items\\(\\)]\")",
+      "Bash(xargs grep -l \"contagem\\\\|notificacao\\\\|lembrete\")",
+      "Bash(xargs grep -l \"contagem\\\\|sendWhatsApp\")",
+      "Bash(done)",
+      "Bash(find /c/Users/mario/Desktop/estoque-cd -type f -name \"*.sql\" -path \"*/supabase/migrations/*\" -exec basename {} ;)",
+      "mcp__plugin_context7_context7__resolve-library-id",
+      "mcp__plugin_context7_context7__query-docs",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(ls /c/Users/mario/Desktop/estoque-cd/node_modules/.bin/nuxi*)",
+      "Bash(xargs grep -l \"getPainelMes\")",
+      "Bash(npx kill-port 3000 3002)",
+      "Bash(lsof -ti:3000 -ti:3002)",
+      "Bash(xargs kill -9)",
+      "Bash(netstat -ano)"
     ]
   }
 }

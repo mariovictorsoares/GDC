@@ -57,7 +57,7 @@ export const useComprasExport = () => {
         </tbody>
       </table>
       ${pedido.observacao ? '<p style="margin-top:16px;font-size:12px;color:#6b7280;">Obs: ' + pedido.observacao + '</p>' : ''}
-      <div class="footer">Guardiao do CMV - Compras</div>
+      <div class="footer">CMV360 - Compras</div>
       <script>window.onload=function(){window.print();}<\/script>
     </body></html>`
 

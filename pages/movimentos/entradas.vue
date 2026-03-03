@@ -1,11 +1,8 @@
 <template>
   <div class="space-y-6">
     <!-- Header -->
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-      <div>
-        <h1 class="text-2xl font-bold text-operacao-800">Entradas</h1>
-        <p class="text-sm text-operacao-400">Registre as compras e entradas de produtos</p>
-      </div>
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2">
+      <h1 class="text-2xl font-semibold text-[#5a5a66] mb-2">Entradas</h1>
       <div class="flex gap-2">
         <UButton
           v-if="pendentesCount > 0"
@@ -28,105 +25,55 @@
     </div>
 
     <!-- Filtros -->
-    <UCard>
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <UFormGroup label="Data Início">
-          <UInput v-model="filtroDataInicio" type="date" />
-        </UFormGroup>
-        <UFormGroup label="Data Fim">
-          <UInput v-model="filtroDataFim" type="date" />
-        </UFormGroup>
-        <UFormGroup label="Produto">
-          <UInput
-            v-model="search"
-            placeholder="Buscar produto..."
-            icon="i-heroicons-magnifying-glass"
-          />
-        </UFormGroup>
-        <div class="flex items-end">
-          <UButton color="gray" variant="soft" class="w-full" @click="clearFilters">
-            Limpar Filtros
-          </UButton>
-        </div>
+    <div class="flex flex-col lg:flex-row lg:items-center gap-3 lg:gap-6">
+      <div class="flex flex-col sm:flex-row flex-wrap gap-3 flex-1 min-w-0">
+        <UInput v-model="filtroDataInicio" type="date" class="w-full sm:w-40" :ui="toolbarInputUi" />
+        <UInput v-model="filtroDataFim" type="date" class="w-full sm:w-40" :ui="toolbarInputUi" />
+        <UInput v-model="search" placeholder="Buscar produto..." icon="i-heroicons-magnifying-glass" class="w-full sm:w-44" :ui="toolbarInputUi" />
       </div>
-    </UCard>
-
-    <!-- Resumo Skeleton -->
-    <div v-if="loading" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <div v-for="i in 3" :key="i" class="rounded-xl bg-white ring-1 ring-operacao-100 shadow-sm p-5">
-        <div class="flex items-center gap-4">
-          <USkeleton class="h-12 w-12 rounded-lg" />
-          <div class="space-y-2">
-            <USkeleton class="h-4 w-24" />
-            <USkeleton class="h-7 w-20" />
-          </div>
-        </div>
+      <div class="flex gap-2 flex-shrink-0">
+        <UButton color="white" :ui="toolbarButtonUi" @click="clearFilters">
+          Limpar Filtros
+        </UButton>
       </div>
     </div>
 
     <!-- Resumo -->
-    <div v-if="!loading" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <UCard>
-        <div class="flex items-center gap-4">
-          <div class="p-3 bg-controle-100 rounded-lg flex items-center justify-center">
-            <UIcon name="i-heroicons-arrow-down-tray" class="w-6 h-6 text-controle-600" />
-          </div>
-          <div>
-            <p class="text-sm text-operacao-400">Total de Entradas</p>
-            <p class="text-2xl font-bold text-operacao-800">{{ filteredEntradas.length }}</p>
-          </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <UCard :ui="{ ring: 'ring-1 ring-[#EBEBED]', shadow: 'shadow-sm', body: { padding: 'px-5 py-4' } }">
+        <div class="flex items-center gap-2 mb-1.5">
+          <span class="w-1.5 h-1.5 rounded-full bg-controle-400" />
+          <span class="text-xs font-medium text-operacao-400">Total de Entradas</span>
         </div>
+        <p class="text-xl font-bold text-operacao-800">{{ filteredEntradas.length }}</p>
       </UCard>
-      <UCard>
-        <div class="flex items-center gap-4">
-          <div class="p-3 bg-guardian-100 rounded-lg flex items-center justify-center">
-            <UIcon name="i-heroicons-cube" class="w-6 h-6 text-guardian-600" />
-          </div>
-          <div>
-            <p class="text-sm text-operacao-400">Total Quantidade</p>
-            <p class="text-2xl font-bold text-operacao-800">{{ formatNumber(totalQuantidade) }}</p>
-          </div>
+      <UCard :ui="{ ring: 'ring-1 ring-[#EBEBED]', shadow: 'shadow-sm', body: { padding: 'px-5 py-4' } }">
+        <div class="flex items-center gap-2 mb-1.5">
+          <span class="w-1.5 h-1.5 rounded-full bg-guardian-400" />
+          <span class="text-xs font-medium text-operacao-400">Total Quantidade</span>
         </div>
+        <p class="text-xl font-bold text-operacao-800">{{ formatNumber(totalQuantidade) }}</p>
       </UCard>
-      <UCard>
-        <div class="flex items-center gap-4">
-          <div class="p-3 bg-purple-100 rounded-lg flex items-center justify-center">
-            <UIcon name="i-heroicons-currency-dollar" class="w-6 h-6 text-purple-600" />
-          </div>
-          <div>
-            <p class="text-sm text-operacao-400">Valor Total</p>
-            <p class="text-2xl font-bold text-operacao-800">{{ formatCurrency(totalValor) }}</p>
-          </div>
+      <UCard :ui="{ ring: 'ring-1 ring-[#EBEBED]', shadow: 'shadow-sm', body: { padding: 'px-5 py-4' } }">
+        <div class="flex items-center gap-2 mb-1.5">
+          <span class="w-1.5 h-1.5 rounded-full bg-purple-400" />
+          <span class="text-xs font-medium text-operacao-400">Valor Total</span>
         </div>
+        <p class="text-xl font-bold text-operacao-800">{{ formatCurrency(totalValor) }}</p>
       </UCard>
     </div>
 
-    <!-- Tabela Skeleton -->
-    <UCard v-if="loading" :ui="{ body: { padding: '' } }">
-      <div class="p-5 space-y-4">
-        <div v-for="i in 8" :key="i" class="flex items-center gap-4">
-          <USkeleton class="h-4 w-20" />
-          <USkeleton class="h-4 w-32" />
-          <USkeleton class="h-4 w-28" />
-          <USkeleton class="h-4 w-16" />
-          <USkeleton class="h-4 w-20" />
-          <USkeleton class="h-4 w-20" />
-          <USkeleton class="h-4 w-24" />
-          <USkeleton class="h-4 w-12" />
-          <USkeleton class="h-4 w-16" />
-        </div>
-      </div>
-    </UCard>
-
     <!-- Tabela -->
-    <UCard v-if="!loading" :ui="{ body: { padding: '' } }">
+    <UCard :ui="{ base: 'overflow-hidden', body: { padding: '' }, ring: 'ring-1 ring-[#EBEBED]', shadow: 'shadow-sm' }">
       <UTable
         :columns="columns"
         :rows="paginatedItems"
         :loading="loading"
         :ui="{
-          td: { color: 'text-operacao-600 dark:text-operacao-200' },
-          th: { color: 'text-operacao-800 dark:text-white' }
+          divide: 'divide-y divide-operacao-50 dark:divide-operacao-700',
+          thead: '',
+          th: { base: 'bg-operacao-100/70 dark:bg-operacao-800 border-b border-operacao-200/60 [&_button]:font-medium [&_button]:uppercase [&_button]:tracking-wider [&_button]:text-xs [&_button]:text-[#5a5a66]', color: 'text-[#5a5a66] dark:text-operacao-400', font: 'font-medium', size: 'text-xs uppercase tracking-wider', padding: 'px-4 py-2' },
+          td: { color: 'text-operacao-600 dark:text-operacao-200', size: 'text-sm', padding: 'px-4 py-2.5' }
         }"
       >
         <!-- Empty State -->
@@ -650,6 +597,9 @@
 
 <script setup lang="ts">
 import type { Entrada, Produto, Beneficiamento } from '~/types'
+
+const toolbarInputUi = { color: { white: { outline: 'shadow-sm bg-white text-gray-900 ring-1 ring-inset ring-[#EBEBED] focus:ring-1 focus:ring-operacao-200 dark:ring-operacao-700' } } }
+const toolbarButtonUi = { color: { white: { solid: 'shadow-sm ring-1 ring-inset ring-[#EBEBED] text-gray-700 bg-white hover:bg-gray-50 focus-visible:ring-2 focus-visible:ring-guardian-500 dark:ring-operacao-700 dark:bg-gray-900 dark:text-white dark:hover:bg-gray-800/50' } } }
 
 interface ItemEntrada {
   produto_id: string

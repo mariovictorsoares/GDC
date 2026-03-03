@@ -131,6 +131,7 @@ export interface Saida {
   produto_id: string
   tipo: TipoSaida
   destino_id?: string
+  empresa_destino_id?: string
   data: string
   semana: string
   quantidade: number
@@ -140,6 +141,7 @@ export interface Saida {
   // Relacionamentos
   produto?: Produto
   destino?: Destino
+  empresa_destino?: Empresa
 }
 
 export interface ItemSaida {
@@ -235,6 +237,11 @@ export interface PainelMes {
   cmv: number
   giro_dias: number
   vezes_mes: number
+  // Breakdown de saídas por tipo
+  saidas_definitiva: number
+  saidas_transf_loja: number
+  saidas_transf_apoio: number
+  saidas_beneficiamento: number
 }
 
 export interface SemanaInfo {
@@ -306,6 +313,15 @@ export interface GestaoInventario {
   ei_valor: number
   ef_quantidade: number
   ef_valor: number
+  // Split principal/apoio
+  ei_quantidade_principal: number
+  ei_valor_principal: number
+  ef_quantidade_principal: number
+  ef_valor_principal: number
+  ei_quantidade_apoio: number
+  ei_valor_apoio: number
+  ef_quantidade_apoio: number
+  ef_valor_apoio: number
   custo_ultima_entrada: number
   variacao_quantidade: number
   variacao_valor: number
@@ -514,4 +530,58 @@ export interface PedidoContagemItem {
   quantidade: number | null
   fornecedor_id: string
   observacao: string
+}
+
+// =============================================
+// Billing / Assinaturas
+// =============================================
+
+export interface Plano {
+  id: string
+  nome: string
+  slug: string
+  descricao?: string
+  preco_mensal: number
+  stripe_product_id?: string
+  stripe_price_id?: string
+  recursos: string[]
+  ativo: boolean
+  ordem: number
+  created_at?: string
+}
+
+export interface Assinatura {
+  id: string
+  empresa_id: string
+  plano_id?: string
+  status: 'trial' | 'active' | 'free' | 'past_due' | 'cancelled' | 'expired' | 'blocked'
+  trial_inicio: string
+  trial_fim: string
+  grace_fim?: string
+  stripe_customer_id?: string
+  stripe_subscription_id?: string
+  taxa_implementacao_paga: boolean
+  data_ativacao?: string
+  data_cancelamento?: string
+  trial_estendido_por?: string
+  observacao_admin?: string
+  created_at?: string
+  updated_at?: string
+  // Relacionamentos
+  plano?: Plano
+}
+
+export type SubscriptionStateName =
+  | 'trial'
+  | 'trial_warning'
+  | 'grace'
+  | 'blocked'
+  | 'active'
+  | 'past_due'
+  | 'cancelled'
+
+export interface SubscriptionState {
+  state: SubscriptionStateName
+  diasRestantes: number | null
+  mensagem: string
 }

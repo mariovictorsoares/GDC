@@ -1,23 +1,18 @@
 <template>
-  <div class="min-h-screen bg-gray-50">
-    <!-- Header (sticky) -->
-    <div class="sticky top-0 bg-white border-b border-operacao-200 z-10">
-      <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-        <!-- Left: Back button -->
-        <UButton
-          icon="i-heroicons-arrow-left"
-          color="gray"
-          variant="ghost"
-          size="sm"
-          @click="navigateTo('/compras')"
-        />
-
-        <!-- Center: Title -->
-        <h1 class="text-lg font-semibold text-operacao-800 truncate mx-4">
+  <USlideover
+    :model-value="modelValue"
+    @update:model-value="$emit('update:modelValue', $event)"
+    :ui="{
+      width: 'max-w-3xl',
+      overlay: { background: 'bg-operacao-900/50 backdrop-blur-sm' }
+    }"
+  >
+    <div class="flex flex-col h-full">
+      <!-- Header -->
+      <div class="flex items-center justify-between px-6 py-4 border-b border-operacao-100">
+        <h3 class="text-lg font-semibold text-operacao-800 truncate">
           {{ listId && pedidoExistente ? pedidoExistente.nome || 'Editar lista' : 'Nova lista de compras' }}
-        </h1>
-
-        <!-- Right: Badge + Save -->
+        </h3>
         <div class="flex items-center gap-3">
           <button
             class="flex items-center gap-1.5 cursor-pointer"
@@ -48,172 +43,158 @@
             @click="saveModalOpen = true"
           >
             <UIcon name="i-heroicons-check" class="w-4 h-4 mr-1" />
-            Salvar Lista
+            Salvar
           </UButton>
-        </div>
-      </div>
-    </div>
-
-    <!-- Main content -->
-    <div class="max-w-7xl mx-auto px-4 py-6 space-y-6">
-
-      <!-- Loading skeleton -->
-      <div v-if="loading" class="space-y-6">
-        <UCard>
-          <div class="flex flex-wrap gap-4">
-            <USkeleton class="h-10 w-48" />
-            <USkeleton class="h-10 w-64" />
-          </div>
-        </UCard>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          <UCard v-for="i in 6" :key="i">
-            <div class="space-y-3">
-              <USkeleton class="h-5 w-40" />
-              <USkeleton class="h-4 w-24" />
-              <USkeleton class="h-8 w-full" />
-              <USkeleton class="h-4 w-32" />
-            </div>
-          </UCard>
+          <UButton
+            icon="i-heroicons-x-mark"
+            color="gray"
+            variant="ghost"
+            size="sm"
+            @click="$emit('update:modelValue', false)"
+          />
         </div>
       </div>
 
-      <!-- Filters Section -->
-      <UCard v-if="!loading">
-        <div class="space-y-4">
-          <!-- Filter row -->
-          <div class="flex flex-wrap gap-4 items-end">
-            <UFormGroup label="Filtrar grupo">
-              <USelect
-                v-model="grupoFilter"
-                :options="grupoOptions"
-                placeholder="Todos os grupos"
-                class="w-56"
-              />
-            </UFormGroup>
-            <UFormGroup label="Buscar produto">
-              <UInput
-                v-model="search"
-                placeholder="Buscar produto..."
-                icon="i-heroicons-magnifying-glass"
-                class="w-64"
-              />
-            </UFormGroup>
-          </div>
-
-          <!-- Toggle row -->
-          <div class="flex flex-wrap items-center justify-between gap-4">
-            <div class="flex items-center gap-3">
-              <UToggle v-model="apenasAbaixoMinimo" />
-              <span class="text-sm text-operacao-600">
-                Apenas produtos abaixo do estoque minimo
-              </span>
-            </div>
-            <div class="flex items-center gap-4">
-              <span class="text-sm text-operacao-400">
-                Exibindo {{ filteredProducts.length }} produto{{ filteredProducts.length !== 1 ? 's' : '' }}
-              </span>
-              <UButton
-                color="primary"
-                variant="outline"
-                size="sm"
-                :disabled="filteredProducts.length === 0"
-                @click="adicionarTodosVisiveis"
-              >
-                <UIcon name="i-heroicons-plus" class="w-4 h-4 mr-1" />
-                Adicionar todos a lista
-              </UButton>
-            </div>
-          </div>
+      <!-- Main content (scrollable) -->
+      <div class="flex-1 overflow-y-auto">
+        <!-- Loading -->
+        <div v-if="loading" class="flex flex-col items-center justify-center py-12 text-operacao-400">
+          <UIcon name="i-heroicons-arrow-path" class="w-6 h-6 animate-spin mb-2" />
+          <p class="text-sm">Carregando...</p>
         </div>
-      </UCard>
 
-      <!-- Product Grid -->
-      <div v-if="!loading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <UCard
-          v-for="product in filteredProducts"
-          :key="product.produto_id"
-          :class="cart.has(product.produto_id) ? 'border-l-4 border-guardian-500' : ''"
-        >
-          <div class="space-y-3">
-            <!-- Nome -->
-            <div>
-              <p class="font-medium text-operacao-800">{{ product.nome }}</p>
-              <UBadge
-                v-if="product.subgrupo_nome"
-                variant="subtle"
-                size="xs"
-                class="bg-operacao-100 text-operacao-600 mt-1"
-              >
-                {{ product.subgrupo_nome }}
-              </UBadge>
+        <template v-else>
+          <!-- Filters -->
+          <div class="p-6 pb-0 space-y-4">
+            <div class="flex flex-wrap gap-4 items-end">
+              <UFormGroup label="Filtrar grupo">
+                <USelect
+                  v-model="grupoFilter"
+                  :options="grupoOptions"
+                  placeholder="Todos os grupos"
+                  class="w-56"
+                />
+              </UFormGroup>
+              <UFormGroup label="Buscar produto">
+                <UInput
+                  v-model="search"
+                  placeholder="Buscar produto..."
+                  icon="i-heroicons-magnifying-glass"
+                  class="w-64"
+                />
+              </UFormGroup>
             </div>
 
-            <!-- Quantity input -->
-            <div class="flex items-center gap-2">
-              <span class="text-sm text-operacao-600 whitespace-nowrap">Comprar:</span>
-              <UInput
-                :model-value="getQuantidade(product.produto_id, product.sugestao_compra)"
-                @update:model-value="setQuantidade(product.produto_id, $event)"
-                type="number"
-                step="0.01"
-                min="0"
-                size="sm"
-                class="w-24"
-              />
-              <span class="text-xs text-operacao-400">{{ product.unidade_sigla }}</span>
-            </div>
-
-            <!-- Info rows -->
-            <div class="space-y-1">
-              <div class="flex items-center justify-between text-sm">
-                <span class="text-operacao-400">Estoque atual:</span>
-                <span class="text-operacao-600">
-                  {{ formatNumber(product.estoque_atual) }} {{ product.unidade_sigla }}
+            <div class="flex flex-wrap items-center justify-between gap-4">
+              <div class="flex items-center gap-3">
+                <UToggle v-model="apenasAbaixoMinimo" />
+                <span class="text-sm text-operacao-600">
+                  Apenas produtos abaixo do estoque mínimo
                 </span>
               </div>
-              <div class="flex items-center justify-between text-sm">
-                <span class="text-operacao-400">Sugestao:</span>
-                <span :class="product.sugestao_compra > 0 ? 'text-red-600 font-medium' : 'text-controle-600'">
-                  {{ product.sugestao_compra > 0 ? formatNumber(product.sugestao_compra) + ' ' + product.unidade_sigla : 'OK' }}
+              <div class="flex items-center gap-4">
+                <span class="text-sm text-operacao-400">
+                  Exibindo {{ filteredProducts.length }} produto{{ filteredProducts.length !== 1 ? 's' : '' }}
                 </span>
+                <UButton
+                  color="primary"
+                  variant="outline"
+                  size="sm"
+                  :disabled="filteredProducts.length === 0"
+                  @click="adicionarTodosVisiveis"
+                >
+                  <UIcon name="i-heroicons-plus" class="w-4 h-4 mr-1" />
+                  Adicionar todos a lista
+                </UButton>
               </div>
             </div>
-
-            <!-- Action button -->
-            <UButton
-              v-if="!cart.has(product.produto_id)"
-              color="primary"
-              variant="outline"
-              size="sm"
-              block
-              @click="addToCart(product)"
-            >
-              <UIcon name="i-heroicons-plus" class="w-4 h-4 mr-1" />
-              Adicionar a lista
-            </UButton>
-            <UButton
-              v-else
-              color="red"
-              variant="outline"
-              size="sm"
-              block
-              @click="removeFromCart(product.produto_id)"
-            >
-              <UIcon name="i-heroicons-trash" class="w-4 h-4 mr-1" />
-              Remover
-            </UButton>
           </div>
-        </UCard>
-      </div>
 
-      <!-- Empty state -->
-      <div
-        v-if="!loading && filteredProducts.length === 0"
-        class="flex flex-col items-center justify-center py-12 text-operacao-400"
-      >
-        <UIcon name="i-heroicons-inbox" class="w-12 h-12 mb-3" />
-        <p class="text-lg font-medium">Nenhum produto encontrado</p>
-        <p class="text-sm mt-1">Tente ajustar os filtros ou desativar o filtro de estoque minimo</p>
+          <!-- Product Grid -->
+          <div class="p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <UCard
+              v-for="product in filteredProducts"
+              :key="product.produto_id"
+              :class="cart.has(product.produto_id) ? 'border-l-4 border-guardian-500' : ''"
+            >
+              <div class="space-y-3">
+                <div>
+                  <p class="font-medium text-operacao-800">{{ product.nome }}</p>
+                  <UBadge
+                    v-if="product.subgrupo_nome"
+                    variant="subtle"
+                    size="xs"
+                    class="bg-operacao-100 text-operacao-600 mt-1"
+                  >
+                    {{ product.subgrupo_nome }}
+                  </UBadge>
+                </div>
+
+                <div class="flex items-center gap-2">
+                  <span class="text-sm text-operacao-600 whitespace-nowrap">Comprar:</span>
+                  <UInput
+                    :model-value="getQuantidade(product.produto_id, product.sugestao_compra)"
+                    @update:model-value="setQuantidade(product.produto_id, $event)"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    size="sm"
+                    class="w-24"
+                  />
+                  <span class="text-xs text-operacao-400">{{ product.unidade_sigla }}</span>
+                </div>
+
+                <div class="space-y-1">
+                  <div class="flex items-center justify-between text-sm">
+                    <span class="text-operacao-400">Estoque atual:</span>
+                    <span class="text-operacao-600">
+                      {{ formatNumber(product.estoque_atual) }} {{ product.unidade_sigla }}
+                    </span>
+                  </div>
+                  <div class="flex items-center justify-between text-sm">
+                    <span class="text-operacao-400">Sugestão:</span>
+                    <span :class="product.sugestao_compra > 0 ? 'text-red-600 font-medium' : 'text-controle-600'">
+                      {{ product.sugestao_compra > 0 ? formatNumber(product.sugestao_compra) + ' ' + product.unidade_sigla : 'OK' }}
+                    </span>
+                  </div>
+                </div>
+
+                <UButton
+                  v-if="!cart.has(product.produto_id)"
+                  color="primary"
+                  variant="outline"
+                  size="sm"
+                  block
+                  @click="addToCart(product)"
+                >
+                  <UIcon name="i-heroicons-plus" class="w-4 h-4 mr-1" />
+                  Adicionar a lista
+                </UButton>
+                <UButton
+                  v-else
+                  color="red"
+                  variant="outline"
+                  size="sm"
+                  block
+                  @click="removeFromCart(product.produto_id)"
+                >
+                  <UIcon name="i-heroicons-trash" class="w-4 h-4 mr-1" />
+                  Remover
+                </UButton>
+              </div>
+            </UCard>
+          </div>
+
+          <!-- Empty state -->
+          <div
+            v-if="filteredProducts.length === 0"
+            class="flex flex-col items-center justify-center py-12 text-operacao-400"
+          >
+            <UIcon name="i-heroicons-inbox" class="w-12 h-12 mb-3" />
+            <p class="text-lg font-medium">Nenhum produto encontrado</p>
+            <p class="text-sm mt-1">Tente ajustar os filtros ou desativar o filtro de estoque mínimo</p>
+          </div>
+        </template>
       </div>
     </div>
 
@@ -248,11 +229,10 @@
           </div>
         </template>
 
-        <!-- Cart items -->
         <div class="max-h-[60vh] overflow-y-auto divide-y divide-operacao-100 -mx-4 sm:-mx-6">
           <div v-if="cart.size === 0" class="flex flex-col items-center justify-center py-8 text-operacao-400">
             <UIcon name="i-heroicons-shopping-cart" class="w-10 h-10 mb-2" />
-            <p class="text-sm">Sua lista esta vazia</p>
+            <p class="text-sm">Sua lista está vazia</p>
           </div>
 
           <div
@@ -260,7 +240,6 @@
             :key="id"
             class="px-4 sm:px-6 py-4 space-y-3"
           >
-            <!-- Item header -->
             <div class="flex items-start justify-between gap-3">
               <div class="flex-1 min-w-0">
                 <p class="font-medium text-operacao-800">{{ item.nome }}</p>
@@ -282,7 +261,6 @@
               />
             </div>
 
-            <!-- Quantity + price row -->
             <div class="flex flex-wrap items-center gap-4">
               <div class="flex items-center gap-2">
                 <span class="text-sm text-operacao-500">Qtd:</span>
@@ -298,15 +276,14 @@
                 <span class="text-xs text-operacao-400">{{ item.unidade_sigla }}</span>
               </div>
               <div class="text-sm text-operacao-400">
-                Ultimo preco: <span class="font-medium text-operacao-600">{{ formatCurrency(item.preco_estimado || 0) }}</span>
+                Último preço: <span class="font-medium text-operacao-600">{{ formatCurrency(item.preco_estimado || 0) }}</span>
               </div>
             </div>
 
-            <!-- Observacao -->
             <UTextarea
               :model-value="item.observacao"
               @update:model-value="updateCartObservacao(id, $event)"
-              placeholder="Observacao do item (opcional)..."
+              placeholder="Observação do item (opcional)..."
               :rows="1"
               size="sm"
               autoresize
@@ -375,21 +352,21 @@
           <UFormGroup label="Nome da lista" required>
             <UInput
               v-model="nomeLista"
-              placeholder="Ex: Compras da semana, Reposicao urgente..."
+              placeholder="Ex: Compras da semana, Reposição urgente..."
             />
           </UFormGroup>
 
-          <UFormGroup label="Previsao de recebimento">
+          <UFormGroup label="Previsão de recebimento">
             <UInput
               v-model="previsaoRecebimento"
               type="date"
             />
           </UFormGroup>
 
-          <UFormGroup label="Observacao">
+          <UFormGroup label="Observação">
             <UTextarea
               v-model="observacao"
-              placeholder="Informacoes adicionais sobre a lista..."
+              placeholder="Informações adicionais sobre a lista..."
               :rows="3"
             />
           </UFormGroup>
@@ -418,7 +395,7 @@
         </template>
       </UCard>
     </UModal>
-  </div>
+  </USlideover>
 </template>
 
 <script setup lang="ts">
@@ -447,16 +424,22 @@ interface DisplayProduct {
   media_semanas: number
 }
 
+const props = defineProps<{
+  modelValue: boolean
+  listId?: string | null
+}>()
+
+const emit = defineEmits<{
+  'update:modelValue': [value: boolean]
+  'saved': []
+}>()
+
 // Composables
 const { getProdutos, getGrupos, createPedido, updatePedido, updatePedidoItens, getPedidos, getUltimosPrecos } = useEstoque()
 const { getEstoqueMinimo } = useRelatorios()
 const { empresaId, empresaAtiva } = useEmpresa()
 const { formatCurrency, formatNumber } = useFormatters()
 const toast = useToast()
-const route = useRoute()
-
-// Route editing support
-const listId = computed(() => route.query.listId as string | undefined)
 
 // State
 const cart = ref<Map<string, CartItem>>(new Map())
@@ -478,10 +461,10 @@ const previsaoRecebimento = ref('')
 const observacao = ref('')
 const salvando = ref(false)
 
-// Local quantity overrides (for products not yet in cart)
+// Local quantity overrides
 const quantidadeOverrides = ref<Record<string, number>>({})
 
-// Computed: group options for the filter
+// Computed
 const grupoOptions = computed(() => {
   const opts = [{ label: 'Todos os grupos', value: '' }]
   for (const g of grupos.value) {
@@ -490,12 +473,8 @@ const grupoOptions = computed(() => {
   return opts
 })
 
-// Computed: cart entries as an iterable array
-const cartEntries = computed(() => {
-  return Array.from(cart.value.entries())
-})
+const cartEntries = computed(() => Array.from(cart.value.entries()))
 
-// Computed: estimated total value
 const valorEstimadoTotal = computed(() => {
   let total = 0
   for (const [, item] of cart.value) {
@@ -504,7 +483,6 @@ const valorEstimadoTotal = computed(() => {
   return total
 })
 
-// Build the product list for display
 const buildProductMap = computed((): DisplayProduct[] => {
   const estoqueMap = new Map<string, EstoqueMinimo>()
   for (const e of estoqueData.value) {
@@ -512,7 +490,6 @@ const buildProductMap = computed((): DisplayProduct[] => {
   }
 
   if (apenasAbaixoMinimo.value) {
-    // Show only products where sugestao_compra > 0
     return estoqueData.value
       .map(e => {
         const prod = produtos.value.find(p => p.id === e.produto_id)
@@ -532,7 +509,6 @@ const buildProductMap = computed((): DisplayProduct[] => {
       .filter(p => p.sugestao_compra > 0)
   }
 
-  // Show ALL active products, enriched with estoque data
   return produtos.value.map(p => {
     const est = estoqueMap.get(p.id)
     const mediaSemanas = est?.media_semanas ?? 0
@@ -552,16 +528,13 @@ const buildProductMap = computed((): DisplayProduct[] => {
   })
 })
 
-// Filtered products
 const filteredProducts = computed(() => {
   let result = buildProductMap.value
 
-  // Filter by grupo
   if (grupoFilter.value) {
     result = result.filter(p => p.grupo_id === grupoFilter.value)
   }
 
-  // Filter by search
   if (search.value) {
     const term = search.value.toLowerCase()
     result = result.filter(p =>
@@ -570,7 +543,6 @@ const filteredProducts = computed(() => {
     )
   }
 
-  // Sort: items in cart first, then by name
   result = [...result].sort((a, b) => {
     const aInCart = cart.value.has(a.produto_id) ? 0 : 1
     const bInCart = cart.value.has(b.produto_id) ? 0 : 1
@@ -581,7 +553,7 @@ const filteredProducts = computed(() => {
   return result
 })
 
-// Get quantity for a product (from cart or override or suggestion)
+// Methods
 const getQuantidade = (produtoId: string, sugestao: number) => {
   const cartItem = cart.value.get(produtoId)
   if (cartItem) return cartItem.quantidade
@@ -589,7 +561,6 @@ const getQuantidade = (produtoId: string, sugestao: number) => {
   return sugestao > 0 ? Math.ceil(sugestao * 100) / 100 : 0
 }
 
-// Set quantity for a product
 const setQuantidade = (produtoId: string, value: any) => {
   const num = Number(value) || 0
   const cartItem = cart.value.get(produtoId)
@@ -601,7 +572,6 @@ const setQuantidade = (produtoId: string, value: any) => {
   }
 }
 
-// Add a product to the cart
 const addToCart = (product: DisplayProduct) => {
   const qty = quantidadeOverrides.value[product.produto_id] ?? (product.sugestao_compra > 0 ? Math.ceil(product.sugestao_compra * 100) / 100 : 1)
   const item: CartItem = {
@@ -616,18 +586,15 @@ const addToCart = (product: DisplayProduct) => {
     sugestao_compra: product.sugestao_compra
   }
   cart.value.set(product.produto_id, item)
-  // Force reactivity
   cart.value = new Map(cart.value)
   delete quantidadeOverrides.value[product.produto_id]
 }
 
-// Remove a product from the cart
 const removeFromCart = (produtoId: string) => {
   cart.value.delete(produtoId)
   cart.value = new Map(cart.value)
 }
 
-// Update cart item quantity
 const updateCartQuantidade = (produtoId: string, value: any) => {
   const item = cart.value.get(produtoId)
   if (!item) return
@@ -636,7 +603,6 @@ const updateCartQuantidade = (produtoId: string, value: any) => {
   cart.value = new Map(cart.value)
 }
 
-// Update cart item observacao
 const updateCartObservacao = (produtoId: string, value: any) => {
   const item = cart.value.get(produtoId)
   if (!item) return
@@ -645,7 +611,6 @@ const updateCartObservacao = (produtoId: string, value: any) => {
   cart.value = new Map(cart.value)
 }
 
-// Add all visible products to cart
 const adicionarTodosVisiveis = () => {
   for (const product of filteredProducts.value) {
     if (!cart.value.has(product.produto_id)) {
@@ -654,13 +619,12 @@ const adicionarTodosVisiveis = () => {
   }
   toast.add({
     title: 'Produtos adicionados',
-    description: `${filteredProducts.value.length} produto(s) adicionados a lista`,
+    description: `${filteredProducts.value.length} produto(s) adicionados à lista`,
     color: 'green',
     timeout: 2000
   })
 }
 
-// Export list as WhatsApp text
 const exportarLista = () => {
   if (cart.value.size === 0) return
 
@@ -687,7 +651,6 @@ const exportarLista = () => {
   window.open(`https://wa.me/?text=${encoded}`, '_blank')
 }
 
-// Save the list
 const salvarLista = async () => {
   if (!nomeLista.value.trim() || cart.value.size === 0) return
 
@@ -704,22 +667,20 @@ const salvarLista = async () => {
 
     const valorEstimado = valorEstimadoTotal.value > 0 ? valorEstimadoTotal.value : undefined
 
-    if (listId.value && pedidoExistente.value) {
-      // Update existing pedido
-      await updatePedido(listId.value, {
+    if (props.listId && pedidoExistente.value) {
+      await updatePedido(props.listId, {
         nome: nomeLista.value.trim(),
         observacao: observacao.value.trim() || undefined,
         previsao_recebimento: previsaoRecebimento.value || undefined,
         valor_estimado: valorEstimado
       } as any)
-      await updatePedidoItens(listId.value, itens)
+      await updatePedidoItens(props.listId, itens)
       toast.add({
         title: 'Lista atualizada',
         description: `Lista "${nomeLista.value}" atualizada com ${itens.length} itens`,
         color: 'green'
       })
     } else {
-      // Create new pedido
       await createPedido(
         {
           data: dataHoje,
@@ -740,7 +701,8 @@ const salvarLista = async () => {
     }
 
     saveModalOpen.value = false
-    navigateTo('/compras')
+    emit('update:modelValue', false)
+    emit('saved')
   } catch (error: any) {
     toast.add({
       title: 'Erro ao salvar',
@@ -752,14 +714,13 @@ const salvarLista = async () => {
   }
 }
 
-// Load existing list for editing
 const loadExistingList = async () => {
-  if (!listId.value) return
+  if (!props.listId) return
   try {
     const pedidos = await getPedidos()
-    const pedido = pedidos.find(p => p.id === listId.value)
+    const pedido = pedidos.find(p => p.id === props.listId)
     if (!pedido) {
-      toast.add({ title: 'Erro', description: 'Lista nao encontrada', color: 'red' })
+      toast.add({ title: 'Erro', description: 'Lista não encontrada', color: 'red' })
       return
     }
     pedidoExistente.value = pedido
@@ -767,7 +728,6 @@ const loadExistingList = async () => {
     previsaoRecebimento.value = pedido.previsao_recebimento || ''
     observacao.value = pedido.observacao || ''
 
-    // Load items into cart
     if (pedido.itens && pedido.itens.length > 0) {
       const newCart = new Map<string, CartItem>()
       for (const item of pedido.itens) {
@@ -797,7 +757,24 @@ const loadExistingList = async () => {
   }
 }
 
-// Load all data
+const resetState = () => {
+  cart.value = new Map()
+  produtos.value = []
+  estoqueData.value = []
+  grupos.value = []
+  precos.value = {}
+  search.value = ''
+  grupoFilter.value = ''
+  apenasAbaixoMinimo.value = true
+  cartModalOpen.value = false
+  saveModalOpen.value = false
+  pedidoExistente.value = null
+  nomeLista.value = ''
+  previsaoRecebimento.value = ''
+  observacao.value = ''
+  quantidadeOverrides.value = {}
+}
+
 const loadData = async () => {
   loading.value = true
   try {
@@ -810,14 +787,12 @@ const loadData = async () => {
     estoqueData.value = estData
     grupos.value = grupoData
 
-    // Load precos for all products
     const ids = prodData.map(p => p.id)
     if (ids.length > 0) {
       precos.value = await getUltimosPrecos(ids)
     }
 
-    // If editing, load existing pedido
-    if (listId.value) {
+    if (props.listId) {
       await loadExistingList()
     }
   } catch (error: any) {
@@ -831,8 +806,13 @@ const loadData = async () => {
   }
 }
 
-// Watch for empresa changes
-watch(empresaId, (id) => {
-  if (id) loadData()
-}, { immediate: true })
+// Load data when slideover opens, reset when it closes
+watch(() => props.modelValue, (open) => {
+  if (open && empresaId.value) {
+    loadData()
+  }
+  if (!open) {
+    resetState()
+  }
+})
 </script>

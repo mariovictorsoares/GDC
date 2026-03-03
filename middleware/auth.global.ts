@@ -39,4 +39,35 @@ export default defineNuxtRouteMiddleware(async (to) => {
   if (!empresaAtiva.value) {
     await carregarEmpresaAtiva()
   }
+
+  // =============================================
+  // Check de assinatura / billing
+  // =============================================
+
+  // Rotas isentas de check de billing
+  const billingExemptRoutes = [
+    '/assinatura',
+    '/assinatura/sucesso',
+    '/assinatura/cancelado',
+  ]
+
+  const isBillingExempt = billingExemptRoutes.some(r => to.path === r)
+  const isAdminRoute = to.path.startsWith('/admin')
+
+  // Admin e rotas de billing não precisam de check
+  if (isBillingExempt || isAdminRoute) {
+    return
+  }
+
+  // Carregar assinatura se ainda não carregada
+  const { carregarAssinatura, isBlocked, loaded } = useAssinatura()
+
+  if (!loaded.value) {
+    await carregarAssinatura()
+  }
+
+  // Se bloqueado, redirecionar para página de assinatura
+  if (isBlocked.value) {
+    return navigateTo('/assinatura')
+  }
 })

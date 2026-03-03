@@ -53,7 +53,7 @@
           <UIcon name="i-heroicons-user-circle" class="w-5 h-5 text-operacao-400 flex-shrink-0" />
           <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 text-sm">
             <span class="text-operacao-800 dark:text-white font-medium">
-              Responsavel: {{ contagem.responsavel_nome }}
+              Responsável: {{ contagem.responsavel_nome }}
             </span>
             <span v-if="contagem.responsavel_telefone" class="text-operacao-400 flex items-center gap-1">
               <UIcon name="i-heroicons-phone" class="w-3.5 h-3.5" />
@@ -128,7 +128,7 @@
             :key="setorRel.id"
             :ui="{
               background: 'bg-white dark:bg-operacao-700/40',
-              ring: 'ring-1 ring-operacao-100 dark:ring-operacao-600',
+              ring: 'ring-1 ring-[#EBEBED] dark:ring-operacao-600',
               shadow: 'shadow-sm',
               body: { padding: 'px-4 py-4' }
             }"
@@ -160,7 +160,7 @@
                 class="w-full"
               >
                 <UIcon name="i-heroicons-check" class="w-4 h-4 mr-1" />
-                Concluido
+                Concluído
               </UButton>
               <UButton
                 v-else-if="(setorRel.progresso || 0) > 0"
@@ -202,7 +202,7 @@
         <div class="flex items-center gap-2 text-xs text-operacao-400">
           <UIcon name="i-heroicons-light-bulb" class="w-4 h-4 flex-shrink-0 text-amber-400" />
           <span>
-            Nao se esqueca de clicar em <strong class="text-operacao-800 dark:text-white">Finalizar Contagem</strong>
+            Não se esqueça de clicar em <strong class="text-operacao-800 dark:text-white">Finalizar Contagem</strong>
             assim que todos os produtos forem contados!
           </span>
         </div>

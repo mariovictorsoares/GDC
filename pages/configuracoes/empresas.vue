@@ -3,7 +3,7 @@
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-operacao-800">Empresas</h1>
+        <h1 class="text-2xl font-semibold text-[#5a5a66] mb-2">Empresas</h1>
         <p class="text-sm text-operacao-400">Gerencie suas empresas e alterne entre elas</p>
       </div>
       <UButton
@@ -17,26 +17,29 @@
     </div>
 
     <!-- Filtros -->
-    <UCard>
-      <div class="flex flex-col sm:flex-row flex-wrap gap-4">
+    <div class="flex flex-col lg:flex-row lg:items-center gap-3 lg:gap-6">
+      <div class="flex flex-col sm:flex-row flex-wrap gap-3 flex-1 min-w-0">
         <UInput
           v-model="busca"
           placeholder="Buscar por nome ou CNPJ..."
           icon="i-heroicons-magnifying-glass"
           class="flex-1 min-w-0 sm:min-w-64"
+          :ui="toolbarInputUi"
         />
       </div>
-    </UCard>
+    </div>
 
     <!-- Tabela -->
-    <UCard :ui="{ body: { padding: '' } }">
+    <UCard :ui="{ base: 'overflow-hidden', body: { padding: '' }, ring: 'ring-1 ring-[#EBEBED]', shadow: 'shadow-sm' }">
       <UTable
         :columns="columns"
         :rows="paginatedItems"
         :loading="false"
         :ui="{
-          td: { color: 'text-operacao-600 dark:text-operacao-200' },
-          th: { color: 'text-operacao-800 dark:text-white' }
+          divide: 'divide-y divide-operacao-50 dark:divide-operacao-700',
+          thead: '',
+          th: { base: 'bg-operacao-100/70 dark:bg-operacao-800 border-b border-operacao-200/60 [&_button]:font-medium [&_button]:uppercase [&_button]:tracking-wider [&_button]:text-xs [&_button]:text-[#5a5a66]', color: 'text-[#5a5a66] dark:text-operacao-400', font: 'font-medium', size: 'text-xs uppercase tracking-wider', padding: 'px-4 py-2' },
+          td: { color: 'text-operacao-600 dark:text-operacao-200', size: 'text-sm', padding: 'px-4 py-2.5' }
         }"
       >
         <template #empty-state>
@@ -297,6 +300,8 @@
 
 <script setup lang="ts">
 import type { Empresa } from '~/types'
+
+const toolbarInputUi = { color: { white: { outline: 'shadow-sm bg-white text-gray-900 ring-1 ring-inset ring-[#EBEBED] focus:ring-1 focus:ring-operacao-200 dark:ring-operacao-700' } } }
 
 const toast = useToast()
 const client = useSupabaseClient()

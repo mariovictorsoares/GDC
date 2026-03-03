@@ -4,7 +4,7 @@
     <div>
       <UButton color="gray" variant="ghost" icon="i-heroicons-arrow-left" size="sm" class="mb-3" @click="$emit('voltar')" />
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <h1 class="text-2xl font-bold text-operacao-800">{{ contagem.nome }}</h1>
+        <h1 class="text-2xl font-semibold text-[#5a5a66]">{{ contagem.nome }}</h1>
         <div class="flex gap-2">
           <UButton
             v-if="contagem.status !== 'finalizada'"

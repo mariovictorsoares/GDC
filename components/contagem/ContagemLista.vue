@@ -12,14 +12,21 @@ defineEmits<{
   'gerenciar-setores': []
 }>()
 
-// Pagination
-const page = ref(1)
-const pageSize = ref(10)
+// UI
+const toolbarInputUi = { color: { white: { outline: 'shadow-sm bg-white text-gray-900 ring-1 ring-inset ring-[#EBEBED] focus:ring-1 focus:ring-operacao-200 dark:ring-operacao-700' } } }
+const toolbarButtonUi = { color: { white: { solid: 'shadow-sm ring-1 ring-inset ring-[#EBEBED] text-gray-700 bg-white hover:bg-gray-50 focus-visible:ring-2 focus-visible:ring-guardian-500 dark:ring-operacao-700 dark:bg-gray-900 dark:text-white dark:hover:bg-gray-800/50' } } }
 
-const contagensPaginadas = computed(() => {
-  const start = (page.value - 1) * pageSize.value
-  return props.contagens.slice(start, start + pageSize.value)
+// Search
+const search = ref('')
+
+// Filtered + Pagination
+const filteredContagens = computed(() => {
+  if (!search.value) return props.contagens
+  const term = search.value.toLowerCase()
+  return props.contagens.filter(c => c.nome?.toLowerCase().includes(term))
 })
+
+const { page, pageSize, paginatedItems: contagensPaginadas } = usePagination(filteredContagens)
 
 // Helper functions
 const formatDate = (date: string | undefined) => {
@@ -44,18 +51,18 @@ const calcProgressoMensal = (contagem: Contagem): { feitas: number; esperadas: n
   const hoje = new Date()
   const ano = hoje.getFullYear()
   const mes = hoje.getMonth()
-  const diaHoje = hoje.getDate()
+  const diasNoMes = new Date(ano, mes + 1, 0).getDate()
 
   let esperadas = 0
   if (rec === 'diaria') {
-    esperadas = diaHoje
+    esperadas = diasNoMes
   } else if (rec === 'semanal') {
     const diasConfig = contagem.dias_semana || []
     if (diasConfig.length === 0) {
-      esperadas = Math.ceil(diaHoje / 7)
+      esperadas = Math.ceil(diasNoMes / 7)
     } else {
       let count = 0
-      for (let d = 1; d <= diaHoje; d++) {
+      for (let d = 1; d <= diasNoMes; d++) {
         const diaSemana = new Date(ano, mes, d).getDay()
         const label = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'][diaSemana]
         if (diasConfig.includes(label)) count++
@@ -63,7 +70,7 @@ const calcProgressoMensal = (contagem: Contagem): { feitas: number; esperadas: n
       esperadas = count
     }
   } else if (rec === 'quinzenal') {
-    esperadas = diaHoje >= 15 ? 2 : 1
+    esperadas = 2
   } else if (rec === 'mensal') {
     esperadas = 1
   }
@@ -85,7 +92,7 @@ const calcProximaContagem = (contagem: Contagem) => {
 
   const horario = contagem.horario_notificacao || '7:00'
 
-  if (diffDias < 0) return 'Atrasada'
+  if (diffDias < 0) return formatDate(contagem.data)
   if (diffDias === 0) return `Hoje (${horario})`
   if (diffDias === 1) return `Amanhã (${horario})`
   return `Em ${diffDias} dias`
@@ -95,69 +102,64 @@ const calcProximaContagem = (contagem: Contagem) => {
 <template>
   <div class="space-y-6">
     <!-- Header -->
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-      <div>
-        <h1 class="text-2xl font-bold text-operacao-800">Contagem de Estoque</h1>
-        <p class="text-sm text-operacao-400">Gerencie suas contagens de estoque e inventário</p>
+    <h1 class="text-2xl font-semibold text-[#5a5a66] mb-2">Contagem de Estoque</h1>
+
+    <!-- Toolbar: Filtros + Ações -->
+    <div class="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6">
+      <!-- Filtros (esquerda) -->
+      <div class="flex items-center gap-3 flex-1 min-w-0">
+        <UInput v-model="search" placeholder="Buscar contagem..." icon="i-heroicons-magnifying-glass" class="w-full sm:w-52" :ui="toolbarInputUi" />
       </div>
-      <div class="flex gap-2">
-        <UButton color="gray" variant="soft" @click="$emit('gerenciar-setores')">
-          <UIcon name="i-heroicons-map-pin" class="w-4 h-4 mr-2" />
+      <!-- Ações (direita) -->
+      <div class="flex gap-2 flex-shrink-0">
+        <UButton color="white" :ui="toolbarButtonUi" @click="$emit('gerenciar-setores')">
+          <UIcon name="i-heroicons-map-pin" class="w-4 h-4 mr-1.5" />
           Setores
         </UButton>
-        <UButton color="primary" @click="$emit('nova-contagem')">
-          <UIcon name="i-heroicons-plus" class="w-4 h-4 mr-2" />
+        <UButton color="white" :ui="toolbarButtonUi" @click="$emit('nova-contagem')">
+          <UIcon name="i-heroicons-plus" class="w-4 h-4 mr-1.5" />
           Nova Contagem
         </UButton>
       </div>
     </div>
 
-    <!-- Loading -->
-    <div v-if="loading" class="space-y-4">
-      <UCard :ui="{ body: { padding: '' } }">
-        <div class="p-5 space-y-4">
-          <div v-for="i in 4" :key="i" class="flex items-center justify-between py-3">
-            <div class="flex items-center gap-4">
-              <USkeleton class="h-10 w-10 rounded-lg" />
-              <div class="space-y-2">
-                <USkeleton class="h-4 w-48" />
-                <USkeleton class="h-3 w-32" />
-              </div>
-            </div>
-            <div class="flex items-center gap-3">
-              <USkeleton class="h-6 w-20 rounded-full" />
-              <USkeleton class="h-5 w-5 rounded-full" />
-            </div>
-          </div>
-        </div>
-      </UCard>
-    </div>
+    <!-- Lista de contagens -->
+    <UCard :ui="{ base: 'overflow-hidden', body: { padding: '' }, ring: 'ring-1 ring-[#EBEBED]', shadow: 'shadow-sm' }">
+      <!-- Loading -->
+      <div v-if="loading" class="flex flex-col items-center justify-center py-12 text-operacao-400">
+        <UIcon name="i-heroicons-arrow-path" class="w-6 h-6 animate-spin mb-2" />
+        <p class="text-sm">Carregando...</p>
+      </div>
 
-    <!-- Empty state -->
-    <UCard v-else-if="contagens.length === 0">
-      <div class="flex flex-col items-center justify-center py-16 text-operacao-400">
+      <!-- Empty state: nenhuma contagem criada -->
+      <div v-else-if="contagens.length === 0" class="flex flex-col items-center justify-center py-16 text-operacao-400">
         <UIcon name="i-heroicons-clipboard-document-list" class="w-12 h-12 mb-4 text-operacao-300" />
         <p class="text-base font-medium">Nenhuma contagem criada</p>
         <p class="text-sm text-operacao-400 mt-1 mb-6">Crie uma contagem para organizar e contar seus produtos por setor</p>
-        <UButton color="primary" @click="$emit('nova-contagem')">
-          <UIcon name="i-heroicons-plus" class="w-4 h-4 mr-2" />
+        <UButton color="white" class="hover:!bg-emerald-50 hover:!ring-emerald-200" :ui="toolbarButtonUi" @click="$emit('nova-contagem')">
+          <UIcon name="i-heroicons-plus" class="w-4 h-4 mr-1.5 text-emerald-500" />
           Criar primeira contagem
         </UButton>
       </div>
-    </UCard>
 
-    <!-- Lista de contagens -->
-    <UCard v-else :ui="{ body: { padding: '' } }">
+      <!-- Empty state: busca sem resultados -->
+      <div v-else-if="filteredContagens.length === 0" class="flex flex-col items-center justify-center py-6 text-operacao-400">
+        <UIcon name="i-heroicons-magnifying-glass" class="w-8 h-8 mb-2" />
+        <p class="text-sm">Nenhuma contagem encontrada</p>
+      </div>
+
+      <!-- Conteúdo -->
+      <template v-else>
       <!-- Tabela desktop -->
       <div class="hidden sm:block overflow-x-auto">
         <table class="w-full">
           <thead>
-            <tr class="border-b border-operacao-200">
-              <th class="text-left px-6 py-3 text-xs font-medium text-operacao-400 uppercase tracking-wider w-[28%]"></th>
-              <th class="text-center px-4 py-3 text-xs font-medium text-operacao-400 uppercase tracking-wider">Última contagem</th>
-              <th class="text-center px-4 py-3 text-xs font-medium text-operacao-400 uppercase tracking-wider">Próxima contagem</th>
-              <th class="text-center px-4 py-3 text-xs font-medium text-operacao-400 uppercase tracking-wider">Recorrência</th>
-              <th class="text-center px-4 py-3 text-xs font-medium text-operacao-400 uppercase tracking-wider w-[100px]">Progresso</th>
+            <tr class="border-b border-operacao-200/60">
+              <th class="text-left px-6 py-3 text-xs font-medium text-[#5a5a66] uppercase tracking-wider bg-operacao-100/70 w-[28%]">Nome da contagem</th>
+              <th class="text-center px-4 py-3 text-xs font-medium text-[#5a5a66] uppercase tracking-wider bg-operacao-100/70">Última contagem</th>
+              <th class="text-center px-4 py-3 text-xs font-medium text-[#5a5a66] uppercase tracking-wider bg-operacao-100/70">Próxima contagem</th>
+              <th class="text-center px-4 py-3 text-xs font-medium text-[#5a5a66] uppercase tracking-wider bg-operacao-100/70">Recorrência</th>
+              <th class="text-center px-4 py-3 text-xs font-medium text-[#5a5a66] uppercase tracking-wider bg-operacao-100/70 w-[100px]">Progresso</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-operacao-100">
@@ -167,23 +169,19 @@ const calcProximaContagem = (contagem: Contagem) => {
               class="hover:bg-operacao-50 transition-colors cursor-pointer"
               @click="$emit('click-contagem', contagem)"
             >
-              <td class="px-6 py-4">
-                <p class="font-semibold text-operacao-800">{{ contagem.nome }}</p>
+              <td class="px-4 py-2.5">
+                <p class="font-semibold text-operacao-800 text-sm">{{ contagem.nome }}</p>
               </td>
-              <td class="px-4 py-4 text-center">
-                <p class="text-xs text-operacao-400">Última contagem</p>
-                <p class="font-semibold text-operacao-600 text-sm">{{ contagem.ultima_contagem ? formatDate(contagem.ultima_contagem) : '-' }}</p>
+              <td class="px-4 py-2.5 text-center">
+                <p class="text-sm text-operacao-600">{{ contagem.ultima_contagem ? formatDate(contagem.ultima_contagem) : '-' }}</p>
               </td>
-              <td class="px-4 py-4 text-center">
-                <p class="text-xs text-operacao-400">Próxima contagem</p>
-                <p class="font-semibold text-operacao-600 text-sm">{{ calcProximaContagem(contagem) }}</p>
+              <td class="px-4 py-2.5 text-center">
+                <p class="text-sm text-operacao-600">{{ calcProximaContagem(contagem) }}</p>
               </td>
-              <td class="px-4 py-4 text-center">
-                <p class="text-xs text-operacao-400">Recorrência</p>
-                <p class="font-semibold text-operacao-600 text-sm">{{ labelRecorrencia(contagem.recorrencia) }}</p>
+              <td class="px-4 py-2.5 text-center">
+                <p class="text-sm text-operacao-600">{{ labelRecorrencia(contagem.recorrencia) }}</p>
               </td>
-              <td class="px-4 py-4 text-center">
-                <p class="text-xs text-operacao-400">Progresso</p>
+              <td class="px-4 py-2.5 text-center">
                 <p class="font-bold text-sm" :class="calcProgressoMensal(contagem).feitas >= calcProgressoMensal(contagem).esperadas ? 'text-controle-600' : 'text-operacao-600'">
                   {{ calcProgressoMensal(contagem).feitas }}/{{ calcProgressoMensal(contagem).esperadas }}
                 </p>
@@ -226,11 +224,13 @@ const calcProximaContagem = (contagem: Contagem) => {
         </div>
       </div>
 
+      </template>
+
       <TablePagination
-        v-if="contagens.length > pageSize"
+        v-if="!loading && contagens.length > 0"
         v-model="page"
         :page-size="pageSize"
-        :total-items="contagens.length"
+        :total-items="filteredContagens.length"
         @update:page-size="pageSize = $event"
       />
     </UCard>

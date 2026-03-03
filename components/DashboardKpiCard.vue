@@ -1,5 +1,5 @@
 <template>
-  <div class="relative overflow-hidden rounded-xl bg-white ring-1 ring-operacao-100 shadow-sm hover:shadow-md transition-shadow duration-200">
+  <div class="relative overflow-hidden rounded-xl bg-white ring-1 ring-[#EBEBED] shadow-sm hover:shadow-md transition-shadow duration-200">
     <!-- Accent stripe -->
     <div class="absolute top-0 left-0 right-0 h-0.5" :class="accentGradient" />
 
@@ -17,7 +17,7 @@
         <div v-if="trendValue !== undefined && trendValue !== null && isFinite(trendValue)" class="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium"
           :class="trendValue >= 0 ? 'bg-controle-50 text-controle-700' : 'bg-red-50 text-red-700'">
           <UIcon
-            :name="trendValue >= 0 ? 'i-heroicons-arrow-trending-up' : 'i-heroicons-arrow-trending-down'"
+            :name="trendValue >= 0 ? 'i-heroicons-arrow-up' : 'i-heroicons-arrow-down'"
             class="w-3.5 h-3.5" />
           {{ Math.abs(trendValue).toFixed(1) }}%
         </div>

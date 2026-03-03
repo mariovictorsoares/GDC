@@ -49,7 +49,7 @@
         </UFormGroup>
 
         <!-- Previsao de recebimento -->
-        <UFormGroup label="Previsao de recebimento">
+        <UFormGroup label="Previsão de recebimento">
           <UInput
             v-model="previsaoRecebimento"
             type="date"
@@ -58,10 +58,10 @@
         </UFormGroup>
 
         <!-- Observacao -->
-        <UFormGroup label="Observacao">
+        <UFormGroup label="Observação">
           <UTextarea
             v-model="observacao"
-            placeholder="Observacoes opcionais..."
+            placeholder="Observações opcionais..."
             :rows="2"
           />
         </UFormGroup>

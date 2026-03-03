@@ -97,7 +97,7 @@ export function montarMensagemLembrete(dados: {
     mensal: 'Mensal'
   }
 
-  const appUrl = dados.baseUrl || 'https://gdcnew.vercel.app'
+  const appUrl = dados.baseUrl || 'https://www.cmv360app.com.br'
   const link = `${appUrl}/movimentos/ajustes`
 
   return [

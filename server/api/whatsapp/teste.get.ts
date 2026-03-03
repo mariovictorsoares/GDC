@@ -24,7 +24,7 @@ export default defineEventHandler(async (event) => {
     },
     {
       phone,
-      message: '✅ *Teste Z-API*\n\nSe você recebeu esta mensagem, a integração com WhatsApp está funcionando corretamente!\n\n_Guardião do Estoque_'
+      message: '✅ *Teste Z-API*\n\nSe você recebeu esta mensagem, a integração com WhatsApp está funcionando corretamente!\n\n_CMV360_'
     }
   )
 

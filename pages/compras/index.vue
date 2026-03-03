@@ -2,209 +2,131 @@
   <div class="space-y-6">
 
     <!-- ======================== HEADER ======================== -->
-    <div class="flex items-center justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-operacao-800">Compras</h1>
-        <p class="text-sm text-operacao-400">Gerencie suas listas de compras e acompanhe pedidos</p>
+    <h1 class="text-2xl font-semibold text-[#5a5a66] mb-2">Compras</h1>
+
+    <!-- ======================== TOOLBAR ======================== -->
+    <div class="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6">
+      <!-- Filtros (esquerda) -->
+      <div class="flex items-center gap-3 flex-1 min-w-0">
+        <UInput
+          v-model="search"
+          placeholder="Buscar..."
+          icon="i-heroicons-magnifying-glass"
+          class="w-full sm:w-44"
+          :ui="toolbarInputUi"
+        />
+        <USelect
+          v-model="statusFilter"
+          :options="statusFilterOptions"
+          value-attribute="value"
+          option-attribute="label"
+          class="w-full sm:w-40"
+          :ui="toolbarInputUi"
+        />
       </div>
-      <UButton color="primary" @click="loadData" :loading="loading">
-        <UIcon name="i-heroicons-arrow-path" class="w-4 h-4 mr-2" />
-        Atualizar
-      </UButton>
+      <!-- Ações (direita) -->
+      <div class="flex gap-2 flex-shrink-0">
+        <UButton color="white" :ui="toolbarButtonUi" @click="analisesSlideover = true">
+          <UIcon name="i-heroicons-chart-bar-square" class="w-4 h-4 mr-1.5" />
+          Análises
+        </UButton>
+        <UButton color="white" :ui="toolbarButtonUi" @click="openNovaLista()">
+          <UIcon name="i-heroicons-plus" class="w-4 h-4 mr-1.5" />
+          Nova Lista
+        </UButton>
+      </div>
     </div>
 
     <!-- ======================== KPI CARDS ======================== -->
-    <div v-if="loading" class="grid grid-cols-2 gap-4">
-      <div v-for="i in 2" :key="i" class="rounded-xl bg-white ring-1 ring-operacao-100 shadow-sm p-5 space-y-3">
-        <USkeleton class="h-4 w-24" />
-        <USkeleton class="h-8 w-32" />
-      </div>
-    </div>
-
-    <div v-else class="grid grid-cols-2 gap-4">
-      <DashboardKpiCard
-        label="Produtos em reposicao"
-        :display-value="String(produtosReposicao)"
-        icon="i-heroicons-exclamation-triangle"
-        icon-bg-class="bg-guardian-50"
-        icon-color-class="text-guardian-600"
-        accent-gradient="bg-gradient-to-r from-guardian-400 to-guardian-600"
-        :secondary-text="produtosReposicao > 0 ? `${produtosReposicao} produto(s) precisam de compra` : 'Estoque OK'"
-      />
-      <DashboardKpiCard
-        label="Produtos com estoque zerado"
-        :display-value="String(produtosZerados)"
-        icon="i-heroicons-x-circle"
-        icon-bg-class="bg-red-50"
-        icon-color-class="text-red-600"
-        accent-gradient="bg-gradient-to-r from-red-400 to-red-600"
-        :value-color-class="produtosZerados > 0 ? 'text-red-600' : 'text-controle-600'"
-        :secondary-text="produtosZerados > 0 ? 'Ruptura de estoque' : 'Nenhum zerado'"
-      />
-    </div>
-
-    <!-- ======================== ACTION BUTTONS ======================== -->
-    <div class="flex flex-wrap gap-3">
-      <NuxtLink to="/compras/nova-lista">
-        <UButton color="primary" class="bg-guardian-600 hover:bg-guardian-700">
-          <UIcon name="i-heroicons-plus-circle" class="w-4 h-4 mr-2" />
-          Criar Lista de Compras
-        </UButton>
-      </NuxtLink>
-      <NuxtLink to="/compras/analises">
-        <UButton variant="outline">
-          <UIcon name="i-heroicons-chart-bar-square" class="w-4 h-4 mr-2" />
-          Analises
-        </UButton>
-      </NuxtLink>
-    </div>
-
-    <!-- ======================== LISTAS EM ANDAMENTO ======================== -->
-    <div class="space-y-4">
-      <div>
-        <h2 class="text-lg font-semibold text-operacao-800">Listas em andamento</h2>
-        <p class="text-sm text-operacao-400">Acompanhe suas listas de compras em andamento</p>
-      </div>
-
-      <div v-if="loading" class="space-y-3">
-        <div v-for="i in 2" :key="i" class="rounded-xl bg-white ring-1 ring-operacao-100 shadow-sm p-5 space-y-3">
-          <USkeleton class="h-5 w-48" />
-          <USkeleton class="h-4 w-32" />
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div class="rounded-lg bg-white ring-1 ring-[#EBEBED] shadow-sm px-4 py-3">
+        <div class="flex items-center gap-1.5 mb-1">
+          <span class="w-1.5 h-1.5 rounded-full bg-guardian-400" />
+          <span class="text-[11px] font-medium text-operacao-400">Em reposição</span>
         </div>
+        <p class="text-base font-bold" :class="produtosReposicao > 0 ? 'text-guardian-600' : 'text-operacao-800'">{{ produtosReposicao }}</p>
       </div>
-
-      <div v-else-if="pedidosEmAndamento.length === 0" class="rounded-xl bg-operacao-50 ring-1 ring-operacao-100 p-8 flex flex-col items-center justify-center text-center">
-        <UIcon name="i-heroicons-inbox" class="w-10 h-10 text-operacao-300 mb-3" />
-        <p class="text-sm text-operacao-400">Nenhuma lista em andamento. Crie sua primeira lista!</p>
+      <div class="rounded-lg bg-white ring-1 ring-[#EBEBED] shadow-sm px-4 py-3">
+        <div class="flex items-center gap-1.5 mb-1">
+          <span class="w-1.5 h-1.5 rounded-full bg-red-400" />
+          <span class="text-[11px] font-medium text-operacao-400">Estoque zerado</span>
+        </div>
+        <p class="text-base font-bold" :class="produtosZerados > 0 ? 'text-red-600' : 'text-operacao-800'">{{ produtosZerados }}</p>
       </div>
-
-      <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <UCard
-          v-for="pedido in pedidosEmAndamento"
-          :key="pedido.id"
-          class="cursor-pointer hover:shadow-md transition-shadow duration-200"
-          :ui="{
-            base: 'overflow-hidden',
-            background: 'bg-white',
-            shadow: 'shadow-sm',
-            ring: 'ring-1 ring-operacao-100',
-            rounded: 'rounded-xl',
-            body: { padding: 'px-5 py-4 sm:p-5' }
-          }"
-          @click="openSlideover(pedido)"
-        >
-          <div class="space-y-3">
-            <div class="flex items-center justify-between">
-              <h3 class="text-sm font-semibold text-operacao-800 truncate">
-                {{ pedido.nome || `Pedido ${formatDate(pedido.data)}` }}
-              </h3>
-              <UBadge
-                :color="getStatusColor(pedido.status)"
-                variant="soft"
-                size="xs"
-              >
-                {{ getStatusLabel(pedido.status) }}
-              </UBadge>
-            </div>
-
-            <div class="flex items-center gap-2">
-              <UBadge color="gray" variant="soft" size="xs">
-                {{ pedido.itens?.length || 0 }} itens
-              </UBadge>
-            </div>
-
-            <div class="space-y-1 text-xs text-operacao-400">
-              <p>
-                Valor estimado:
-                <span class="font-medium text-operacao-600">
-                  {{ formatCurrency(calcValorEstimado(pedido)) }}
-                </span>
-              </p>
-              <p>
-                Previsao:
-                <span class="font-medium text-operacao-600">
-                  {{ pedido.previsao_recebimento ? formatDate(pedido.previsao_recebimento) : '-' }}
-                </span>
-              </p>
-              <p>
-                Responsavel:
-                <span class="font-medium text-operacao-600">
-                  {{ pedido.responsavel_nome || '-' }}
-                </span>
-              </p>
-            </div>
-          </div>
-        </UCard>
+      <div class="rounded-lg bg-white ring-1 ring-[#EBEBED] shadow-sm px-4 py-3">
+        <div class="flex items-center gap-1.5 mb-1">
+          <span class="w-1.5 h-1.5 rounded-full bg-blue-400" />
+          <span class="text-[11px] font-medium text-operacao-400">Em andamento</span>
+        </div>
+        <p class="text-base font-bold text-operacao-800">{{ totalEmAndamento }}</p>
+      </div>
+      <div class="rounded-lg bg-white ring-1 ring-[#EBEBED] shadow-sm px-4 py-3">
+        <div class="flex items-center gap-1.5 mb-1">
+          <span class="w-1.5 h-1.5 rounded-full bg-controle-400" />
+          <span class="text-[11px] font-medium text-operacao-400">Finalizadas</span>
+        </div>
+        <p class="text-base font-bold text-operacao-800">{{ totalFinalizadas }}</p>
       </div>
     </div>
 
-    <!-- ======================== LISTAS FINALIZADAS (COLLAPSIBLE) ======================== -->
-    <div class="space-y-4">
-      <button
-        class="flex items-center gap-2 w-full text-left"
-        @click="finalizadasOpen = !finalizadasOpen"
+    <!-- ======================== TABLE ======================== -->
+    <UCard :ui="{ base: 'overflow-hidden', body: { padding: '' }, ring: 'ring-1 ring-[#EBEBED]', shadow: 'shadow-sm' }">
+      <UTable
+        :columns="columns"
+        :rows="paginatedItems"
+        :loading="loading"
+        :ui="{
+          divide: 'divide-y divide-operacao-50 dark:divide-operacao-700',
+          thead: '',
+          th: { base: 'bg-operacao-100/70 dark:bg-operacao-800 border-b border-operacao-200/60 [&_button]:font-medium [&_button]:uppercase [&_button]:tracking-wider [&_button]:text-xs [&_button]:text-[#5a5a66]', color: 'text-[#5a5a66] dark:text-operacao-400', font: 'font-medium', size: 'text-xs uppercase tracking-wider', padding: 'px-4 py-2' },
+          td: { color: 'text-operacao-600 dark:text-operacao-200', size: 'text-sm', padding: 'px-4 py-2.5' },
+          tr: { base: 'cursor-pointer hover:bg-operacao-50 transition-colors' }
+        }"
+        @select="handleRowClick"
       >
-        <UIcon
-          :name="finalizadasOpen ? 'i-heroicons-chevron-down' : 'i-heroicons-chevron-right'"
-          class="w-5 h-5 text-operacao-400"
-        />
-        <h2 class="text-lg font-semibold text-operacao-800">Listas finalizadas</h2>
-        <UBadge v-if="pedidosFinalizados.length > 0" color="gray" variant="soft" size="xs">
-          {{ pedidosFinalizados.length }}
-        </UBadge>
-      </button>
+        <template #empty-state>
+          <div class="flex flex-col items-center justify-center py-6 text-operacao-400">
+            <UIcon name="i-heroicons-inbox" class="w-8 h-8 mb-2" />
+            <p class="text-sm">Nenhuma lista encontrada</p>
+          </div>
+        </template>
 
-      <div v-if="finalizadasOpen && !loading" class="space-y-3">
-        <div v-if="pedidosFinalizados.length === 0" class="rounded-xl bg-operacao-50 ring-1 ring-operacao-100 p-6 text-center">
-          <p class="text-sm text-operacao-400">Nenhuma lista finalizada</p>
-        </div>
+        <template #nome-data="{ row }">
+          <span class="font-semibold text-operacao-800">{{ row.nome || `Pedido ${formatDate(row.data)}` }}</span>
+        </template>
 
-        <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <UCard
-            v-for="pedido in pedidosFinalizados"
-            :key="pedido.id"
-            class="cursor-pointer hover:shadow-md transition-shadow duration-200"
-            :ui="{
-              base: 'overflow-hidden',
-              background: 'bg-white',
-              shadow: 'shadow-sm',
-              ring: 'ring-1 ring-operacao-100',
-              rounded: 'rounded-xl',
-              body: { padding: 'px-5 py-4 sm:p-5' }
-            }"
-            @click="openSlideoverReadonly(pedido)"
-          >
-            <div class="space-y-2">
-              <div class="flex items-center justify-between">
-                <h3 class="text-sm font-semibold text-operacao-800 truncate">
-                  {{ pedido.nome || `Pedido ${formatDate(pedido.data)}` }}
-                </h3>
-                <UBadge color="green" variant="soft" size="xs">
-                  Finalizada
-                </UBadge>
-              </div>
-              <div class="flex items-center gap-2">
-                <UBadge color="gray" variant="soft" size="xs">
-                  {{ pedido.itens?.length || 0 }} itens
-                </UBadge>
-              </div>
-              <div class="space-y-1 text-xs text-operacao-400">
-                <p v-if="pedido.data_recebimento">
-                  Recebido em:
-                  <span class="font-medium text-operacao-600">{{ formatDate(pedido.data_recebimento) }}</span>
-                </p>
-                <p>
-                  Responsavel:
-                  <span class="font-medium text-operacao-600">{{ pedido.responsavel_nome || '-' }}</span>
-                </p>
-              </div>
-            </div>
-          </UCard>
-        </div>
-      </div>
-    </div>
+        <template #status-data="{ row }">
+          <UBadge :color="getStatusColor(row.status)" variant="soft" size="xs">
+            {{ getStatusLabel(row.status) }}
+          </UBadge>
+        </template>
 
-    <!-- ======================== SLIDEOVER ======================== -->
+        <template #itens-data="{ row }">
+          {{ row.itens?.length || 0 }}
+        </template>
+
+        <template #valor_estimado-data="{ row }">
+          {{ formatCurrency(calcValorEstimado(row)) }}
+        </template>
+
+        <template #previsao-data="{ row }">
+          {{ row.previsao_recebimento ? formatDate(row.previsao_recebimento) : '-' }}
+        </template>
+
+        <template #responsavel-data="{ row }">
+          {{ row.responsavel_nome || '-' }}
+        </template>
+      </UTable>
+      <TablePagination
+        v-if="!loading && pedidos.length > 0"
+        v-model="page"
+        :page-size="pageSize"
+        :total-items="filteredPedidos.length"
+        @update:page-size="pageSize = $event"
+      />
+    </UCard>
+
+    <!-- ======================== DETAIL SLIDEOVER ======================== -->
     <USlideover
       v-model="slideoverOpen"
       :ui="{
@@ -258,14 +180,14 @@
             </UBadge>
           </div>
           <div v-if="selectedPedido.previsao_recebimento" class="mt-1 text-xs text-operacao-400">
-            Previsao recebimento: {{ formatDate(selectedPedido.previsao_recebimento) }}
+            Previsão de recebimento: {{ formatDate(selectedPedido.previsao_recebimento) }}
           </div>
           <div v-if="isReadonly && selectedPedido.data_recebimento" class="mt-1 text-xs text-controle-600 font-medium">
             Recebido em: {{ formatDate(selectedPedido.data_recebimento) }}
           </div>
         </div>
 
-        <!-- Slideover: Confirmar Recebimento -->
+        <!-- Confirmar Recebimento -->
         <div v-if="isEditable && ['enviado', 'em_andamento'].includes(selectedPedido.status)" class="px-6 py-3 border-b border-operacao-100">
           <UButton
             color="green"
@@ -278,7 +200,7 @@
           </UButton>
         </div>
 
-        <!-- Slideover Items List -->
+        <!-- Items List -->
         <div class="flex-1 overflow-y-auto px-6 py-4">
           <h4 class="text-sm font-semibold text-operacao-600 mb-3">Itens da lista</h4>
           <div v-if="!selectedPedido.itens?.length" class="text-center py-6 text-operacao-400">
@@ -333,9 +255,8 @@
           </div>
         </div>
 
-        <!-- Slideover Footer Actions -->
+        <!-- Footer Actions -->
         <div class="border-t border-operacao-100 px-6 py-4 space-y-3">
-          <!-- Save changes button (editable mode) -->
           <UButton
             v-if="isEditable"
             color="primary"
@@ -344,7 +265,7 @@
             @click="saveChanges"
           >
             <UIcon name="i-heroicons-check" class="w-4 h-4 mr-2" />
-            Salvar Alteracoes
+            Salvar Alterações
           </UButton>
 
           <div class="flex gap-2">
@@ -387,14 +308,14 @@
             </div>
             <div>
               <h3 class="text-lg font-semibold text-operacao-800">Excluir Lista</h3>
-              <p class="text-xs text-operacao-400">Esta acao nao pode ser desfeita</p>
+              <p class="text-xs text-operacao-400">Esta ação não pode ser desfeita</p>
             </div>
           </div>
         </template>
         <p class="text-sm text-operacao-600">
           Tem certeza que deseja excluir a lista
           <strong>{{ selectedPedido?.nome || 'este pedido' }}</strong>?
-          Todos os itens serao removidos permanentemente.
+          Todos os itens serão removidos permanentemente.
         </p>
         <template #footer>
           <div class="flex justify-end gap-3">
@@ -409,11 +330,28 @@
       </UCard>
     </UModal>
 
+    <!-- Análises Slideover -->
+    <ComprasAnalisesPanel
+      v-model="analisesSlideover"
+      @compra-criada="loadData"
+    />
+
+    <!-- Nova Lista Slideover -->
+    <ComprasNovaListaSlideover
+      v-model="novaListaOpen"
+      :list-id="editListId"
+      @saved="handleListaSaved"
+    />
+
   </div>
 </template>
 
 <script setup lang="ts">
 import type { Pedido, PedidoItem, EstoqueMinimo } from '~/types'
+
+// UI
+const toolbarInputUi = { color: { white: { outline: 'shadow-sm bg-white text-gray-900 ring-1 ring-inset ring-[#EBEBED] focus:ring-1 focus:ring-operacao-200 dark:ring-operacao-700' } } }
+const toolbarButtonUi = { color: { white: { solid: 'shadow-sm ring-1 ring-inset ring-[#EBEBED] text-gray-700 bg-white hover:bg-gray-50 focus-visible:ring-2 focus-visible:ring-guardian-500 dark:ring-operacao-700 dark:bg-gray-900 dark:text-white dark:hover:bg-gray-800/50' } } }
 
 const { getPedidos, deletePedido, confirmarRecebimento, updatePedido, updatePedidoItens } = useEstoque()
 const { getEstoqueMinimo } = useRelatorios()
@@ -427,28 +365,68 @@ const toast = useToast()
 const loading = ref(false)
 const pedidos = ref<Pedido[]>([])
 const estoqueData = ref<EstoqueMinimo[]>([])
+const search = ref('')
+const statusFilter = ref('em_andamento')
 const selectedPedido = ref<Pedido | null>(null)
 const slideoverOpen = ref(false)
-const finalizadasOpen = ref(false)
 const isReadonly = ref(false)
 const deleteModalOpen = ref(false)
 const deleting = ref(false)
 const savingChanges = ref(false)
 const confirmingRecebimento = ref(false)
+const analisesSlideover = ref(false)
+const novaListaOpen = ref(false)
+const editListId = ref<string | null>(null)
 
 // Editable fields for slideover
 const editNome = ref('')
 const editItens = ref<PedidoItem[]>([])
 
 // ==========================================
+// TABLE
+// ==========================================
+const columns = [
+  { key: 'nome', label: 'Nome', sortable: true },
+  { key: 'status', label: 'Status' },
+  { key: 'itens', label: 'Itens' },
+  { key: 'valor_estimado', label: 'Valor Estimado' },
+  { key: 'previsao', label: 'Previsão' },
+  { key: 'responsavel', label: 'Responsável' }
+]
+
+const statusFilterOptions = [
+  { label: 'Em andamento', value: 'em_andamento' },
+  { label: 'Finalizadas', value: 'finalizada' }
+]
+
+// ==========================================
 // COMPUTED
 // ==========================================
-const pedidosEmAndamento = computed(() =>
-  pedidos.value.filter(p => ['rascunho', 'enviado', 'em_andamento'].includes(p.status))
+const filteredPedidos = computed(() => {
+  let result = pedidos.value
+
+  if (statusFilter.value === 'em_andamento') {
+    result = result.filter(p => ['rascunho', 'enviado', 'em_andamento'].includes(p.status))
+  } else {
+    result = result.filter(p => ['concluido', 'finalizada'].includes(p.status))
+  }
+
+  if (search.value) {
+    const term = search.value.toLowerCase()
+    result = result.filter(p => (p.nome || '').toLowerCase().includes(term))
+  }
+
+  return result
+})
+
+const { page, pageSize, paginatedItems } = usePagination(filteredPedidos)
+
+const totalEmAndamento = computed(() =>
+  pedidos.value.filter(p => ['rascunho', 'enviado', 'em_andamento'].includes(p.status)).length
 )
 
-const pedidosFinalizados = computed(() =>
-  pedidos.value.filter(p => ['concluido', 'finalizada'].includes(p.status))
+const totalFinalizadas = computed(() =>
+  pedidos.value.filter(p => ['concluido', 'finalizada'].includes(p.status)).length
 )
 
 const produtosReposicao = computed(() => {
@@ -530,10 +508,33 @@ const getStatusLabel = (status: string): string => {
     case 'rascunho': return 'Rascunho'
     case 'enviado': return 'Enviado'
     case 'em_andamento': return 'Em andamento'
-    case 'concluido': return 'Concluido'
+    case 'concluido': return 'Concluído'
     case 'finalizada': return 'Finalizada'
     default: return status
   }
+}
+
+// ==========================================
+// ROW CLICK
+// ==========================================
+const handleRowClick = (row: Pedido) => {
+  if (['concluido', 'finalizada'].includes(row.status)) {
+    openSlideoverReadonly(row)
+  } else {
+    openSlideover(row)
+  }
+}
+
+// ==========================================
+// NOVA LISTA
+// ==========================================
+const openNovaLista = () => {
+  editListId.value = null
+  novaListaOpen.value = true
+}
+
+const handleListaSaved = () => {
+  loadData()
 }
 
 // ==========================================
@@ -572,13 +573,11 @@ const saveChanges = async () => {
   try {
     const pedidoId = selectedPedido.value.id
 
-    // Update pedido name if changed
     const newNome = editNome.value.trim()
     if (newNome !== (selectedPedido.value.nome || '')) {
       await updatePedido(pedidoId, { nome: newNome || undefined })
     }
 
-    // Update items
     const itensPayload = editItens.value.map(item => ({
       produto_id: item.produto_id,
       quantidade: item.quantidade,
@@ -590,14 +589,12 @@ const saveChanges = async () => {
 
     toast.add({
       title: 'Salvo',
-      description: 'Alteracoes salvas com sucesso',
+      description: 'Alterações salvas com sucesso',
       color: 'green'
     })
 
-    // Reload data
     await loadData()
 
-    // Update selected pedido reference
     const updated = pedidos.value.find(p => p.id === pedidoId)
     if (updated) {
       selectedPedido.value = updated
@@ -606,7 +603,7 @@ const saveChanges = async () => {
   } catch (error: any) {
     toast.add({
       title: 'Erro',
-      description: error.message || 'Erro ao salvar alteracoes',
+      description: error.message || 'Erro ao salvar alterações',
       color: 'red'
     })
   } finally {
@@ -654,8 +651,8 @@ const handleDelete = async () => {
   try {
     await deletePedido(selectedPedido.value.id)
     toast.add({
-      title: 'Excluido',
-      description: 'Lista excluida com sucesso',
+      title: 'Excluído',
+      description: 'Lista excluída com sucesso',
       color: 'green'
     })
     deleteModalOpen.value = false
@@ -769,7 +766,7 @@ const printList = () => {
             <th>Produto</th>
             <th class="text-center" style="width: 50px;">Un.</th>
             <th class="text-right" style="width: 90px;">Qtd.</th>
-            <th class="text-right" style="width: 100px;">Preco Un.</th>
+            <th class="text-right" style="width: 100px;">Preço Un.</th>
             <th class="text-right" style="width: 100px;">Subtotal</th>
           </tr>
         </thead>
@@ -782,7 +779,7 @@ const printList = () => {
         </tbody>
       </table>
       ${pedido.observacao ? `<p style="margin-top: 16px; font-size: 12px; color: #6b7280;">Obs: ${pedido.observacao}</p>` : ''}
-      <div class="footer">Guardiao do CMV - Lista de Compras</div>
+      <div class="footer">Guardião do CMV - Lista de Compras</div>
       <script>window.onload = function() { window.print(); }<\/script>
     </body>
     </html>

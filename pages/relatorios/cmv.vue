@@ -1,97 +1,30 @@
 <template>
   <div class="space-y-6">
-    <!-- Header -->
-    <div class="flex items-center justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-operacao-800">CMV - Custo da Mercadoria Vendida</h1>
-        <p class="text-sm text-operacao-400">Análise do custo das mercadorias vendidas por período</p>
+    <h1 class="text-2xl font-semibold text-[#5a5a66] mb-2">CMV</h1>
+
+    <!-- Toolbar: Year Picker -->
+    <div class="flex items-center gap-3">
+      <div class="inline-flex items-center gap-1 ring-1 ring-[#EBEBED] rounded-lg bg-white shadow-sm">
+        <button
+          class="p-1.5 rounded-l-lg hover:bg-operacao-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          :disabled="selectedAno <= minAno"
+          @click="selectedAno--"
+        >
+          <UIcon name="i-heroicons-chevron-left-20-solid" class="w-4 h-4 text-operacao-500" />
+        </button>
+        <span class="px-3 py-1 text-sm font-semibold text-[#5a5a66] tabular-nums select-none min-w-[3.5rem] text-center">{{ selectedAno }}</span>
+        <button
+          class="p-1.5 rounded-r-lg hover:bg-operacao-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          :disabled="selectedAno >= maxAno"
+          @click="selectedAno++"
+        >
+          <UIcon name="i-heroicons-chevron-right-20-solid" class="w-4 h-4 text-operacao-500" />
+        </button>
       </div>
     </div>
 
-    <!-- Cadastro de Faturamento Mensal -->
-    <UCard>
-      <template #header>
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <div class="p-1.5 bg-guardian-100 rounded-lg">
-              <UIcon name="i-heroicons-currency-dollar" class="w-4 h-4 text-guardian-600" />
-            </div>
-            <div>
-              <h3 class="font-semibold text-operacao-800 text-sm">Faturamento Mensal</h3>
-              <p class="text-[11px] text-operacao-400">Preencha o faturamento de cada mês para calcular o CMV%</p>
-            </div>
-          </div>
-          <div class="flex items-center gap-2">
-            <span class="text-xs text-operacao-400">{{ mesesPreenchidos }}/12 meses</span>
-            <UIcon
-              v-if="mesesPreenchidos === 12"
-              name="i-heroicons-check-circle"
-              class="w-4 h-4 text-controle-500"
-            />
-          </div>
-        </div>
-      </template>
-
-      <div v-if="loadingFaturamento" class="flex justify-center py-4">
-        <UIcon name="i-heroicons-arrow-path" class="w-5 h-5 animate-spin text-operacao-400" />
-      </div>
-      <div v-else class="overflow-x-auto -mx-4 sm:mx-0">
-        <table class="w-full text-sm" style="min-width: 700px">
-          <thead>
-            <tr class="border-b border-operacao-200 bg-operacao-50">
-              <th
-                v-for="(mes, idx) in mesesAbrev"
-                :key="idx"
-                class="text-center px-2 py-2 font-semibold text-operacao-500 text-xs"
-              >
-                {{ mes }}
-              </th>
-              <th class="text-center px-2 py-2 font-semibold text-guardian-600 text-xs">Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td v-for="(mes, idx) in mesesAbrev" :key="idx" class="px-1 py-1.5 text-center">
-                <template v-if="isMesFuturo(idx + 1)">
-                  <span class="text-operacao-300 text-xs">-</span>
-                </template>
-                <template v-else>
-                  <CurrencyInput
-                    :model-value="Number(mensalInputs[idx + 1]) || 0"
-                    @update:model-value="mensalInputs[idx + 1] = $event"
-                    @blur="salvarFaturamentoMensal(idx + 1)"
-                    size="xs"
-                    placeholder="0,00"
-                    :ui="{ base: 'text-center' }"
-                  />
-                </template>
-              </td>
-              <td class="px-2 py-1.5 text-center font-bold text-guardian-600 whitespace-nowrap text-sm">
-                {{ formatCurrency(totalFaturamento) }}
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </UCard>
-
     <!-- Tabela Mensal Transposta -->
-    <UCard :ui="{ body: { padding: '' } }">
-      <template #header>
-        <div class="flex items-center justify-between gap-4">
-          <h3 class="font-semibold">Evolução Mensal</h3>
-          <div class="flex items-center gap-2">
-            <UBadge color="yellow">≤25% Atenção</UBadge>
-            <UBadge color="green">25-32% Aceitável</UBadge>
-            <UBadge color="red">>32% Perigo</UBadge>
-            <USelect v-model="selectedAno" :options="anosOptions" class="w-28" />
-            <UButton color="primary" @click="loadCMV" :loading="loading" size="sm">
-              <UIcon name="i-heroicons-arrow-path" class="w-4 h-4" />
-            </UButton>
-          </div>
-        </div>
-      </template>
-
+    <UCard :ui="{ base: 'overflow-hidden', body: { padding: '' }, ring: 'ring-1 ring-[#EBEBED]', shadow: 'shadow-sm' }">
       <!-- Loading -->
       <div v-if="loading" class="p-6 flex justify-center">
         <UIcon name="i-heroicons-arrow-path" class="w-6 h-6 animate-spin text-operacao-400" />
@@ -108,22 +41,49 @@
         <table class="w-full text-sm" style="min-width: 700px">
           <thead>
             <tr class="border-b border-operacao-200 bg-operacao-50">
-              <th class="text-left px-4 py-3 font-semibold text-operacao-500 whitespace-nowrap sticky left-0 bg-operacao-50 z-10"></th>
+              <th class="text-left px-4 py-3 font-semibold text-[#5a5a66] whitespace-nowrap sticky left-0 bg-operacao-50 z-10"></th>
               <th
                 v-for="row in cmvDataFiltrado"
                 :key="row.mes"
-                class="text-center px-4 py-3 font-semibold text-operacao-600 whitespace-nowrap"
+                class="text-center px-4 py-3 font-semibold text-[#5a5a66] whitespace-nowrap"
               >
                 {{ mesesAbrev[row.mes - 1] }}
               </th>
             </tr>
           </thead>
           <tbody>
-            <!-- Faturamento -->
+            <!-- Faturamento (click-to-edit) -->
             <tr class="border-b border-operacao-100 hover:bg-operacao-50">
-              <td class="px-4 py-2.5 font-medium text-operacao-500 whitespace-nowrap sticky left-0 bg-white z-10">Faturamento</td>
-              <td v-for="row in cmvDataFiltrado" :key="'fat-' + row.mes" class="text-center px-4 py-2.5 whitespace-nowrap" :class="isMesFuturo(row.mes) ? 'text-operacao-400' : 'text-guardian-600'">
-                {{ isMesFuturo(row.mes) ? '-' : formatCurrency(row.faturamento) }}
+              <td class="px-4 py-2.5 font-medium text-operacao-500 whitespace-nowrap sticky left-0 bg-white z-10">
+                <div class="flex items-center gap-1">
+                  Faturamento
+                  <UIcon name="i-heroicons-pencil-square" class="w-3 h-3 text-operacao-300" />
+                </div>
+              </td>
+              <td v-for="row in cmvDataFiltrado" :key="'fat-' + row.mes" class="text-center px-2 py-1 whitespace-nowrap">
+                <!-- Mês futuro -->
+                <span v-if="isMesFuturo(row.mes)" class="text-operacao-400 px-2 py-1.5 inline-block">-</span>
+                <!-- Editando -->
+                <CurrencyInput
+                  v-else-if="editingFatMes === row.mes"
+                  :model-value="Number(mensalInputs[row.mes]) || 0"
+                  @update:model-value="mensalInputs[row.mes] = $event"
+                  @blur="finishEditFat(row.mes)"
+                  @keydown.enter="($event.target as HTMLInputElement)?.blur()"
+                  size="xs"
+                  placeholder="0,00"
+                  :ui="{ base: 'text-center w-24' }"
+                  :ref="(el: any) => { if (el) fatInputRef = el }"
+                />
+                <!-- Display (click to edit) -->
+                <button
+                  v-else
+                  class="group px-2 py-1.5 rounded hover:bg-guardian-50 transition-colors cursor-pointer text-guardian-600"
+                  @click="startEditFat(row.mes)"
+                >
+                  <span>{{ formatCurrency(row.faturamento) }}</span>
+                  <UIcon name="i-heroicons-pencil-square" class="w-3 h-3 ml-1 opacity-0 group-hover:opacity-60 text-operacao-400 inline-block align-middle transition-opacity" />
+                </button>
               </td>
             </tr>
             <!-- Est. Inicial -->
@@ -220,6 +180,15 @@ const loading = ref(false)
 const loadingFaturamento = ref(false)
 const selectedAno = ref(new Date().getFullYear())
 
+// Year picker limits
+const currentYear = new Date().getFullYear()
+const minAno = currentYear - 2
+const maxAno = currentYear + 2
+
+// Click-to-edit faturamento
+const editingFatMes = ref<number | null>(null)
+const fatInputRef = ref<any>(null)
+
 // ==========================================
 // FATURAMENTO MENSAL INLINE
 // ==========================================
@@ -262,6 +231,19 @@ const salvarFaturamentoMensal = async (mes: number) => {
   }
 }
 
+const startEditFat = (mes: number) => {
+  editingFatMes.value = mes
+  nextTick(() => {
+    const input = fatInputRef.value?.$el?.querySelector('input') as HTMLInputElement | null
+    input?.focus()
+  })
+}
+
+const finishEditFat = async (mes: number) => {
+  editingFatMes.value = null
+  await salvarFaturamentoMensal(mes)
+}
+
 const { page, pageSize, paginatedItems } = usePagination(cmvData)
 
 const mesesNomes = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -270,25 +252,6 @@ const mesesNomes = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
 const mesesAbrev = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun',
   'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
 
-const columns = [
-  { key: 'mes', label: 'Mês' },
-  { key: 'estoque_inicial', label: 'Est. Inicial' },
-  { key: 'compras', label: 'Compras' },
-  { key: 'estoque_final', label: 'Est. Final' },
-  { key: 'cmv', label: 'CMV' },
-  { key: 'faturamento', label: 'Faturamento' },
-  { key: 'cmc', label: '% CMC' },
-  { key: 'percentual_cmv', label: '% CMV Real' },
-  { key: 'status', label: 'Status' }
-]
-
-const anosOptions = computed(() => {
-  const currentYear = new Date().getFullYear()
-  return Array.from({ length: 5 }, (_, i) => ({
-    label: String(currentYear - 2 + i),
-    value: currentYear - 2 + i
-  }))
-})
 
 const cmvDataFiltrado = computed(() => cmvData.value)
 

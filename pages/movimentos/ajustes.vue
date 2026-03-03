@@ -716,7 +716,7 @@ const enviarLembreteManual = async () => {
       `⏰ Horário: ${c.horario_notificacao || '07:00'}`, ``,
       `📍 *Setores:*`, setoresTexto, ``,
       `👉 *Acesse e inicie a contagem:*`,
-      `https://gdcnew.vercel.app/movimentos/ajustes`
+      `https://www.cmv360app.com.br/movimentos/ajustes`
     ].join('\n')
     await $fetch('/api/whatsapp/enviar', { method: 'POST', body: { phone: c.responsavel_telefone, message: mensagem } })
     toast.add({ title: 'Enviado!', description: `Lembrete enviado para ${c.responsavel_nome} via WhatsApp`, color: 'green' })

@@ -19,11 +19,9 @@ export const useRelatorios = () => {
   const { empresaId } = useEmpresa()
 
   // Helper para aplicar filtro empresa_id em queries
+  // NOTA: sempre exige empresaId — chamadores devem verificar antes de invocar
   const comEmpresa = (query: any) => {
-    if (empresaId.value) {
-      return query.eq('empresa_id', empresaId.value)
-    }
-    return query
+    return query.eq('empresa_id', empresaId.value)
   }
 
   // ==========================================
@@ -103,6 +101,8 @@ export const useRelatorios = () => {
   }
 
   const getPainelMes = async (ano: number, mes: number, tipoSaida: 'todos' | 'transferencia' | 'definitiva' | 'beneficiamento' = 'todos'): Promise<{ semanas: SemanaInfo[], itens: PainelMes[] }> => {
+    if (!empresaId.value) return { semanas: [], itens: [] }
+
     // Calcular semanas Seg-Dom reais do mês
     const semanasDoMes = calcularSemanasDoMes(ano, mes)
     const qtdSemanas = semanasDoMes.length
@@ -142,10 +142,10 @@ export const useRelatorios = () => {
 
     if (entError) throw entError
 
-    // Buscar saídas do range das semanas com custo e tipo (com data)
+    // Buscar saídas do range das semanas com custo, tipo e empresa_destino_id (com data)
     const { data: saidas, error: saiError } = await comEmpresa(client
       .from('saidas')
-      .select('produto_id, quantidade, data, custo_saida, tipo')
+      .select('produto_id, quantidade, data, custo_saida, tipo, empresa_destino_id')
       .gte('data', dataInicio)
       .lte('data', dataFim))
 
@@ -230,16 +230,27 @@ export const useRelatorios = () => {
     const painel: PainelMes[] = produtos?.map(p => {
       const prodEntradas = entradas?.filter(e => e.produto_id === p.id) || []
       const prodSaidasAll = saidas?.filter(s => s.produto_id === p.id) || []
-      const prodSaidas = tipoSaida === 'todos'
-        ? prodSaidasAll.filter(s => s.tipo === 'transferencia' || s.tipo === 'definitiva')
-        : prodSaidasAll.filter(s => s.tipo === tipoSaida)
       const prodAjustes = ajustes?.filter(a => a.produto_id === p.id) || []
+
+      // Breakdown de saídas por tipo (sempre calculado)
+      const saidas_definitiva = prodSaidasAll
+        .filter(s => s.tipo === 'definitiva')
+        .reduce((sum, s) => sum + Number(s.quantidade), 0)
+      const saidas_transf_loja = prodSaidasAll
+        .filter(s => s.tipo === 'transferencia' && s.empresa_destino_id)
+        .reduce((sum, s) => sum + Number(s.quantidade), 0)
+      const saidas_transf_apoio = prodSaidasAll
+        .filter(s => s.tipo === 'transferencia' && !s.empresa_destino_id)
+        .reduce((sum, s) => sum + Number(s.quantidade), 0)
+      const saidas_beneficiamento = prodSaidasAll
+        .filter(s => s.tipo === 'beneficiamento')
+        .reduce((sum, s) => sum + Number(s.quantidade), 0)
       const prodCusto = ultimaEntradaPorProduto.get(p.id) || p.preco_inicial || 0
       const categoriaNome = (p.categoria as any)?.nome || ''
 
       const estoqueInicial = movimentosAnteriores.get(p.id) || 0
 
-      // Agrupar por semana real usando a data
+      // Agrupar por semana real usando a data — TODAS as saídas (incl. beneficiamento)
       const entradas_por_semana = new Array(qtdSemanas).fill(0)
       prodEntradas.forEach(e => {
         const idx = getIndiceSemana(e.data)
@@ -247,39 +258,31 @@ export const useRelatorios = () => {
       })
 
       const saidas_por_semana = new Array(qtdSemanas).fill(0)
-      prodSaidas.forEach(s => {
+      prodSaidasAll.forEach(s => {
         const idx = getIndiceSemana(s.data)
         if (idx >= 0) saidas_por_semana[idx] += Number(s.quantidade)
       })
 
       const total_entradas = entradas_por_semana.reduce((sum, v) => sum + v, 0)
       const total_saidas = saidas_por_semana.reduce((sum, v) => sum + v, 0)
+      const total_ajustes = prodAjustes.reduce((sum, a) => sum + Number(a.quantidade), 0)
 
-      const total_ajustes = prodAjustes
-        .filter(a => a.data >= dataInicioMes && a.data <= dataFimMes)
-        .reduce((sum, a) => sum + Number(a.quantidade), 0)
-
-      // Estoque final considera movimentos APENAS do mês real (não do range estendido das semanas)
-      const entradasDoMes = prodEntradas
-        .filter(e => e.data >= dataInicioMes && e.data <= dataFimMes)
-        .reduce((sum, e) => sum + Number(e.quantidade), 0)
-      const totalSaidasAll = prodSaidasAll
-        .filter(s => s.data >= dataInicioMes && s.data <= dataFimMes)
-        .reduce((sum, s) => sum + Number(s.quantidade), 0)
-      const estoque_final = estoqueInicial + entradasDoMes - totalSaidasAll + total_ajustes
+      // E.F. = E.I. + Entradas - Saídas + Ajustes (tudo consistente)
+      const estoque_final = estoqueInicial + total_entradas - total_saidas + total_ajustes
       const valor_total = estoque_final * Number(prodCusto)
 
-      // CMV do produto = total_saidas * C.Unit (custo da última entrada) - EXCLUINDO MTP
+      // CMV: saídas sem beneficiamento × custo unitário (MTP excluído)
+      const saidas_cmv = total_saidas - saidas_beneficiamento
       const cmvProduto = categoriaNome.toUpperCase() === 'MTP'
         ? 0
-        : total_saidas * Number(prodCusto)
+        : saidas_cmv * Number(prodCusto)
 
-      // Giro em dias - Fórmula especial para MTP
+      // Giro em dias
       let giro_dias = 0
       let vezes_mes = 0
 
       if (categoriaNome.toUpperCase() === 'MTP') {
-        const custoSaidasMTP = total_saidas * Number(prodCusto)
+        const custoSaidasMTP = saidas_cmv * Number(prodCusto)
         giro_dias = custoSaidasMTP > 0 ? (valor_total / custoSaidasMTP) * 30 : 0
       } else {
         giro_dias = cmvProduto > 0 ? (valor_total / cmvProduto) * 30 : 0
@@ -301,7 +304,11 @@ export const useRelatorios = () => {
         valor_total,
         cmv: cmvProduto,
         giro_dias,
-        vezes_mes
+        vezes_mes,
+        saidas_definitiva,
+        saidas_transf_loja,
+        saidas_transf_apoio,
+        saidas_beneficiamento
       }
     }) || []
 
@@ -320,6 +327,7 @@ export const useRelatorios = () => {
   // ==========================================
 
   const getCurvaABCEstoque = async (ano?: number, mes?: number): Promise<CurvaABC[]> => {
+    if (!empresaId.value) return [] as CurvaABC[]
     // Se não passou período, usa o mês atual
     const hoje = new Date()
     const anoRef = ano || hoje.getFullYear()
@@ -423,6 +431,7 @@ export const useRelatorios = () => {
   // ==========================================
 
   const getCurvaABCCMV = async (ano?: number, mes?: number): Promise<CurvaABC[]> => {
+    if (!empresaId.value) return [] as CurvaABC[]
     // Definir período - últimos 3 meses se não especificado
     const hoje = new Date()
     const anoRef = ano || hoje.getFullYear()
@@ -526,6 +535,7 @@ export const useRelatorios = () => {
   // ==========================================
 
   const getComparativoABC = async (ano?: number, mes?: number): Promise<ComparativoABC[]> => {
+    if (!empresaId.value) return [] as ComparativoABC[]
     const [abcEstoque, abcCMV] = await Promise.all([
       getCurvaABCEstoque(),
       getCurvaABCCMV(ano, mes)
@@ -582,6 +592,7 @@ export const useRelatorios = () => {
 
   // Manter compatibilidade com função antiga
   const getCurvaABC = async (tipo: 'estoque' | 'cmv' = 'estoque', ano?: number, mes?: number): Promise<CurvaABC[]> => {
+    if (!empresaId.value) return [] as CurvaABC[]
     if (tipo === 'cmv') {
       return getCurvaABCCMV(ano, mes)
     }
@@ -594,6 +605,7 @@ export const useRelatorios = () => {
 
   // Função auxiliar para calcular valor do estoque em uma data específica (EXCLUINDO MTP)
   const calcularValorEstoqueEmData = async (dataLimite: string, excluirMTP: boolean = false): Promise<number> => {
+    if (!empresaId.value) return 0
     // Buscar produtos ativos com categoria
     const { data: produtos } = await comEmpresa(client
       .from('produtos')
@@ -665,6 +677,7 @@ export const useRelatorios = () => {
   }
 
   const getGiroEstoque = async (ano: number): Promise<GiroEstoque[]> => {
+    if (!empresaId.value) return [] as GiroEstoque[]
     const mesesNomes = [
       'JANEIRO', 'FEVEREIRO', 'MARÇO', 'ABRIL', 'MAIO', 'JUNHO',
       'JULHO', 'AGOSTO', 'SETEMBRO', 'OUTUBRO', 'NOVEMBRO', 'DEZEMBRO'
@@ -790,15 +803,14 @@ export const useRelatorios = () => {
   // ==========================================
 
   const getCMV = async (ano: number): Promise<CMV[]> => {
+    if (!empresaId.value) return [] as CMV[]
+
     // Buscar TODOS os dados necessários de uma vez (em paralelo)
-    let fatQuery = client
+    const fatQuery = client
       .from('faturamentos')
       .select('*')
       .eq('ano', ano)
-
-    if (empresaId.value) {
-      fatQuery = fatQuery.eq('empresa_id', empresaId.value)
-    }
+      .eq('empresa_id', empresaId.value)
 
     // Data range: do início do ano anterior (para estoque inicial de jan) até fim do ano
     const dataInicioTotal = `${ano - 1}-01-01`
@@ -937,6 +949,7 @@ export const useRelatorios = () => {
   // ==========================================
 
   const getEstoqueMinimo = async (): Promise<EstoqueMinimo[]> => {
+    if (!empresaId.value) return [] as EstoqueMinimo[]
     const { data: produtos, error } = await comEmpresa(client
       .from('produtos')
       .select(`
@@ -1033,6 +1046,7 @@ export const useRelatorios = () => {
   // ==========================================
 
   const getVariacaoCusto = async (ano: number) => {
+    if (!empresaId.value) return []
     const { data: custos, error } = await comEmpresa(client
       .from('custos_mensais')
       .select(`
@@ -1145,6 +1159,7 @@ export const useRelatorios = () => {
    * divididas por faturamento semanal
    */
   const getCmcSemanal = async (qtdSemanas: number = 4): Promise<CmcSemanalResumo> => {
+    if (!empresaId.value) return { semanas: [], grupos: [], faturamentos: [], cmc_percentuais: [] } as CmcSemanalResumo
     const semanas = calcularSemanas(qtdSemanas)
 
     const semanasFormatadas = semanas.map(s => ({
@@ -1276,6 +1291,7 @@ export const useRelatorios = () => {
   // ==========================================
 
   const getVariacaoCustoDiaria = async (ano: number, mes: number) => {
+    if (!empresaId.value) return { dias: [] as { data: string; label: string }[], produtos: [] as any[] }
     const dataInicio = `${ano}-${String(mes).padStart(2, '0')}-01`
     const ultimoDia = new Date(ano, mes, 0).getDate()
     const dataFim = `${ano}-${String(mes).padStart(2, '0')}-${ultimoDia}`
@@ -1395,18 +1411,17 @@ export const useRelatorios = () => {
   // ==========================================
 
   const getDashboardResumo = async (estoqueMinData?: EstoqueMinimo[]) => {
+    if (!empresaId.value) return { totalProdutos: 0, valorEstoque: 0, produtosAbaixoMinimo: 0, totalEntradasMes: 0, totalSaidasMes: 0 }
+
     const hoje = new Date()
     const primeiroDia = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-01`
 
     // Total de produtos ativos
-    let prodQuery = client
+    const prodQuery = client
       .from('produtos')
       .select('*', { count: 'exact', head: true })
       .eq('ativo', true)
-
-    if (empresaId.value) {
-      prodQuery = prodQuery.eq('empresa_id', empresaId.value)
-    }
+      .eq('empresa_id', empresaId.value)
 
     // Fazer todas as queries em paralelo
     const [
@@ -1447,6 +1462,7 @@ export const useRelatorios = () => {
   // ==========================================
 
   const getGestaoInventario = async (ano: number, mes: number): Promise<GestaoInventario[]> => {
+    if (!empresaId.value) return [] as GestaoInventario[]
     const dataInicio = `${ano}-${String(mes).padStart(2, '0')}-01`
     const ultimoDia = new Date(ano, mes, 0).getDate()
     const dataFim = `${ano}-${String(mes).padStart(2, '0')}-${ultimoDia}`
@@ -1481,10 +1497,10 @@ export const useRelatorios = () => {
       .select('produto_id, quantidade, valor_total, custo_unitario, data')
       .lte('data', dataFim))
 
-    // Buscar todas as saídas até o fim do mês
+    // Buscar todas as saídas até o fim do mês (com tipo para split principal/apoio)
     const { data: saidasAte } = await comEmpresa(client
       .from('saidas')
-      .select('produto_id, quantidade, data')
+      .select('produto_id, quantidade, data, tipo')
       .lte('data', dataFim))
 
     // Buscar todos os ajustes até o fim do mês
@@ -1515,37 +1531,49 @@ export const useRelatorios = () => {
       const prodSaidas = saidasAte?.filter(s => s.produto_id === p.id) || []
       const prodAjustes = ajustesAte?.filter(a => a.produto_id === p.id) || []
 
-      // Calcular EI: movimentos até o último dia do mês anterior
-      let ei_quantidade = Number(p.estoque_inicial || 0)
+      // Separar saídas por tipo (transferências vão para apoio)
+      const prodTransferencias = prodSaidas.filter(s => s.tipo === 'transferencia')
+      const prodSaidasDefinitivas = prodSaidas.filter(s => s.tipo !== 'transferencia')
 
-      prodEntradas.filter(e => e.data <= dataFimAnterior).forEach(e => {
-        ei_quantidade += Number(e.quantidade)
-      })
-      prodSaidas.filter(s => s.data <= dataFimAnterior).forEach(s => {
-        ei_quantidade -= Number(s.quantidade)
-      })
-      prodAjustes.filter(a => a.data <= dataFimAnterior).forEach(a => {
-        ei_quantidade += Number(a.quantidade)
-      })
+      // --- EI (movimentos até fim do mês anterior) ---
+      const estoqueInicial = Number(p.estoque_inicial || 0)
 
-      // Calcular EF: movimentos até o último dia do mês selecionado
-      let ef_quantidade = Number(p.estoque_inicial || 0)
+      // Principal EI: estoque_inicial + entradas - TODAS saídas + ajustes
+      let ei_quantidade_principal = estoqueInicial
+      prodEntradas.filter(e => e.data <= dataFimAnterior).forEach(e => { ei_quantidade_principal += Number(e.quantidade) })
+      prodSaidas.filter(s => s.data <= dataFimAnterior).forEach(s => { ei_quantidade_principal -= Number(s.quantidade) })
+      prodAjustes.filter(a => a.data <= dataFimAnterior).forEach(a => { ei_quantidade_principal += Number(a.quantidade) })
 
-      prodEntradas.filter(e => e.data <= dataFim).forEach(e => {
-        ef_quantidade += Number(e.quantidade)
-      })
-      prodSaidas.filter(s => s.data <= dataFim).forEach(s => {
-        ef_quantidade -= Number(s.quantidade)
-      })
-      prodAjustes.filter(a => a.data <= dataFim).forEach(a => {
-        ef_quantidade += Number(a.quantidade)
-      })
+      // Apoio EI: acumula transferências recebidas
+      let ei_quantidade_apoio = 0
+      prodTransferencias.filter(s => s.data <= dataFimAnterior).forEach(s => { ei_quantidade_apoio += Number(s.quantidade) })
 
-      // Custo da última entrada (para valorizar EF)
+      // Total EI
+      const ei_quantidade = ei_quantidade_principal + ei_quantidade_apoio
+
+      // --- EF (movimentos até fim do mês selecionado) ---
+      // Principal EF
+      let ef_quantidade_principal = estoqueInicial
+      prodEntradas.filter(e => e.data <= dataFim).forEach(e => { ef_quantidade_principal += Number(e.quantidade) })
+      prodSaidas.filter(s => s.data <= dataFim).forEach(s => { ef_quantidade_principal -= Number(s.quantidade) })
+      prodAjustes.filter(a => a.data <= dataFim).forEach(a => { ef_quantidade_principal += Number(a.quantidade) })
+
+      // Apoio EF
+      let ef_quantidade_apoio = 0
+      prodTransferencias.filter(s => s.data <= dataFim).forEach(s => { ef_quantidade_apoio += Number(s.quantidade) })
+
+      // Total EF
+      const ef_quantidade = ef_quantidade_principal + ef_quantidade_apoio
+
+      // Custo da última entrada (para valorizar)
       const custoUltimaEntrada = ultimaEntradaPorProduto.get(p.id) || Number(p.preco_inicial || 0)
 
       const ei_valor = Math.max(0, ei_quantidade) * custoUltimaEntrada
       const ef_valor = Math.max(0, ef_quantidade) * custoUltimaEntrada
+      const ei_valor_principal = Math.max(0, ei_quantidade_principal) * custoUltimaEntrada
+      const ef_valor_principal = Math.max(0, ef_quantidade_principal) * custoUltimaEntrada
+      const ei_valor_apoio = Math.max(0, ei_quantidade_apoio) * custoUltimaEntrada
+      const ef_valor_apoio = Math.max(0, ef_quantidade_apoio) * custoUltimaEntrada
 
       // Verificar se houve movimentação no mês
       const entradasNoMes = prodEntradas.filter(e => e.data >= dataInicio && e.data <= dataFim)
@@ -1564,6 +1592,14 @@ export const useRelatorios = () => {
         ei_valor,
         ef_quantidade,
         ef_valor,
+        ei_quantidade_principal,
+        ei_valor_principal,
+        ef_quantidade_principal,
+        ef_valor_principal,
+        ei_quantidade_apoio,
+        ei_valor_apoio,
+        ef_quantidade_apoio,
+        ef_valor_apoio,
         custo_ultima_entrada: custoUltimaEntrada,
         variacao_quantidade: ef_quantidade - ei_quantidade,
         variacao_valor: ef_valor - ei_valor,

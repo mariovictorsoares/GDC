@@ -1,66 +1,43 @@
 <template>
   <div class="space-y-6">
     <!-- Header -->
-    <div class="flex items-center justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-operacao-800">Giro de Estoque</h1>
-        <p class="text-sm text-operacao-400">Análise de velocidade de rotação do estoque</p>
-      </div>
-    </div>
+    <h1 class="text-2xl font-semibold text-[#5a5a66] mb-2">Giro de Estoque</h1>
 
     <!-- Filtros -->
-    <UCard>
-      <div class="flex flex-wrap gap-4 items-end">
-        <UFormGroup label="Ano">
-          <USelect
-            v-model="selectedAno"
-            :options="anosOptions"
-            class="w-32"
-          />
-        </UFormGroup>
-        <UButton color="primary" @click="loadGiro" :loading="loading">
-          <UIcon name="i-heroicons-arrow-path" class="w-4 h-4 mr-2" />
-          Atualizar
-        </UButton>
-      </div>
-    </UCard>
-
-    <!-- Resumo Skeleton -->
-    <div v-if="loading" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div v-for="i in 2" :key="i" class="rounded-xl bg-white ring-1 ring-operacao-100 shadow-sm p-5">
-        <div class="text-center space-y-2">
-          <USkeleton class="h-4 w-28 mx-auto" />
-          <USkeleton class="h-8 w-32 mx-auto" />
-        </div>
-      </div>
+    <div class="flex items-center gap-3">
+      <USelect v-model="selectedAno" :options="anosOptions" class="w-full sm:w-32" :ui="toolbarInputUi" />
     </div>
 
     <!-- Resumo Anual -->
-    <div v-if="!loading" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <UCard>
-        <div class="text-center">
-          <p class="text-sm text-operacao-400">CMV Total</p>
-          <p class="text-2xl font-bold text-red-600">{{ formatCurrency(resumoAnual.cmvTotal) }}</p>
+    <div class="grid grid-cols-2 gap-3">
+      <div class="rounded-lg bg-white ring-1 ring-[#EBEBED] shadow-sm px-4 py-3">
+        <div class="flex items-center gap-1.5 mb-1">
+          <span class="w-1.5 h-1.5 rounded-full bg-red-400" />
+          <span class="text-[11px] font-medium text-operacao-400">CMV Total</span>
         </div>
-      </UCard>
-      <UCard>
-        <div class="text-center">
-          <p class="text-sm text-operacao-400">Giro Médio (dias)</p>
-          <p class="text-2xl font-bold" :class="getGiroClass(resumoAnual.giroMedioDias)">{{ formatNumber(resumoAnual.giroMedioDias) }}</p>
+        <p class="text-base font-bold text-red-600">{{ formatCurrency(resumoAnual.cmvTotal) }}</p>
+      </div>
+      <div class="rounded-lg bg-white ring-1 ring-[#EBEBED] shadow-sm px-4 py-3">
+        <div class="flex items-center gap-1.5 mb-1">
+          <span class="w-1.5 h-1.5 rounded-full bg-guardian-400" />
+          <span class="text-[11px] font-medium text-operacao-400">Giro Médio (dias)</span>
         </div>
-      </UCard>
+        <p class="text-base font-bold" :class="getGiroClass(resumoAnual.giroMedioDias)">{{ formatNumber(resumoAnual.giroMedioDias) }}</p>
+      </div>
     </div>
 
     <!-- Tabela Mensal -->
-    <UCard :ui="{ body: { padding: '' } }">
-      <template #header>
-        <h3 class="font-semibold">Evolução Mensal</h3>
-      </template>
-
+    <UCard :ui="{ base: 'overflow-hidden', body: { padding: '' }, ring: 'ring-1 ring-[#EBEBED]', shadow: 'shadow-sm' }">
       <UTable
         :columns="columns"
         :rows="paginatedItems"
         :loading="loading"
+        :ui="{
+          divide: 'divide-y divide-operacao-50 dark:divide-operacao-700',
+          thead: '',
+          th: { base: 'bg-operacao-100/70 dark:bg-operacao-800 border-b border-operacao-200/60 [&_button]:font-medium [&_button]:uppercase [&_button]:tracking-wider [&_button]:text-xs [&_button]:text-[#5a5a66]', color: 'text-[#5a5a66] dark:text-operacao-400', font: 'font-medium', size: 'text-xs uppercase tracking-wider', padding: 'px-4 py-2' },
+          td: { color: 'text-operacao-600 dark:text-operacao-200', size: 'text-sm', padding: 'px-4 py-2.5' }
+        }"
       >
         <!-- Empty State -->
         <template #empty-state>
@@ -97,6 +74,8 @@
 
 <script setup lang="ts">
 import type { GiroEstoque } from '~/types'
+
+const toolbarInputUi = { color: { white: { outline: 'shadow-sm bg-white text-gray-900 ring-1 ring-inset ring-[#EBEBED] focus:ring-1 focus:ring-operacao-200 dark:ring-operacao-700' } } }
 
 const { getGiroEstoque } = useRelatorios()
 const { empresaId } = useEmpresa()

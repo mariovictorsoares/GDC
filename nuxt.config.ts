@@ -7,7 +7,13 @@ export default defineNuxtConfig({
     zapiInstanceId: process.env.ZAPI_INSTANCE_ID || '',
     zapiToken: process.env.ZAPI_TOKEN || '',
     zapiClientToken: process.env.ZAPI_CLIENT_TOKEN || '',
-    zapiBaseUrl: process.env.ZAPI_BASE_URL || 'https://api.z-api.io'
+    zapiBaseUrl: process.env.ZAPI_BASE_URL || 'https://api.z-api.io',
+    stripeSecretKey: process.env.STRIPE_SECRET_KEY || '',
+    stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET || '',
+    stripeTaxaImplPriceId: process.env.STRIPE_TAXA_IMPL_PRICE_ID || '',
+    public: {
+      appUrl: process.env.APP_URL || 'http://localhost:3000'
+    }
   },
 
   modules: [
@@ -17,7 +23,7 @@ export default defineNuxtConfig({
 
   supabase: {
     redirect: false,
-    cookieName: 'sb-estoque',
+    cookieName: 'sb-cmv360',
     cookieOptions: {
       maxAge: 60 * 60 * 8,
       sameSite: 'lax',
@@ -35,11 +41,11 @@ export default defineNuxtConfig({
 
   app: {
     head: {
-      title: 'Guardião do Estoque',
+      title: 'CMV360',
       meta: [
         { charset: 'utf-8' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-        { name: 'description', content: 'Sistema de Controle de Estoque para Centro de Distribuição' }
+        { name: 'description', content: 'CMV360 - Sistema de Controle de Estoque e CMV' }
       ],
       link: [
         { rel: 'icon', type: 'image/png', href: '/favicon.png' }

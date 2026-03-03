@@ -1,49 +1,78 @@
 <template>
   <div class="space-y-6">
     <!-- Header -->
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-      <div>
-        <h1 class="text-2xl font-bold text-operacao-800">Produtos</h1>
-        <p class="text-sm text-operacao-400">Gerencie o cadastro de produtos</p>
-      </div>
-      <div class="flex gap-2">
-        <UButton color="white" class="w-full sm:w-auto" @click="openGruposModal()">
-          <UIcon name="i-heroicons-folder" class="w-4 h-4 mr-2" />
-          Gerenciar Grupos
-        </UButton>
-        <UButton color="white" class="w-full sm:w-auto" @click="openUnidadesModal()">
-          <UIcon name="i-heroicons-cog-6-tooth" class="w-4 h-4 mr-2" />
-          Gerenciar Unidades
-        </UButton>
-        <UButton color="primary" class="w-full sm:w-auto" @click="openModal()">
-          <UIcon name="i-heroicons-plus" class="w-4 h-4 mr-2" />
-          Novo Produto
-        </UButton>
-      </div>
-    </div>
+    <h1 class="text-2xl font-semibold text-[#5a5a66] mb-2">Produtos</h1>
 
-    <!-- Filtros -->
-    <UCard>
-      <div class="flex flex-col sm:flex-row flex-wrap gap-4">
+    <!-- Toolbar: Filtros + Ações -->
+    <div class="flex flex-col lg:flex-row lg:items-center gap-3 lg:gap-6">
+      <!-- Filtros (esquerda) -->
+      <div class="flex flex-col sm:flex-row flex-wrap gap-3 flex-1 min-w-0">
         <UInput
           v-model="search"
-          placeholder="Buscar produto..."
+          placeholder="Buscar..."
           icon="i-heroicons-magnifying-glass"
-          class="flex-1 min-w-0 sm:min-w-64"
+          class="w-full sm:w-44"
+          :ui="toolbarInputUi"
         />
-        <USelect
-          v-model="filterGrupo"
-          :options="grupoOptions"
-          placeholder="Grupo"
-          class="w-full sm:w-40"
-          @change="filterSubgrupo = ''"
-        />
-        <USelect
-          v-model="filterSubgrupo"
-          :options="subgrupoFilterOptions"
-          placeholder="Subgrupo"
-          class="w-full sm:w-48"
-        />
+        <!-- Filtro Grupo/Subgrupo expansível -->
+        <UPopover v-model:open="categoriaPopoverOpen" :popper="{ placement: 'bottom-start' }">
+          <UButton
+            color="white"
+            class="w-full sm:w-52 justify-between"
+            trailing-icon="i-heroicons-chevron-down-20-solid"
+            :ui="toolbarButtonUi"
+          >
+            <span class="truncate text-left font-normal"><span class="text-operacao-400">Grupo:</span> <span class="text-gray-900">{{ filterCategoriaLabel }}</span></span>
+          </UButton>
+
+          <template #panel>
+            <div class="w-64 max-h-72 overflow-y-auto py-1">
+              <!-- Todos -->
+              <button
+                class="w-full text-left px-3 py-1.5 text-sm rounded transition-colors"
+                :class="!filterCategoria ? 'text-guardian-600 font-medium bg-guardian-50' : 'text-operacao-600 hover:bg-operacao-50'"
+                @click="selectCategoria('')"
+              >
+                Todos
+              </button>
+
+              <!-- Grupos expansíveis -->
+              <div v-for="grupo in grupos" :key="grupo.id">
+                <div class="flex items-center">
+                  <button
+                    class="p-1 rounded hover:bg-operacao-100 transition-colors"
+                    @click.stop="toggleGrupoExpand(grupo.id)"
+                  >
+                    <UIcon
+                      :name="expandedGrupos.has(grupo.id) ? 'i-heroicons-chevron-down-20-solid' : 'i-heroicons-chevron-right-20-solid'"
+                      class="w-3.5 h-3.5 text-operacao-400"
+                    />
+                  </button>
+                  <button
+                    class="flex-1 text-left px-2 py-1.5 text-sm rounded transition-colors"
+                    :class="filterCategoria === `g:${grupo.id}` ? 'text-guardian-600 font-medium bg-guardian-50' : 'text-operacao-700 hover:bg-operacao-50'"
+                    @click="selectCategoria(`g:${grupo.id}`)"
+                  >
+                    {{ grupo.nome }}
+                  </button>
+                </div>
+
+                <!-- Subgrupos -->
+                <div v-if="expandedGrupos.has(grupo.id)" class="ml-2">
+                  <button
+                    v-for="sub in subgruposDe(grupo.id)"
+                    :key="sub.id"
+                    class="w-full text-left pl-7 pr-3 py-1.5 text-sm rounded transition-colors"
+                    :class="filterCategoria === `s:${sub.id}` ? 'text-guardian-600 font-medium bg-guardian-50' : 'text-operacao-500 hover:bg-operacao-50'"
+                    @click="selectCategoria(`s:${sub.id}`)"
+                  >
+                    {{ sub.nome }}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </template>
+        </UPopover>
         <USelect
           v-model="filterStatus"
           :options="statusOptions"
@@ -51,34 +80,38 @@
           option-attribute="label"
           placeholder="Status"
           class="w-full sm:w-32"
+          :ui="toolbarInputUi"
         />
       </div>
-    </UCard>
 
-    <!-- Tabela Skeleton -->
-    <UCard v-if="loading" :ui="{ body: { padding: '' } }">
-      <div class="p-5 space-y-4">
-        <div v-for="i in 8" :key="i" class="flex items-center gap-4">
-          <USkeleton class="h-4 w-32" />
-          <USkeleton class="h-4 w-24" />
-          <USkeleton class="h-4 w-16" />
-          <USkeleton class="h-4 w-20" />
-          <USkeleton class="h-4 w-20" />
-          <USkeleton class="h-4 w-16" />
-          <USkeleton class="h-4 w-16" />
-        </div>
+      <!-- Ações (direita) -->
+      <div class="flex gap-2 flex-shrink-0">
+        <UButton color="white" :ui="toolbarButtonUi" @click="openGruposModal()">
+          <UIcon name="i-heroicons-folder" class="w-4 h-4 mr-1.5" />
+          Grupos
+        </UButton>
+        <UButton color="white" :ui="toolbarButtonUi" @click="openUnidadesModal()">
+          <UIcon name="i-heroicons-cog-6-tooth" class="w-4 h-4 mr-1.5" />
+          Unidades
+        </UButton>
+        <UButton color="primary" @click="openModal()">
+          <UIcon name="i-heroicons-plus" class="w-4 h-4 mr-1.5" />
+          Novo Produto
+        </UButton>
       </div>
-    </UCard>
+    </div>
 
     <!-- Tabela -->
-    <UCard v-if="!loading" :ui="{ body: { padding: '' } }">
+    <UCard :ui="{ base: 'overflow-hidden', body: { padding: '' }, ring: 'ring-1 ring-[#EBEBED]', shadow: 'shadow-sm' }">
       <UTable
         :columns="columns"
         :rows="paginatedItems"
         :loading="loading"
         :ui="{
-          td: { color: 'text-operacao-600 dark:text-operacao-200' },
-          th: { color: 'text-operacao-800 dark:text-white' }
+          divide: 'divide-y divide-operacao-50 dark:divide-operacao-700',
+          thead: '',
+          th: { base: 'bg-operacao-100/70 dark:bg-operacao-800 border-b border-operacao-200/60 [&_button]:font-medium [&_button]:uppercase [&_button]:tracking-wider [&_button]:text-xs [&_button]:text-[#5a5a66]', color: 'text-[#5a5a66] dark:text-operacao-400', font: 'font-medium', size: 'text-xs uppercase tracking-wider', padding: 'px-4 py-2' },
+          td: { color: 'text-operacao-600 dark:text-operacao-200', size: 'text-sm', padding: 'px-4 py-2.5' }
         }"
       >
         <!-- Empty State -->
@@ -94,12 +127,11 @@
         </template>
 
         <template #subgrupo-data="{ row }">
-          <div class="flex flex-col">
-            <UBadge color="gray" variant="soft">
-              {{ row.subgrupo?.nome || '-' }}
-            </UBadge>
-            <span class="text-xs text-operacao-400 mt-1">{{ row.subgrupo?.grupo?.nome || '' }}</span>
-          </div>
+          <span class="whitespace-nowrap">
+            <span class="text-operacao-400">{{ row.subgrupo?.grupo?.nome }}</span>
+            <span v-if="row.subgrupo?.grupo?.nome && row.subgrupo?.nome" class="text-operacao-300 mx-1">›</span>
+            <span>{{ row.subgrupo?.nome || '-' }}</span>
+          </span>
         </template>
 
         <template #unidade-data="{ row }">
@@ -112,12 +144,6 @@
 
         <template #preco_inicial-data="{ row }">
           {{ formatCurrency(row.preco_inicial) }}
-        </template>
-
-        <template #ativo-data="{ row }">
-          <UBadge :color="row.ativo ? 'green' : 'gray'">
-            {{ row.ativo ? 'Ativo' : 'Inativo' }}
-          </UBadge>
         </template>
 
         <template #actions-data="{ row }">
@@ -492,7 +518,7 @@
     <!-- Slideover de Gerenciamento de Unidades -->
     <USlideover
       v-model="unidadesModalOpen"
-      :prevent-close="deleteUnidadeModalOpen"
+      :prevent-close="deleteUnidadeModalOpen || unidadeEditModalOpen"
       :ui="{
         width: 'max-w-2xl',
         overlay: { background: 'bg-operacao-900/50 backdrop-blur-sm' },
@@ -502,7 +528,8 @@
       }"
       @after-leave="onUnidadesModalClose"
     >
-      <UCard :ui="{ background: 'bg-transparent', ring: 'ring-0', shadow: '', divide: 'divide-operacao-100 dark:divide-operacao-700', body: { base: 'overflow-y-auto' } }">
+      <div :inert="deleteUnidadeModalOpen || unidadeEditModalOpen || undefined" class="h-full">
+      <UCard :ui="{ background: 'bg-transparent', ring: 'ring-0', shadow: '', divide: 'divide-operacao-100 dark:divide-operacao-700', base: 'flex flex-col h-full', body: { base: 'flex-1 overflow-y-auto min-h-0' } }">
         <template #header>
           <div class="flex items-center justify-between">
             <h3 class="text-lg font-semibold">Gerenciar Unidades</h3>
@@ -515,37 +542,12 @@
           </div>
         </template>
 
-        <!-- Formulário de Nova Unidade -->
-        <div class="mb-4 p-4 bg-operacao-50 rounded-lg">
-          <h4 class="text-sm font-medium text-operacao-600 mb-3">{{ editingUnidade ? 'Editar Unidade' : 'Nova Unidade' }}</h4>
-          <div class="flex gap-2">
-            <UInput
-              v-model="unidadeForm.sigla"
-              placeholder="Sigla (ex: KG)"
-              class="w-24"
-              maxlength="10"
-            />
-            <UInput
-              v-model="unidadeForm.descricao"
-              placeholder="Descrição (ex: Quilograma)"
-              class="flex-1"
-            />
-            <UButton
-              color="primary"
-              :loading="savingUnidade"
-              @click="saveUnidade"
-            >
-              {{ editingUnidade ? 'Salvar' : 'Adicionar' }}
-            </UButton>
-            <UButton
-              v-if="editingUnidade"
-              color="gray"
-              variant="ghost"
-              @click="cancelEditUnidade"
-            >
-              Cancelar
-            </UButton>
-          </div>
+        <!-- Botão Nova Unidade -->
+        <div class="mb-4">
+          <UButton color="primary" size="sm" @click="openUnidadeEditModal()">
+            <UIcon name="i-heroicons-plus" class="w-4 h-4 mr-1" />
+            Nova Unidade
+          </UButton>
         </div>
 
         <!-- Lista de Unidades -->
@@ -555,8 +557,8 @@
             :rows="unidades"
             :ui="{
               td: { color: 'text-operacao-600 dark:text-operacao-200' },
-              th: { color: 'text-operacao-800 dark:text-white' },
-              thead: 'sticky top-0 bg-white dark:bg-operacao-800 z-10'
+              th: { base: 'bg-operacao-100/70 dark:bg-operacao-800 border-b border-operacao-200/60 [&_button]:font-medium [&_button]:uppercase [&_button]:tracking-wider [&_button]:text-xs [&_button]:text-[#5a5a66]', color: 'text-[#5a5a66] dark:text-operacao-400', font: 'font-medium', size: 'text-xs uppercase tracking-wider', padding: 'px-4 py-2' },
+              thead: 'sticky top-0 z-10'
             }"
           >
             <template #empty-state>
@@ -581,7 +583,7 @@
                   variant="ghost"
                   icon="i-heroicons-pencil-square"
                   size="xs"
-                  @click="editUnidade(row)"
+                  @click="openUnidadeEditModal(row)"
                 />
                 <UButton
                   color="red"
@@ -603,6 +605,7 @@
           </div>
         </template>
       </UCard>
+      </div>
     </USlideover>
 
     <!-- Modal de Confirmação de Exclusão de Unidade -->
@@ -636,6 +639,54 @@
       </UCard>
     </UModal>
 
+    <!-- Sub-Modal: Criar/Editar Unidade -->
+    <UModal
+      v-model="unidadeEditModalOpen"
+      :ui="{
+        width: 'sm:max-w-md',
+        overlay: { background: 'bg-operacao-900/50 backdrop-blur-sm' },
+        background: 'bg-white dark:bg-operacao-800',
+        ring: 'ring-1 ring-operacao-200 dark:ring-operacao-700',
+        shadow: 'shadow-2xl'
+      }"
+    >
+      <UCard :ui="{ background: 'bg-transparent', ring: 'ring-0', shadow: '', divide: 'divide-operacao-100 dark:divide-operacao-700' }">
+        <template #header>
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-semibold">
+              {{ editingUnidade ? 'Editar Unidade' : 'Nova Unidade' }}
+            </h3>
+            <UButton
+              color="gray"
+              variant="ghost"
+              icon="i-heroicons-x-mark"
+              @click="unidadeEditModalOpen = false"
+            />
+          </div>
+        </template>
+
+        <form @submit.prevent="saveUnidade" class="space-y-4">
+          <UFormGroup label="Sigla" required>
+            <UInput v-model="unidadeForm.sigla" placeholder="Ex: KG" maxlength="10" autofocus />
+          </UFormGroup>
+          <UFormGroup label="Descrição">
+            <UInput v-model="unidadeForm.descricao" placeholder="Ex: Quilograma" />
+          </UFormGroup>
+        </form>
+
+        <template #footer>
+          <div class="flex flex-col-reverse sm:flex-row justify-end gap-3">
+            <UButton color="gray" variant="ghost" class="w-full sm:w-auto" @click="unidadeEditModalOpen = false">
+              Cancelar
+            </UButton>
+            <UButton color="primary" class="w-full sm:w-auto" :loading="savingUnidade" @click="saveUnidade">
+              {{ editingUnidade ? 'Salvar' : 'Criar' }}
+            </UButton>
+          </div>
+        </template>
+      </UCard>
+    </UModal>
+
     <!-- Slideover de Gerenciamento de Grupos e Subgrupos -->
     <USlideover
       v-model="gruposModalOpen"
@@ -649,7 +700,8 @@
       }"
       @after-leave="onGruposModalClose"
     >
-      <UCard :ui="{ background: 'bg-transparent', ring: 'ring-0', shadow: '', divide: 'divide-operacao-100 dark:divide-operacao-700', body: { base: 'overflow-y-auto' } }">
+      <div :inert="anyGrupoSubModalOpen || undefined" class="h-full">
+      <UCard :ui="{ background: 'bg-transparent', ring: 'ring-0', shadow: '', divide: 'divide-operacao-100 dark:divide-operacao-700', base: 'flex flex-col h-full', body: { base: 'flex-1 overflow-y-auto min-h-0' } }">
         <template #header>
           <div class="flex items-center justify-between">
             <h3 class="text-lg font-semibold">Gerenciar Grupos e Subgrupos</h3>
@@ -673,11 +725,11 @@
         <!-- Tabela estilo planilha -->
         <div class="overflow-x-auto border rounded-lg">
           <table class="w-full">
-            <thead class="sticky top-0 bg-white dark:bg-operacao-800 z-10">
-              <tr class="border-b border-operacao-200 dark:border-operacao-700">
-                <th class="px-4 py-3 text-left text-sm font-semibold text-operacao-800 dark:text-white w-48">Grupo</th>
-                <th class="px-4 py-3 text-left text-sm font-semibold text-operacao-800 dark:text-white">Subgrupo</th>
-                <th class="px-4 py-3 text-right text-sm font-semibold text-operacao-800 dark:text-white w-24">Ações</th>
+            <thead class="sticky top-0 z-10">
+              <tr class="border-b border-operacao-200/60">
+                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-[#5a5a66] dark:text-operacao-400 bg-operacao-100/70 dark:bg-operacao-800 w-48">Grupo</th>
+                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-[#5a5a66] dark:text-operacao-400 bg-operacao-100/70 dark:bg-operacao-800">Subgrupo</th>
+                <th class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-[#5a5a66] dark:text-operacao-400 bg-operacao-100/70 dark:bg-operacao-800 w-24">Ações</th>
               </tr>
             </thead>
             <tbody>
@@ -785,13 +837,10 @@
             </tbody>
           </table>
 
-          <!-- Loading Skeleton -->
-          <div v-if="loadingGrupos" class="p-5 space-y-3">
-            <div v-for="i in 5" :key="i" class="flex items-center gap-4 py-2">
-              <USkeleton class="h-5 w-36" />
-              <USkeleton class="h-4 w-28" />
-              <USkeleton class="h-4 w-16 ml-auto" />
-            </div>
+          <!-- Loading -->
+          <div v-if="loadingGrupos" class="flex items-center justify-center py-8 text-operacao-400">
+            <UIcon name="i-heroicons-arrow-path" class="w-5 h-5 animate-spin mr-2" />
+            <span class="text-sm">Carregando...</span>
           </div>
         </div>
 
@@ -803,6 +852,7 @@
           </div>
         </template>
       </UCard>
+      </div>
     </USlideover>
 
     <!-- Sub-Modal: Criar/Editar Grupo -->
@@ -833,7 +883,7 @@
 
         <form @submit.prevent="saveGrupoItem" class="space-y-4">
           <UFormGroup label="Nome do Grupo" required>
-            <UInput v-model="grupoEditForm.nome" placeholder="Ex: Alimentos" />
+            <UInput v-model="grupoEditForm.nome" placeholder="Ex: Alimentos" autofocus />
           </UFormGroup>
         </form>
 
@@ -888,7 +938,7 @@
           </UFormGroup>
 
           <UFormGroup label="Nome do Subgrupo" required>
-            <UInput v-model="subgrupoEditForm.nome" placeholder="Ex: Mercearia" />
+            <UInput v-model="subgrupoEditForm.nome" placeholder="Ex: Mercearia" autofocus />
           </UFormGroup>
         </form>
 
@@ -972,6 +1022,10 @@
 <script setup lang="ts">
 import type { Produto, Grupo, Subgrupo, Unidade } from '~/types'
 
+// UI consistente para toolbar (bordas iguais à tabela)
+const toolbarInputUi = { color: { white: { outline: 'shadow-sm bg-white text-gray-900 ring-1 ring-inset ring-[#EBEBED] focus:ring-1 focus:ring-operacao-200 dark:ring-operacao-700' } } }
+const toolbarButtonUi = { color: { white: { solid: 'shadow-sm ring-1 ring-inset ring-[#EBEBED] text-gray-700 bg-white hover:bg-gray-50 focus-visible:ring-2 focus-visible:ring-guardian-500 dark:ring-operacao-700 dark:bg-gray-900 dark:text-white dark:hover:bg-gray-800/50' } } }
+
 const {
   getProdutos,
   createProduto,
@@ -1006,9 +1060,10 @@ const loading = ref(true)
 const saving = ref(false)
 const deleting = ref(false)
 const search = ref('')
-const filterGrupo = ref('')
-const filterSubgrupo = ref('')
+const filterCategoria = ref('')
 const filterStatus = ref('true')
+const categoriaPopoverOpen = ref(false)
+const expandedGrupos = ref<Set<string>>(new Set())
 const modalOpen = ref(false)
 const custosModalOpen = ref(false)
 const deleteModalOpen = ref(false)
@@ -1020,6 +1075,7 @@ const custosForm = ref<Record<number, number>>({})
 
 // Unidades
 const unidadesModalOpen = ref(false)
+const unidadeEditModalOpen = ref(false)
 const deleteUnidadeModalOpen = ref(false)
 const editingUnidade = ref<Unidade | null>(null)
 const deletingUnidade = ref<Unidade | null>(null)
@@ -1091,12 +1147,11 @@ const getSubgruposForPF = (grupoId: string) => {
 
 const columns = [
   { key: 'nome', label: 'Nome', sortable: true },
-  { key: 'subgrupo', label: 'Subgrupo', sortable: true },
+  { key: 'subgrupo', label: 'Grupo / Subgrupo', sortable: true },
   { key: 'unidade', label: 'Unid.', sortable: true },
   { key: 'estoque_inicial', label: 'Est. Inicial' },
   { key: 'preco_inicial', label: 'Preço Inicial' },
-  { key: 'ativo', label: 'Status' },
-  { key: 'actions', label: 'Ações', class: 'text-right', rowClass: 'text-right' }
+  { key: 'actions', label: '', class: 'text-right', rowClass: 'text-right' }
 ]
 
 const unidadesColumns = [
@@ -1111,21 +1166,39 @@ const statusOptions = [
   { label: 'Inativos', value: 'false' }
 ]
 
-const grupoOptions = computed(() => [
-  { label: 'Todos', value: '' },
-  ...grupos.value.map(g => ({ label: g.nome, value: g.id }))
-])
-
-const subgrupoFilterOptions = computed(() => {
-  const options = [{ label: 'Todos', value: '' }]
-
-  let filtered = subgrupos.value
-  if (filterGrupo.value) {
-    filtered = subgrupos.value.filter(s => s.grupo_id === filterGrupo.value)
+// Filtro expansível Grupo/Subgrupo
+const filterCategoriaLabel = computed(() => {
+  if (!filterCategoria.value) return 'Todos'
+  if (filterCategoria.value.startsWith('g:')) {
+    const id = filterCategoria.value.slice(2)
+    return grupos.value.find(g => g.id === id)?.nome || 'Grupo'
   }
-
-  return [...options, ...filtered.map(s => ({ label: s.nome, value: s.id }))]
+  if (filterCategoria.value.startsWith('s:')) {
+    const id = filterCategoria.value.slice(2)
+    const sub = subgrupos.value.find(s => s.id === id)
+    return sub?.nome || 'Subgrupo'
+  }
+  return 'Grupo / Subgrupo'
 })
+
+const subgruposDe = (grupoId: string) => {
+  return subgrupos.value.filter(s => s.grupo_id === grupoId)
+}
+
+const toggleGrupoExpand = (grupoId: string) => {
+  const newSet = new Set(expandedGrupos.value)
+  if (newSet.has(grupoId)) {
+    newSet.delete(grupoId)
+  } else {
+    newSet.add(grupoId)
+  }
+  expandedGrupos.value = newSet
+}
+
+const selectCategoria = (value: string) => {
+  filterCategoria.value = value
+  categoriaPopoverOpen.value = false
+}
 
 const gruposSelect = computed(() =>
   grupos.value.map(g => ({ label: g.nome, value: g.id }))
@@ -1168,12 +1241,14 @@ const filteredProdutos = computed(() => {
     )
   }
 
-  if (filterGrupo.value) {
-    result = result.filter(p => p.subgrupo?.grupo_id === filterGrupo.value)
-  }
-
-  if (filterSubgrupo.value) {
-    result = result.filter(p => p.subgrupo_id === filterSubgrupo.value)
+  if (filterCategoria.value) {
+    if (filterCategoria.value.startsWith('g:')) {
+      const grupoId = filterCategoria.value.slice(2)
+      result = result.filter(p => p.subgrupo?.grupo_id === grupoId)
+    } else if (filterCategoria.value.startsWith('s:')) {
+      const subgrupoId = filterCategoria.value.slice(2)
+      result = result.filter(p => p.subgrupo_id === subgrupoId)
+    }
   }
 
   if (filterStatus.value !== '') {
@@ -1518,8 +1593,6 @@ const deleteProduto = async () => {
 // ==========================================
 
 const openUnidadesModal = () => {
-  editingUnidade.value = null
-  unidadeForm.value = { sigla: '', descricao: '' }
   unidadesModalOpen.value = true
 }
 
@@ -1528,17 +1601,18 @@ const onUnidadesModalClose = () => {
   loadData()
 }
 
-const editUnidade = (unidade: Unidade) => {
-  editingUnidade.value = unidade
-  unidadeForm.value = {
-    sigla: unidade.sigla,
-    descricao: unidade.descricao || ''
+const openUnidadeEditModal = (unidade?: Unidade) => {
+  if (unidade) {
+    editingUnidade.value = unidade
+    unidadeForm.value = {
+      sigla: unidade.sigla,
+      descricao: unidade.descricao || ''
+    }
+  } else {
+    editingUnidade.value = null
+    unidadeForm.value = { sigla: '', descricao: '' }
   }
-}
-
-const cancelEditUnidade = () => {
-  editingUnidade.value = null
-  unidadeForm.value = { sigla: '', descricao: '' }
+  unidadeEditModalOpen.value = true
 }
 
 const saveUnidade = async () => {
@@ -1574,6 +1648,7 @@ const saveUnidade = async () => {
         color: 'green'
       })
     }
+    unidadeEditModalOpen.value = false
     editingUnidade.value = null
     unidadeForm.value = { sigla: '', descricao: '' }
     unidades.value = await getUnidades()
@@ -1870,6 +1945,19 @@ const deleteSubgrupoItem = async () => {
   }
 }
 
+// ==========================================
+// Fix: HeadlessUI FocusTrap conflict (slideover + modal)
+// Quando um UModal abre sobre um USlideover, o FocusTrap do slideover
+// pode interferir nos inputs do modal. Solução: setar 'inert' no painel
+// do slideover enquanto um sub-modal estiver aberto.
+// ==========================================
+const anyGrupoSubModalOpen = computed(() =>
+  grupoEditModalOpen.value || subgrupoEditModalOpen.value ||
+  deleteGrupoModalOpen.value || deleteSubgrupoModalOpen.value
+)
+
+// Fix agora é declarativo via <div :inert="..."> dentro de cada USlideover template
+
 // Recarregar dados quando a empresa ativa mudar
 watch(empresaId, () => {
   if (empresaId.value) {
@@ -1877,3 +1965,26 @@ watch(empresaId, () => {
   }
 }, { immediate: true })
 </script>
+
+<style scoped>
+/* Impede dimming visual do atributo inert nos slideoverss */
+:deep([inert]) {
+  opacity: 1 !important;
+  filter: none !important;
+}
+
+/* Normaliza botões de colunas sortable para ficarem iguais aos headers não-sortable */
+:deep(table thead th button) {
+  color: #5a5a66 !important;
+  font-weight: 500 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  font-size: 0.75rem !important;
+  line-height: 1rem !important;
+}
+
+/* Esconde ícone de sort no estado padrão (não-ordenado) */
+:deep(table thead th button [class*="i-heroicons-arrows-up-down"]) {
+  display: none;
+}
+</style>

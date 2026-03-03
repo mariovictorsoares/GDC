@@ -2,23 +2,12 @@
   <div class="space-y-6">
 
     <!-- ======================== ROW 0: Header ======================== -->
-    <div class="flex items-center justify-between">
-      <div>
-        <h1 class="text-xl font-semibold text-operacao-800">{{ saudacao }}</h1>
-        <p class="text-sm text-operacao-400">{{ dataFormatada }}</p>
-      </div>
+    <div class="flex items-center justify-between pb-2">
+      <h1 class="text-2xl font-semibold text-[#5a5a66] mb-2">{{ saudacao }}</h1>
     </div>
 
     <!-- ======================== ROW 1: KPI Cards ======================== -->
-    <div v-if="loading" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-      <div v-for="i in 5" :key="i" class="rounded-xl bg-white ring-1 ring-operacao-100 shadow-sm p-5 space-y-3">
-        <USkeleton class="h-4 w-24" />
-        <USkeleton class="h-8 w-32" />
-        <USkeleton class="h-5 w-full" />
-      </div>
-    </div>
-
-    <div v-else class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
       <!-- KPI 1: Valor do Estoque -->
       <DashboardKpiCard
         label="Valor do Estoque"
@@ -140,18 +129,7 @@
     </div>
 
     <!-- ======================== ROW 2: Charts Primários ======================== -->
-    <div v-if="loading" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-      <div class="lg:col-span-7 rounded-xl bg-white ring-1 ring-operacao-100 shadow-sm p-6 space-y-3">
-        <USkeleton class="h-5 w-48" />
-        <USkeleton class="h-64 w-full" />
-      </div>
-      <div class="lg:col-span-5 rounded-xl bg-white ring-1 ring-operacao-100 shadow-sm p-6 space-y-3">
-        <USkeleton class="h-5 w-40" />
-        <USkeleton class="h-64 w-full rounded-full mx-auto" style="max-width: 200px" />
-      </div>
-    </div>
-
-    <div v-else class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
       <!-- CMV % Trend Line Chart -->
       <UCard class="lg:col-span-7" :ui="cardUi">
         <template #header>
@@ -194,18 +172,7 @@
     </div>
 
     <!-- ======================== ROW 3: Charts Secundários ======================== -->
-    <div v-if="loading" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <div class="rounded-xl bg-white ring-1 ring-operacao-100 shadow-sm p-6 space-y-3">
-        <USkeleton class="h-5 w-48" />
-        <USkeleton class="h-56 w-full" />
-      </div>
-      <div class="rounded-xl bg-white ring-1 ring-operacao-100 shadow-sm p-6 space-y-3">
-        <USkeleton class="h-5 w-32" />
-        <USkeleton class="h-56 w-full" />
-      </div>
-    </div>
-
-    <div v-else class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <!-- Entradas vs Saídas Bar Chart -->
       <UCard :ui="cardUi">
         <template #header>
@@ -230,13 +197,13 @@
         <div class="space-y-4">
           <!-- CTAs Principais -->
           <div class="grid grid-cols-2 gap-3">
-            <NuxtLink to="/movimentos/entradas">
+            <NuxtLink to="/movimentos/controle-estoque">
               <UButton color="green" variant="soft" block size="lg" class="justify-center">
                 <UIcon name="i-heroicons-plus-circle" class="w-5 h-5 mr-2" />
                 Nova Entrada
               </UButton>
             </NuxtLink>
-            <NuxtLink to="/movimentos/saidas">
+            <NuxtLink to="/movimentos/controle-estoque">
               <UButton color="red" variant="soft" block size="lg" class="justify-center">
                 <UIcon name="i-heroicons-minus-circle" class="w-5 h-5 mr-2" />
                 Nova Saída
@@ -275,7 +242,7 @@
     </div>
 
     <!-- ======================== ROW 4: Tabela de Alertas ======================== -->
-    <UCard v-if="!loading && lowStockWithDays.length > 0" :ui="cardUi">
+    <UCard v-if="lowStockWithDays.length > 0" :ui="cardUi">
       <template #header>
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-3">
@@ -299,14 +266,14 @@
       <div class="overflow-x-auto">
         <table class="w-full text-sm">
           <thead>
-            <tr class="border-b border-operacao-100">
-              <th class="text-left py-2.5 px-3 text-xs font-semibold text-operacao-400 uppercase tracking-wide w-8"></th>
-              <th class="text-left py-2.5 px-3 text-xs font-semibold text-operacao-400 uppercase tracking-wide">Subgrupo</th>
-              <th class="text-left py-2.5 px-3 text-xs font-semibold text-operacao-400 uppercase tracking-wide">Produto</th>
-              <th class="text-left py-2.5 px-3 text-xs font-semibold text-operacao-400 uppercase tracking-wide">Estoque Atual</th>
-              <th class="text-left py-2.5 px-3 text-xs font-semibold text-operacao-400 uppercase tracking-wide">Pt. Reposição</th>
-              <th class="text-left py-2.5 px-3 text-xs font-semibold text-operacao-400 uppercase tracking-wide">Dias até Ruptura</th>
-              <th class="text-left py-2.5 px-3 text-xs font-semibold text-operacao-400 uppercase tracking-wide">Prev. Compras</th>
+            <tr class="border-b border-operacao-200/60">
+              <th class="bg-operacao-100/70 text-left py-2.5 px-3 text-xs font-medium text-[#5a5a66] uppercase tracking-wider w-8"></th>
+              <th class="bg-operacao-100/70 text-left py-2.5 px-3 text-xs font-medium text-[#5a5a66] uppercase tracking-wider">Subgrupo</th>
+              <th class="bg-operacao-100/70 text-left py-2.5 px-3 text-xs font-medium text-[#5a5a66] uppercase tracking-wider">Produto</th>
+              <th class="bg-operacao-100/70 text-left py-2.5 px-3 text-xs font-medium text-[#5a5a66] uppercase tracking-wider">Estoque Atual</th>
+              <th class="bg-operacao-100/70 text-left py-2.5 px-3 text-xs font-medium text-[#5a5a66] uppercase tracking-wider">Pt. Reposição</th>
+              <th class="bg-operacao-100/70 text-left py-2.5 px-3 text-xs font-medium text-[#5a5a66] uppercase tracking-wider">Dias até Ruptura</th>
+              <th class="bg-operacao-100/70 text-left py-2.5 px-3 text-xs font-medium text-[#5a5a66] uppercase tracking-wider">Prev. Compras</th>
             </tr>
           </thead>
           <tbody>
@@ -369,7 +336,7 @@
     </UCard>
 
     <!-- Empty state: Tudo OK -->
-    <div v-if="!loading && lowStockWithDays.length === 0 && resumo.totalProdutos > 0" class="rounded-xl bg-controle-50 ring-1 ring-controle-100 p-6 flex items-center gap-4">
+    <div v-if="lowStockWithDays.length === 0 && resumo.totalProdutos > 0" class="rounded-xl bg-controle-50 ring-1 ring-controle-100 p-6 flex items-center gap-4">
       <div class="p-3 bg-controle-100 rounded-lg flex items-center justify-center">
         <UIcon name="i-heroicons-check-badge" class="w-6 h-6 text-controle-600" />
       </div>
@@ -551,7 +518,7 @@ const cardUi = {
   background: 'bg-white',
   shadow: 'shadow-sm',
   body: { padding: 'px-5 py-5 sm:p-6' },
-  ring: 'ring-1 ring-operacao-100',
+  ring: 'ring-1 ring-[#EBEBED]',
   rounded: 'rounded-xl',
   header: { padding: 'px-5 py-4 sm:px-6', base: 'border-b border-operacao-50' }
 }

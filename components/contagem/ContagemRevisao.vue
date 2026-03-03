@@ -4,7 +4,7 @@
     <div class="flex items-center gap-3">
       <UButton color="gray" variant="ghost" icon="i-heroicons-arrow-left" size="sm" @click="$emit('voltar')" />
       <div>
-        <h1 class="text-xl font-bold text-operacao-800">Revisão da Contagem</h1>
+        <h1 class="text-xl font-semibold text-[#5a5a66]">Revisão da Contagem</h1>
         <p class="text-sm text-operacao-400">{{ contagem?.nome }} — {{ formatDate(contagem?.data) }}</p>
       </div>
     </div>
@@ -73,7 +73,7 @@
         <div class="overflow-x-auto -mx-4 sm:-mx-6">
           <table class="w-full text-sm">
             <thead>
-              <tr class="text-left text-operacao-400 border-b border-operacao-200">
+              <tr class="text-left text-[#5a5a66] border-b border-operacao-200">
                 <th class="px-4 sm:px-6 pb-3 font-medium">Produto</th>
                 <th class="px-2 pb-3 font-medium text-right">Sistema</th>
                 <th class="px-2 pb-3 font-medium text-right">Contado</th>

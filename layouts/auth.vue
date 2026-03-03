@@ -80,7 +80,7 @@
 
             <div class="flex items-center gap-4 bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10 hover:bg-white/10 transition-all duration-300 group">
               <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-guardian-500 to-guardian-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-guardian-500/25 group-hover:scale-110 transition-transform duration-300">
-                <UIcon name="i-heroicons-arrow-trending-up" class="w-6 h-6 text-white" />
+                <UIcon name="i-heroicons-chart-bar" class="w-6 h-6 text-white" />
               </div>
               <div class="text-left">
                 <h3 class="text-white font-semibold">Curva ABC automatizada</h3>

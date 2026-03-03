@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "dev",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["node_modules/@nuxt/cli/bin/nuxi.mjs", "dev"],
+      "port": 3000
+    }
+  ]
+}

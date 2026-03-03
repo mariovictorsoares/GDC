@@ -1,11 +1,8 @@
 <template>
   <div class="space-y-6">
     <!-- Header -->
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-      <div>
-        <h1 class="text-2xl font-bold text-operacao-800">Lista de Pedidos</h1>
-        <p class="text-sm text-operacao-400">Crie pedidos de compra por grupo/subgrupo e envie pelo WhatsApp</p>
-      </div>
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2">
+      <h1 class="text-2xl font-semibold text-[#5a5a66] mb-2">Lista de Pedidos</h1>
       <UButton color="primary" class="w-full sm:w-auto" @click="abrirModalSetup">
         <UIcon name="i-heroicons-plus" class="w-4 h-4 mr-2" />
         Novo Pedido
@@ -13,102 +10,51 @@
     </div>
 
     <!-- Filtros -->
-    <UCard>
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <UFormGroup label="Data Início">
-          <UInput v-model="filtroDataInicio" type="date" />
-        </UFormGroup>
-        <UFormGroup label="Data Fim">
-          <UInput v-model="filtroDataFim" type="date" />
-        </UFormGroup>
-        <UFormGroup label="Buscar">
-          <UInput
-            v-model="filtroBusca"
-            placeholder="Buscar produto ou observação..."
-            icon="i-heroicons-magnifying-glass"
-          />
-        </UFormGroup>
-        <div class="flex items-end">
-          <UButton color="gray" variant="soft" class="w-full" @click="limparFiltros">
-            Limpar Filtros
-          </UButton>
-        </div>
+    <div class="flex flex-col lg:flex-row lg:items-center gap-3 lg:gap-6">
+      <div class="flex flex-col sm:flex-row flex-wrap gap-3 flex-1 min-w-0">
+        <UInput v-model="filtroDataInicio" type="date" class="w-full sm:w-40" :ui="toolbarInputUi" />
+        <UInput v-model="filtroDataFim" type="date" class="w-full sm:w-40" :ui="toolbarInputUi" />
+        <UInput v-model="filtroBusca" placeholder="Buscar produto ou observação..." icon="i-heroicons-magnifying-glass" class="w-full sm:w-52" :ui="toolbarInputUi" />
       </div>
-    </UCard>
-
-    <!-- Resumo Skeleton -->
-    <div v-if="loadingHistorico" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <div v-for="i in 3" :key="i" class="rounded-xl bg-white ring-1 ring-operacao-100 shadow-sm p-5">
-        <div class="flex items-center gap-4">
-          <USkeleton class="h-12 w-12 rounded-lg" />
-          <div class="space-y-2">
-            <USkeleton class="h-4 w-24" />
-            <USkeleton class="h-7 w-20" />
-          </div>
-        </div>
+      <div class="flex gap-2 flex-shrink-0">
+        <UButton color="white" :ui="toolbarButtonUi" @click="limparFiltros">
+          Limpar Filtros
+        </UButton>
       </div>
     </div>
 
     <!-- Resumo -->
-    <div v-if="!loadingHistorico" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <UCard>
-        <div class="flex items-center gap-4">
-          <div class="p-3 bg-guardian-100 rounded-lg flex items-center justify-center">
-            <UIcon name="i-heroicons-clipboard-document-list" class="w-6 h-6 text-guardian-600" />
-          </div>
-          <div>
-            <p class="text-sm text-operacao-400">Total de Pedidos</p>
-            <p class="text-2xl font-bold text-operacao-800">{{ pedidosFiltrados.length }}</p>
-          </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <UCard :ui="{ ring: 'ring-1 ring-[#EBEBED]', shadow: 'shadow-sm', body: { padding: 'px-5 py-4' } }">
+        <div class="flex items-center gap-2 mb-1.5">
+          <span class="w-1.5 h-1.5 rounded-full bg-guardian-400" />
+          <span class="text-xs font-medium text-operacao-400">Total de Pedidos</span>
         </div>
+        <p class="text-xl font-bold text-operacao-800">{{ pedidosFiltrados.length }}</p>
       </UCard>
-      <UCard>
-        <div class="flex items-center gap-4">
-          <div class="p-3 bg-controle-100 rounded-lg flex items-center justify-center">
-            <UIcon name="i-heroicons-check-circle" class="w-6 h-6 text-controle-600" />
-          </div>
-          <div>
-            <p class="text-sm text-operacao-400">Enviados</p>
-            <p class="text-2xl font-bold text-controle-600">{{ pedidosEnviados }}</p>
-          </div>
+      <UCard :ui="{ ring: 'ring-1 ring-[#EBEBED]', shadow: 'shadow-sm', body: { padding: 'px-5 py-4' } }">
+        <div class="flex items-center gap-2 mb-1.5">
+          <span class="w-1.5 h-1.5 rounded-full bg-controle-400" />
+          <span class="text-xs font-medium text-operacao-400">Enviados</span>
         </div>
+        <p class="text-xl font-bold text-controle-600">{{ pedidosEnviados }}</p>
       </UCard>
-      <UCard>
-        <div class="flex items-center gap-4">
-          <div class="p-3 bg-yellow-100 rounded-lg flex items-center justify-center">
-            <UIcon name="i-heroicons-document-text" class="w-6 h-6 text-alerta-600" />
-          </div>
-          <div>
-            <p class="text-sm text-operacao-400">Rascunhos</p>
-            <p class="text-2xl font-bold text-alerta-600">{{ pedidosRascunho }}</p>
-          </div>
+      <UCard :ui="{ ring: 'ring-1 ring-[#EBEBED]', shadow: 'shadow-sm', body: { padding: 'px-5 py-4' } }">
+        <div class="flex items-center gap-2 mb-1.5">
+          <span class="w-1.5 h-1.5 rounded-full bg-alerta-400" />
+          <span class="text-xs font-medium text-operacao-400">Rascunhos</span>
         </div>
+        <p class="text-xl font-bold text-alerta-600">{{ pedidosRascunho }}</p>
       </UCard>
     </div>
 
     <!-- Lista de pedidos -->
-    <UCard :ui="{ body: { padding: '' } }">
+    <UCard :ui="{ base: 'overflow-hidden', body: { padding: '' }, ring: 'ring-1 ring-[#EBEBED]', shadow: 'shadow-sm' }">
       <template #header>
         <h3 class="text-lg font-semibold text-operacao-800">Histórico de Pedidos</h3>
       </template>
 
-      <div v-if="loadingHistorico" class="p-5 space-y-4">
-        <div v-for="i in 5" :key="i" class="flex items-center justify-between py-3">
-          <div class="flex items-center gap-4">
-            <USkeleton class="h-10 w-10 rounded-lg" />
-            <div class="space-y-2">
-              <USkeleton class="h-4 w-40" />
-              <USkeleton class="h-3 w-28" />
-            </div>
-          </div>
-          <div class="flex items-center gap-3">
-            <USkeleton class="h-4 w-16" />
-            <USkeleton class="h-5 w-5 rounded-full" />
-          </div>
-        </div>
-      </div>
-
-      <div v-else-if="pedidosFiltrados.length === 0" class="flex flex-col items-center justify-center py-12 text-operacao-400">
+      <div v-if="pedidosFiltrados.length === 0 && !loadingHistorico" class="flex flex-col items-center justify-center py-12 text-operacao-400">
         <UIcon name="i-heroicons-inbox" class="w-10 h-10 mb-3" />
         <p class="text-sm">Nenhum pedido registrado</p>
         <p class="text-xs text-operacao-400 mt-1">Clique em "Novo Pedido" para começar</p>
@@ -161,7 +107,7 @@
             <div class="overflow-x-auto">
               <table class="w-full text-sm">
                 <thead>
-                  <tr class="text-left text-operacao-400 border-b border-operacao-200">
+                  <tr class="text-left text-[#5a5a66] border-b border-operacao-200">
                     <th class="pb-2 font-medium">Produto</th>
                     <th class="pb-2 font-medium text-right">Quantidade</th>
                   </tr>
@@ -680,6 +626,9 @@
 
 <script setup lang="ts">
 import type { Pedido, Produto, Grupo, Subgrupo, PedidoContagemItem } from '~/types'
+
+const toolbarInputUi = { color: { white: { outline: 'shadow-sm bg-white text-gray-900 ring-1 ring-inset ring-[#EBEBED] focus:ring-1 focus:ring-operacao-200 dark:ring-operacao-700' } } }
+const toolbarButtonUi = { color: { white: { solid: 'shadow-sm ring-1 ring-inset ring-[#EBEBED] text-gray-700 bg-white hover:bg-gray-50 focus-visible:ring-2 focus-visible:ring-guardian-500 dark:ring-operacao-700 dark:bg-gray-900 dark:text-white dark:hover:bg-gray-800/50' } } }
 
 const toast = useToast()
 const {

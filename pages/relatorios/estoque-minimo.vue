@@ -1,11 +1,8 @@
 <template>
   <div class="space-y-6">
     <!-- Header -->
-    <div class="flex items-center justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-operacao-800">Planejamento de Compras</h1>
-        <p class="text-sm text-operacao-400">Ponto de reposição, CMC e variação de custo</p>
-      </div>
+    <div class="flex items-center justify-between pb-2">
+      <h1 class="text-2xl font-semibold text-[#5a5a66] mb-2">Planejamento de Compras</h1>
       <div class="flex gap-2">
         <UButton color="primary" variant="outline" @click="gerarCompra" v-if="activeTab === 0" :disabled="produtosEmReposicao.length === 0">
           <UIcon name="i-heroicons-shopping-cart" class="w-4 h-4 mr-2" />
@@ -22,26 +19,30 @@
     <template v-if="activeTab === 0">
 
     <!-- Filtros -->
-    <UCard>
-      <div class="flex flex-wrap gap-4 items-end">
-        <UFormGroup label="Buscar">
-          <UInput
-            v-model="search"
-            placeholder="Buscar produto ou subgrupo..."
-            icon="i-heroicons-magnifying-glass"
-            class="w-64"
-          />
-        </UFormGroup>
+    <div class="flex flex-col lg:flex-row lg:items-center gap-3 lg:gap-6">
+      <div class="flex flex-col sm:flex-row flex-wrap gap-3 flex-1 min-w-0">
+        <UInput
+          v-model="search"
+          placeholder="Buscar produto ou subgrupo..."
+          icon="i-heroicons-magnifying-glass"
+          class="w-full sm:w-64"
+          :ui="toolbarInputUi"
+        />
       </div>
-    </UCard>
+    </div>
 
     <!-- Tabela -->
-    <UCard :ui="{ body: { padding: '' } }">
+    <UCard :ui="{ base: 'overflow-hidden', body: { padding: '' }, ring: 'ring-1 ring-[#EBEBED]', shadow: 'shadow-sm' }">
       <UTable
         :columns="columns"
         :rows="paginatedItems"
         :loading="loading"
-        :ui="{ td: { base: '' } }"
+        :ui="{
+          divide: 'divide-y divide-operacao-50 dark:divide-operacao-700',
+          thead: '',
+          th: { base: 'bg-operacao-100/70 dark:bg-operacao-800 border-b border-operacao-200/60 [&_button]:font-medium [&_button]:uppercase [&_button]:tracking-wider [&_button]:text-xs [&_button]:text-[#5a5a66]', color: 'text-[#5a5a66] dark:text-operacao-400', font: 'font-medium', size: 'text-xs uppercase tracking-wider', padding: 'px-4 py-2' },
+          td: { color: 'text-operacao-600 dark:text-operacao-200', size: 'text-sm', padding: 'px-4 py-2.5' }
+        }"
       >
         <template #empty-state>
           <div class="flex flex-col items-center justify-center py-6 text-operacao-400">
@@ -158,20 +159,20 @@
     <template v-if="activeTab === 1">
 
       <!-- Tabela CMC Semanal Agrupada -->
-      <UCard :ui="{ body: { padding: '' } }">
+      <UCard :ui="{ base: 'overflow-hidden', body: { padding: '' }, ring: 'ring-1 ring-[#EBEBED]', shadow: 'shadow-sm' }">
         <div class="overflow-x-auto">
           <table class="w-full text-sm">
             <thead>
-              <tr class="bg-operacao-50 border-b border-operacao-200">
-                <th class="px-4 py-3 text-left font-semibold text-operacao-600 min-w-[250px]">Grupo / Subgrupo</th>
+              <tr class="bg-operacao-100/70 border-b border-operacao-200/60">
+                <th class="px-4 py-3 text-left font-medium text-[#5a5a66] text-xs uppercase tracking-wider min-w-[250px]">Grupo / Subgrupo</th>
                 <th
                   v-for="(semana, idx) in cmcData?.semanas || []"
                   :key="idx"
-                  class="px-3 py-3 text-right font-semibold text-operacao-600 min-w-[120px]"
+                  class="px-3 py-3 text-right font-semibold text-[#5a5a66] min-w-[120px]"
                 >
                   {{ semana.inicio }} - {{ semana.fim }}
                 </th>
-                <th class="px-3 py-3 text-right font-semibold text-operacao-600 min-w-[120px]">Total</th>
+                <th class="px-3 py-3 text-right font-semibold text-[#5a5a66] min-w-[120px]">Total</th>
               </tr>
             </thead>
 
@@ -321,38 +322,25 @@
     <template v-if="activeTab === 2">
 
       <!-- Filtros -->
-      <UCard>
-        <div class="flex flex-wrap gap-4 items-end">
-          <UFormGroup label="Mês">
-            <USelect
-              v-model="vcMesSelecionado"
-              :options="vcMesesOptions"
-              class="w-48"
-            />
-          </UFormGroup>
-          <UFormGroup label="Buscar">
-            <UInput
-              v-model="vcSearch"
-              placeholder="Buscar produto..."
-              icon="i-heroicons-magnifying-glass"
-              class="w-64"
-            />
-          </UFormGroup>
+      <div class="flex flex-col lg:flex-row lg:items-center gap-3 lg:gap-6">
+        <div class="flex flex-col sm:flex-row flex-wrap gap-3 flex-1 min-w-0">
+          <USelect v-model="vcMesSelecionado" :options="vcMesesOptions" class="w-full sm:w-48" :ui="toolbarInputUi" />
+          <UInput v-model="vcSearch" placeholder="Buscar produto..." icon="i-heroicons-magnifying-glass" class="w-full sm:w-44" :ui="toolbarInputUi" />
         </div>
-      </UCard>
+      </div>
 
       <!-- Tabela Variação de Custo Diária -->
-      <UCard :ui="{ body: { padding: '' } }">
+      <UCard :ui="{ base: 'overflow-hidden', body: { padding: '' }, ring: 'ring-1 ring-[#EBEBED]', shadow: 'shadow-sm' }">
         <div class="overflow-x-auto">
           <table class="min-w-full text-sm">
             <thead class="bg-operacao-50">
               <tr>
-                <th class="px-3 py-3 text-left text-xs font-medium text-operacao-400 uppercase tracking-wider sticky left-0 bg-operacao-50 min-w-[200px] z-10">Produto</th>
-                <th class="px-3 py-3 text-left text-xs font-medium text-operacao-400 uppercase tracking-wider sticky left-[200px] bg-operacao-50 min-w-[50px] z-10">Un.</th>
+                <th class="px-3 py-3 text-left text-xs font-medium text-[#5a5a66] uppercase tracking-wider sticky left-0 bg-operacao-50 min-w-[200px] z-10">Produto</th>
+                <th class="px-3 py-3 text-left text-xs font-medium text-[#5a5a66] uppercase tracking-wider sticky left-[200px] bg-operacao-50 min-w-[50px] z-10">Un.</th>
                 <th
                   v-for="dia in vcData?.dias || []"
                   :key="dia.data"
-                  class="px-3 py-3 text-center text-xs font-medium text-operacao-400 uppercase tracking-wider min-w-[90px]"
+                  class="px-3 py-3 text-center text-xs font-medium text-[#5a5a66] uppercase tracking-wider min-w-[90px]"
                 >
                   {{ dia.label }}
                 </th>
@@ -496,6 +484,8 @@
 
 <script setup lang="ts">
 import type { EstoqueMinimo, CmcSemanalResumo } from '~/types'
+
+const toolbarInputUi = { color: { white: { outline: 'shadow-sm bg-white text-gray-900 ring-1 ring-inset ring-[#EBEBED] focus:ring-1 focus:ring-operacao-200 dark:ring-operacao-700' } } }
 
 const { getEstoqueMinimo, getCmcSemanal, getVariacaoCustoDiaria, upsertFaturamentoSemanal } = useRelatorios()
 const { createPedido } = useEstoque()
