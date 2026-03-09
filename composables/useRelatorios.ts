@@ -1432,21 +1432,24 @@ export const useRelatorios = () => {
     const ultimoDia = new Date(ano, mes, 0).getDate()
     const dataFim = `${ano}-${String(mes).padStart(2, '0')}-${ultimoDia}`
 
-    // Buscar entradas do mês com produto, subgrupo e unidade
+    // Buscar todos os produtos ativos
+    const { data: todosProdutos, error: prodError } = await comEmpresa(client
+      .from('produtos')
+      .select(`
+        id,
+        nome,
+        subgrupo:subgrupos(nome),
+        unidade:unidades(sigla)
+      `)
+      .eq('ativo', true)
+      .order('nome'))
+
+    if (prodError) throw prodError
+
+    // Buscar entradas do mês
     const { data: entradas, error } = await comEmpresa(client
       .from('entradas')
-      .select(`
-        data,
-        quantidade,
-        custo_unitario,
-        valor_total,
-        produto:produtos(
-          id,
-          nome,
-          subgrupo:subgrupos(nome),
-          unidade:unidades(sigla)
-        )
-      `)
+      .select('data, custo_unitario, produto_id')
       .gte('data', dataInicio)
       .lte('data', dataFim)
       .order('data'))
@@ -1459,7 +1462,16 @@ export const useRelatorios = () => {
       dias.push(`${ano}-${String(mes).padStart(2, '0')}-${String(d).padStart(2, '0')}`)
     }
 
-    // Agrupar por produto
+    // Indexar custos por produto/dia
+    const custosMap = new Map<string, Map<string, number>>()
+    entradas?.forEach(e => {
+      if (!custosMap.has(e.produto_id)) {
+        custosMap.set(e.produto_id, new Map())
+      }
+      custosMap.get(e.produto_id)!.set(e.data, Number(e.custo_unitario))
+    })
+
+    // Montar mapa com todos os produtos
     const produtosMap = new Map<string, {
       produto_id: string
       produto: string
@@ -1468,23 +1480,14 @@ export const useRelatorios = () => {
       custos_por_dia: Map<string, number>
     }>()
 
-    entradas?.forEach(e => {
-      const produto = e.produto as any
-      if (!produto) return
-
-      const prodId = produto.id
-      if (!produtosMap.has(prodId)) {
-        produtosMap.set(prodId, {
-          produto_id: prodId,
-          produto: produto.nome,
-          subgrupo: produto.subgrupo?.nome || '',
-          unidade: produto.unidade?.sigla || '',
-          custos_por_dia: new Map()
-        })
-      }
-
-      const prod = produtosMap.get(prodId)!
-      prod.custos_por_dia.set(e.data, Number(e.custo_unitario))
+    todosProdutos?.forEach(p => {
+      produtosMap.set(p.id, {
+        produto_id: p.id,
+        produto: p.nome,
+        subgrupo: (p.subgrupo as any)?.nome || '',
+        unidade: (p.unidade as any)?.sigla || '',
+        custos_por_dia: custosMap.get(p.id) || new Map()
+      })
     })
 
     // Converter para array

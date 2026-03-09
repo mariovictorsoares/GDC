@@ -3,7 +3,7 @@
     :model-value="modelValue"
     @update:model-value="$emit('update:modelValue', $event)"
     :ui="{
-      width: 'max-w-5xl',
+      width: 'max-w-7xl',
       overlay: { background: 'bg-operacao-900/50 backdrop-blur-sm' }
     }"
   >
@@ -13,72 +13,96 @@
       <div class="flex items-center justify-between px-6 py-4 border-b border-operacao-200">
         <div class="flex items-center gap-3">
           <div class="p-2 bg-guardian-100 rounded-lg">
-            <UIcon name="i-heroicons-chart-bar-square" class="w-5 h-5 text-guardian-600" />
+            <UIcon name="i-heroicons-clipboard-document-list" class="w-5 h-5 text-guardian-600" />
           </div>
           <h2 class="text-lg font-bold text-operacao-800">Análises de Compras</h2>
         </div>
-        <div class="flex items-center gap-2">
-          <UButton
-            v-if="activeTab === 0"
-            color="primary"
-            variant="outline"
-            size="sm"
-            @click="gerarCompra"
-            :disabled="produtosEmReposicao.length === 0"
-          >
-            <UIcon name="i-heroicons-shopping-cart" class="w-4 h-4 mr-1" />
-            Gerar Compra
-          </UButton>
-          <UButton color="primary" size="sm" @click="loadData" :loading="loading">
-            <UIcon name="i-heroicons-arrow-path" class="w-4 h-4 mr-1" />
-            Atualizar
-          </UButton>
-          <UButton
-            icon="i-heroicons-x-mark"
-            variant="ghost"
-            color="gray"
-            size="sm"
-            @click="$emit('update:modelValue', false)"
-          />
-        </div>
-      </div>
-
-      <!-- Tabs -->
-      <div class="border-b border-operacao-200 px-6">
-        <div class="flex gap-1 -mb-px">
-          <button
-            v-for="(tab, idx) in tabItems"
-            :key="idx"
-            @click="activeTab = idx"
-            class="px-4 py-2.5 text-sm font-medium border-b-2 transition-colors"
-            :class="activeTab === idx
-              ? 'border-guardian-600 text-guardian-700'
-              : 'border-transparent text-operacao-500 hover:text-operacao-700 hover:border-operacao-300'"
-          >
-            {{ tab.label }}
-          </button>
-        </div>
+        <UButton
+          icon="i-heroicons-x-mark"
+          variant="ghost"
+          color="gray"
+          size="sm"
+          @click="$emit('update:modelValue', false)"
+        />
       </div>
 
       <!-- Content (scrollable) -->
       <div class="flex-1 overflow-y-auto p-6 space-y-4">
 
+        <!-- Filtros + Tab Switcher -->
+        <div class="flex items-center gap-3">
+          <div class="flex flex-wrap items-center gap-3 flex-1 min-w-0">
+            <template v-if="activeTab === 0">
+              <UInput
+                v-model="search"
+                placeholder="Buscar produto ou subgrupo..."
+                icon="i-heroicons-magnifying-glass"
+                class="w-64"
+                :ui="toolbarInputUi"
+              />
+            </template>
+            <template v-if="activeTab === 1">
+              <UInput
+                v-model="vcSearch"
+                placeholder="Buscar produto..."
+                icon="i-heroicons-magnifying-glass"
+                class="w-64"
+                :ui="toolbarInputUi"
+              />
+              <UPopover :popper="{ placement: 'bottom-start' }">
+                <UButton
+                  color="white"
+                  class="w-auto justify-between"
+                  :ui="toolbarButtonUi"
+                >
+                  <UIcon name="i-heroicons-calendar-days" class="w-4 h-4 text-operacao-400 mr-2" />
+                  <span class="text-sm font-normal text-gray-900 capitalize">{{ vcMesAnoLabel }}</span>
+                </UButton>
+                <template #panel="{ close }">
+                  <div class="w-64 p-3">
+                    <div class="flex items-center justify-between mb-3">
+                      <button class="p-1 rounded hover:bg-operacao-100 transition-colors" @click="vcPickerAno--">
+                        <UIcon name="i-heroicons-chevron-left-20-solid" class="w-4 h-4 text-operacao-500" />
+                      </button>
+                      <span class="text-sm font-semibold text-gray-700">{{ vcPickerAno }}</span>
+                      <button class="p-1 rounded hover:bg-operacao-100 transition-colors" @click="vcPickerAno++">
+                        <UIcon name="i-heroicons-chevron-right-20-solid" class="w-4 h-4 text-operacao-500" />
+                      </button>
+                    </div>
+                    <div class="grid grid-cols-3 gap-1.5">
+                      <button
+                        v-for="(nome, idx) in mesesNomes"
+                        :key="idx"
+                        class="px-2 py-1.5 text-sm rounded-md transition-colors capitalize"
+                        :class="vcSelectedMes === idx + 1 && vcSelectedAno === vcPickerAno
+                          ? 'bg-guardian-600 text-white font-medium'
+                          : 'text-operacao-600 hover:bg-operacao-50'"
+                        @click="vcSelectMesAno(idx + 1, vcPickerAno); close()"
+                      >
+                        {{ nome }}
+                      </button>
+                    </div>
+                  </div>
+                </template>
+              </UPopover>
+            </template>
+          </div>
+          <!-- Tab Switcher -->
+          <div class="inline-flex items-center rounded-lg bg-operacao-100/80 p-0.5 ring-1 ring-operacao-200/60 flex-shrink-0">
+            <button
+              v-for="(tab, idx) in tabItems"
+              :key="idx"
+              @click="activeTab = idx"
+              class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all"
+              :class="activeTab === idx ? 'bg-white text-operacao-800 shadow-sm ring-1 ring-operacao-200/60' : 'text-operacao-400 hover:text-operacao-600'"
+            >
+              <UIcon :name="tab.icon" class="w-3.5 h-3.5" /><span>{{ tab.label }}</span>
+            </button>
+          </div>
+        </div>
+
         <!-- Tab: Ponto de Reposição -->
         <template v-if="activeTab === 0">
-
-          <!-- Filtros -->
-          <UCard>
-            <div class="flex flex-wrap gap-4 items-end">
-              <UFormGroup label="Buscar">
-                <UInput
-                  v-model="search"
-                  placeholder="Buscar produto ou subgrupo..."
-                  icon="i-heroicons-magnifying-glass"
-                  class="w-64"
-                />
-              </UFormGroup>
-            </div>
-          </UCard>
 
           <!-- Tabela -->
           <UCard :ui="{ body: { padding: '' } }">
@@ -200,58 +224,6 @@
         <!-- Tab: Variação de Custo -->
         <template v-if="activeTab === 1">
 
-          <!-- Filtros -->
-          <UCard>
-            <div class="flex flex-wrap gap-4 items-end">
-              <UFormGroup label="Buscar">
-                <UInput
-                  v-model="vcSearch"
-                  placeholder="Buscar produto..."
-                  icon="i-heroicons-magnifying-glass"
-                  class="w-64"
-                />
-              </UFormGroup>
-              <UFormGroup label="Mês">
-                <UPopover :popper="{ placement: 'bottom-start' }">
-                  <UButton
-                    color="white"
-                    class="w-48 justify-between"
-                    :ui="toolbarButtonUi"
-                  >
-                    <UIcon name="i-heroicons-calendar-days" class="w-4 h-4 text-operacao-400 mr-2" />
-                    <span class="text-sm font-normal text-gray-900 capitalize">{{ vcMesAnoLabel }}</span>
-                  </UButton>
-                  <template #panel="{ close }">
-                    <div class="w-64 p-3">
-                      <div class="flex items-center justify-between mb-3">
-                        <button class="p-1 rounded hover:bg-operacao-100 transition-colors" @click="vcPickerAno--">
-                          <UIcon name="i-heroicons-chevron-left-20-solid" class="w-4 h-4 text-operacao-500" />
-                        </button>
-                        <span class="text-sm font-semibold text-gray-700">{{ vcPickerAno }}</span>
-                        <button class="p-1 rounded hover:bg-operacao-100 transition-colors" @click="vcPickerAno++">
-                          <UIcon name="i-heroicons-chevron-right-20-solid" class="w-4 h-4 text-operacao-500" />
-                        </button>
-                      </div>
-                      <div class="grid grid-cols-3 gap-1.5">
-                        <button
-                          v-for="(nome, idx) in mesesNomes"
-                          :key="idx"
-                          class="px-2 py-1.5 text-sm rounded-md transition-colors capitalize"
-                          :class="vcSelectedMes === idx + 1 && vcSelectedAno === vcPickerAno
-                            ? 'bg-guardian-600 text-white font-medium'
-                            : 'text-operacao-600 hover:bg-operacao-50'"
-                          @click="vcSelectMesAno(idx + 1, vcPickerAno); close()"
-                        >
-                          {{ nome }}
-                        </button>
-                      </div>
-                    </div>
-                  </template>
-                </UPopover>
-              </UFormGroup>
-            </div>
-          </UCard>
-
           <!-- Tabela Variação de Custo Diária -->
           <UCard :ui="{ body: { padding: '' } }">
             <div class="overflow-x-auto">
@@ -259,7 +231,6 @@
                 <thead class="bg-operacao-50">
                   <tr>
                     <th class="px-3 py-3 text-left text-xs font-medium text-[#5a5a66] uppercase tracking-wider sticky left-0 bg-operacao-50 min-w-[200px] z-10">Produto</th>
-                    <th class="px-3 py-3 text-left text-xs font-medium text-[#5a5a66] uppercase tracking-wider sticky left-[200px] bg-operacao-50 min-w-[50px] z-10">Un.</th>
                     <th
                       v-for="dia in vcData?.dias || []"
                       :key="dia.data"
@@ -271,31 +242,30 @@
                 </thead>
                 <tbody class="bg-white divide-y divide-operacao-200">
                   <tr v-if="vcLoading">
-                    <td :colspan="2 + (vcData?.dias?.length || 0)" class="px-3 py-8 text-center text-operacao-400">
+                    <td :colspan="1 + (vcData?.dias?.length || 0)" class="px-3 py-8 text-center text-operacao-400">
                       <UIcon name="i-heroicons-arrow-path" class="w-6 h-6 animate-spin mx-auto mb-2" />
                       Carregando...
                     </td>
                   </tr>
                   <tr v-else-if="vcFilteredData.length === 0">
-                    <td :colspan="2 + (vcData?.dias?.length || 0)" class="px-3 py-8 text-center text-operacao-400">
+                    <td :colspan="1 + (vcData?.dias?.length || 0)" class="px-3 py-8 text-center text-operacao-400">
                       <UIcon name="i-heroicons-inbox" class="w-8 h-8 mb-2 mx-auto" />
                       <p class="text-sm">Nenhum dado encontrado</p>
                     </td>
                   </tr>
-                  <template v-for="item in vcFilteredData" :key="item.produto_id">
-                    <tr class="hover:bg-operacao-50">
-                      <td class="px-3 py-1.5 sticky left-0 bg-white z-10">
-                        <span class="text-sm font-medium text-operacao-800">{{ item.produto }}</span>
-                        <div class="flex items-center gap-2 mt-0.5 text-[10px] text-operacao-400 leading-tight">
+                  <template v-for="item in vcPaginatedItems" :key="item.produto_id">
+                    <tr class="hover:bg-operacao-50 h-12">
+                      <td class="px-3 py-2 sticky left-0 bg-white z-10 align-middle">
+                        <span class="text-sm font-medium text-operacao-800">{{ item.produto }} <span class="text-xs text-operacao-400 font-normal">({{ item.unidade }})</span></span>
+                        <div v-if="item.menor_valor > 0 || item.maior_valor > 0" class="flex items-center gap-2 mt-0.5 text-[10px] text-operacao-400 leading-tight">
                           <span v-if="item.menor_valor > 0" class="text-controle-600">↓{{ formatCurrency(item.menor_valor) }}</span>
                           <span v-if="item.maior_valor > 0" class="text-red-500">↑{{ formatCurrency(item.maior_valor) }}</span>
                         </div>
                       </td>
-                      <td class="px-3 py-1.5 text-xs text-operacao-400 sticky left-[200px] bg-white z-10">{{ item.unidade }}</td>
                       <td
                         v-for="(custo, index) in item.custos"
                         :key="index"
-                        class="px-3 py-1.5 text-sm text-center"
+                        class="px-3 py-2 text-sm text-center align-middle"
                       >
                         <span v-if="custo > 0" class="font-medium">{{ formatCurrency(custo) }}</span>
                         <span v-else class="text-operacao-300">-</span>
@@ -305,6 +275,12 @@
                 </tbody>
               </table>
             </div>
+            <TablePagination
+              v-model="vcPage"
+              :page-size="vcPageSize"
+              :total-items="vcFilteredData.length"
+              @update:page-size="vcPageSize = $event"
+            />
           </UCard>
 
         </template>
@@ -442,8 +418,8 @@ const toast = useToast()
 
 const activeTab = ref(0)
 const tabItems = [
-  { label: 'Ponto de Reposição' },
-  { label: 'Variação de Custo' }
+  { label: 'Ponto de Reposição', icon: 'i-heroicons-arrow-path' },
+  { label: 'Variação de Custo', icon: 'i-heroicons-arrow-trending-up' }
 ]
 
 // ==========================================
@@ -734,17 +710,29 @@ const vcSelectMesAno = (mes: number, ano: number) => {
   vcSelectedAno.value = ano
 }
 
+const toolbarInputUi = { color: { white: { outline: 'shadow-sm bg-white text-gray-900 ring-1 ring-inset ring-[#EBEBED] focus:ring-1 focus:ring-operacao-200 dark:ring-operacao-700' } } }
 const toolbarButtonUi = { color: { white: { solid: 'shadow-sm ring-1 ring-inset ring-[#EBEBED] text-gray-700 bg-white hover:bg-gray-50 focus-visible:ring-2 focus-visible:ring-guardian-500 dark:ring-operacao-700 dark:bg-gray-900 dark:text-white dark:hover:bg-gray-800/50' } } }
 
 const vcFilteredData = computed(() => {
   if (!vcData.value) return []
-  if (!vcSearch.value) return vcData.value.produtos
-  const term = vcSearch.value.toLowerCase()
-  return vcData.value.produtos.filter((p: any) =>
-    p.produto.toLowerCase().includes(term) ||
-    p.subgrupo.toLowerCase().includes(term)
-  )
+  let result = vcData.value.produtos
+  if (vcSearch.value) {
+    const term = vcSearch.value.toLowerCase()
+    result = result.filter((p: any) =>
+      p.produto.toLowerCase().includes(term) ||
+      p.subgrupo.toLowerCase().includes(term)
+    )
+  }
+  // Ordenar: maior variação primeiro, depois por maior_valor desc, sem dados por último
+  return [...result].sort((a: any, b: any) => {
+    const aVar = a.variacao_mes ?? -Infinity
+    const bVar = b.variacao_mes ?? -Infinity
+    if (aVar !== bVar) return bVar - aVar
+    return b.maior_valor - a.maior_valor
+  })
 })
+
+const { page: vcPage, pageSize: vcPageSize, paginatedItems: vcPaginatedItems } = usePagination(vcFilteredData)
 
 const loadVariacaoCusto = async () => {
   try {
