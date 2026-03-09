@@ -7,7 +7,7 @@
       <!-- Header: icon + label + trend -->
       <div class="flex items-center justify-between mb-3">
         <div class="flex items-center gap-3">
-          <div class="p-2 rounded-lg" :class="iconBgClass">
+          <div class="flex items-center justify-center p-2 rounded-lg" :class="iconBgClass">
             <UIcon :name="icon" class="w-5 h-5" :class="iconColorClass" />
           </div>
           <span class="text-xs font-medium text-operacao-400 uppercase tracking-wide">{{ label }}</span>

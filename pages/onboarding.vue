@@ -329,7 +329,6 @@ const uploadLogo = async (empresaId: string): Promise<string | null> => {
     })
 
   if (error) {
-    console.error('Erro upload logo:', error)
     return null
   }
 

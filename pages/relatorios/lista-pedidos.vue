@@ -1129,6 +1129,13 @@ const formatDate = (date: string | undefined) => {
 const { formatNumber } = useFormatters()
 
 // ==========================================
+// REALTIME
+// ==========================================
+const { onTableChange } = useRealtime()
+onTableChange(['pedidos', 'pedido_itens'], () => carregarHistorico())
+onTableChange(['produtos', 'fornecedores', 'grupos', 'subgrupos'], () => carregarDadosBase())
+
+// ==========================================
 // INIT
 // ==========================================
 watch(empresaId, async () => {

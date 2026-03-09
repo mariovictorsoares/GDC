@@ -102,7 +102,7 @@ const calcProximaContagem = (contagem: Contagem) => {
 <template>
   <div class="space-y-6">
     <!-- Header -->
-    <h1 class="text-2xl font-semibold text-[#5a5a66] mb-2">Contagem de Estoque</h1>
+    <h1 class="text-2xl font-semibold text-[#5a5a66] mb-2">Contagem</h1>
 
     <!-- Toolbar: Filtros + Ações -->
     <div class="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6">
@@ -159,7 +159,6 @@ const calcProximaContagem = (contagem: Contagem) => {
               <th class="text-center px-4 py-3 text-xs font-medium text-[#5a5a66] uppercase tracking-wider bg-operacao-100/70">Última contagem</th>
               <th class="text-center px-4 py-3 text-xs font-medium text-[#5a5a66] uppercase tracking-wider bg-operacao-100/70">Próxima contagem</th>
               <th class="text-center px-4 py-3 text-xs font-medium text-[#5a5a66] uppercase tracking-wider bg-operacao-100/70">Recorrência</th>
-              <th class="text-center px-4 py-3 text-xs font-medium text-[#5a5a66] uppercase tracking-wider bg-operacao-100/70 w-[100px]">Progresso</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-operacao-100">
@@ -181,11 +180,6 @@ const calcProximaContagem = (contagem: Contagem) => {
               <td class="px-4 py-2.5 text-center">
                 <p class="text-sm text-operacao-600">{{ labelRecorrencia(contagem.recorrencia) }}</p>
               </td>
-              <td class="px-4 py-2.5 text-center">
-                <p class="font-bold text-sm" :class="calcProgressoMensal(contagem).feitas >= calcProgressoMensal(contagem).esperadas ? 'text-controle-600' : 'text-operacao-600'">
-                  {{ calcProgressoMensal(contagem).feitas }}/{{ calcProgressoMensal(contagem).esperadas }}
-                </p>
-              </td>
             </tr>
           </tbody>
         </table>
@@ -199,13 +193,8 @@ const calcProximaContagem = (contagem: Contagem) => {
           class="px-5 py-4 hover:bg-operacao-50 transition-colors cursor-pointer"
           @click="$emit('click-contagem', contagem)"
         >
-          <div class="flex items-center justify-between mb-2">
-            <p class="font-semibold text-operacao-800">{{ contagem.nome }}</p>
-            <p class="text-xs font-bold" :class="calcProgressoMensal(contagem).feitas >= calcProgressoMensal(contagem).esperadas ? 'text-controle-600' : 'text-operacao-600'">
-              {{ calcProgressoMensal(contagem).feitas }}/{{ calcProgressoMensal(contagem).esperadas }}
-            </p>
-          </div>
-          <div class="grid grid-cols-3 gap-2 text-center">
+          <p class="font-semibold text-operacao-800 mb-2">{{ contagem.nome }}</p>
+          <div class="grid grid-cols-2 gap-2 text-center">
             <div>
               <p class="text-[10px] text-operacao-400 uppercase">Próxima</p>
               <p class="text-xs font-semibold text-operacao-600">{{ calcProximaContagem(contagem) }}</p>
@@ -213,12 +202,6 @@ const calcProximaContagem = (contagem: Contagem) => {
             <div>
               <p class="text-[10px] text-operacao-400 uppercase">Recorrência</p>
               <p class="text-xs font-semibold text-operacao-600">{{ labelRecorrencia(contagem.recorrencia) }}</p>
-            </div>
-            <div>
-              <p class="text-[10px] text-operacao-400 uppercase">Progresso</p>
-              <p class="text-xs font-bold" :class="calcProgressoMensal(contagem).feitas >= calcProgressoMensal(contagem).esperadas ? 'text-controle-600' : 'text-operacao-600'">
-                {{ calcProgressoMensal(contagem).feitas }}/{{ calcProgressoMensal(contagem).esperadas }}
-              </p>
             </div>
           </div>
         </div>

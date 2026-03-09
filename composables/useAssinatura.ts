@@ -33,6 +33,10 @@ function computeSubscriptionState(assin: Assinatura | null): SubscriptionState {
     return { state: 'cancelled', diasRestantes: null, mensagem: 'Assinatura cancelada.' }
   }
 
+  if (assin.status === 'expired') {
+    return { state: 'blocked', diasRestantes: 0, mensagem: 'Assinatura expirada. Assine um plano para continuar.' }
+  }
+
   // Lógica de trial
   const now = new Date()
   const trialFim = new Date(assin.trial_fim)

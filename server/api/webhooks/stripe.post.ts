@@ -9,7 +9,7 @@
  * - customer.subscription.updated → atualiza plano/status
  * - customer.subscription.deleted → cancela assinatura
  */
-import { createClient } from '@supabase/supabase-js'
+import { serverSupabaseServiceRole } from '#supabase/server'
 import type Stripe from 'stripe'
 
 export default defineEventHandler(async (event) => {
@@ -37,10 +37,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: `Webhook signature inválida: ${err.message}` })
   }
 
-  const supabase = createClient(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_KEY!
-  )
+  const supabase = serverSupabaseServiceRole(event)
 
   console.log(`[Stripe Webhook] Evento: ${stripeEvent.type}`)
 
@@ -74,10 +71,13 @@ export default defineEventHandler(async (event) => {
         updateData.plano_id = plano.id
       }
 
-      // Verificar se a taxa de implantação foi incluída
-      // (checkout com mais de 1 line item = incluiu taxa)
-      if (session.amount_total && session.amount_total > 0) {
-        updateData.taxa_implementacao_paga = true
+      // Verificar se a taxa de implantação foi incluída no checkout
+      const taxaPriceId = config.stripeTaxaImplPriceId
+      if (taxaPriceId) {
+        const lineItems = await stripe.checkout.sessions.listLineItems(session.id)
+        if (lineItems.data.some(item => item.price?.id === taxaPriceId)) {
+          updateData.taxa_implementacao_paga = true
+        }
       }
 
       await supabase

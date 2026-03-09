@@ -110,7 +110,7 @@
         :ui="{
           divide: 'divide-y divide-operacao-50 dark:divide-operacao-700',
           thead: '',
-          th: { base: 'bg-operacao-100/70 dark:bg-operacao-800 border-b border-operacao-200/60 [&_button]:font-medium [&_button]:uppercase [&_button]:tracking-wider [&_button]:text-xs [&_button]:text-[#5a5a66]', color: 'text-[#5a5a66] dark:text-operacao-400', font: 'font-medium', size: 'text-xs uppercase tracking-wider', padding: 'px-4 py-2' },
+          th: { base: 'bg-operacao-100/70 dark:bg-operacao-800 border-b border-operacao-200/60 [&_button]:font-medium [&_button]:uppercase [&_button]:tracking-wider [&_button]:text-xs [&_button]:text-[#5a5a66] [&_button>span+span]:text-operacao-300 [&_button>span+span]:!w-3.5 [&_button>span+span]:!h-3.5', color: 'text-[#5a5a66] dark:text-operacao-400', font: 'font-medium', size: 'text-xs uppercase tracking-wider', padding: 'px-4 py-2' },
           td: { color: 'text-operacao-600 dark:text-operacao-200', size: 'text-sm', padding: 'px-4 py-2.5' }
         }"
       >
@@ -515,6 +515,49 @@
       </UCard>
     </UModal>
 
+    <!-- Modal de Confirmação: Beneficiamento sem Eficiência -->
+    <UModal
+      v-model="confirmBeneficiamentoModalOpen"
+      :ui="{
+        overlay: { background: 'bg-operacao-900/50 backdrop-blur-sm' },
+        background: 'bg-white dark:bg-operacao-800',
+        ring: 'ring-1 ring-operacao-200 dark:ring-operacao-700',
+        shadow: 'shadow-2xl'
+      }"
+    >
+      <UCard :ui="{ background: 'bg-transparent', ring: 'ring-0', shadow: '', divide: 'divide-operacao-100 dark:divide-operacao-700' }">
+        <template #header>
+          <div class="flex items-center gap-2">
+            <UIcon name="i-heroicons-exclamation-triangle" class="w-5 h-5 text-amber-500" />
+            <h3 class="text-lg font-semibold text-amber-600">Produto incompleto</h3>
+          </div>
+        </template>
+
+        <div class="space-y-3">
+          <p class="text-operacao-700">
+            A <strong>eficiência do beneficiamento</strong> não foi informada para este produto.
+          </p>
+          <div class="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+            <p class="text-sm text-amber-700">
+              Sem essa informação, o cálculo do custo do produto beneficiado ficará comprometido. Recomendamos preencher esse campo para ter um controle preciso do CMV.
+            </p>
+          </div>
+          <p class="text-sm text-operacao-500">Deseja salvar mesmo assim?</p>
+        </div>
+
+        <template #footer>
+          <div class="flex flex-col-reverse sm:flex-row justify-end gap-3">
+            <UButton color="gray" variant="ghost" class="w-full sm:w-auto" @click="confirmBeneficiamentoModalOpen = false">
+              Voltar e preencher
+            </UButton>
+            <UButton color="amber" class="w-full sm:w-auto" @click="confirmarSalvarSemEficiencia">
+              Salvar mesmo assim
+            </UButton>
+          </div>
+        </template>
+      </UCard>
+    </UModal>
+
     <!-- Slideover de Gerenciamento de Unidades -->
     <USlideover
       v-model="unidadesModalOpen"
@@ -557,7 +600,7 @@
             :rows="unidades"
             :ui="{
               td: { color: 'text-operacao-600 dark:text-operacao-200' },
-              th: { base: 'bg-operacao-100/70 dark:bg-operacao-800 border-b border-operacao-200/60 [&_button]:font-medium [&_button]:uppercase [&_button]:tracking-wider [&_button]:text-xs [&_button]:text-[#5a5a66]', color: 'text-[#5a5a66] dark:text-operacao-400', font: 'font-medium', size: 'text-xs uppercase tracking-wider', padding: 'px-4 py-2' },
+              th: { base: 'bg-operacao-100/70 dark:bg-operacao-800 border-b border-operacao-200/60 [&_button]:font-medium [&_button]:uppercase [&_button]:tracking-wider [&_button]:text-xs [&_button]:text-[#5a5a66] [&_button>span+span]:text-operacao-300 [&_button>span+span]:!w-3.5 [&_button>span+span]:!h-3.5', color: 'text-[#5a5a66] dark:text-operacao-400', font: 'font-medium', size: 'text-xs uppercase tracking-wider', padding: 'px-4 py-2' },
               thead: 'sticky top-0 z-10'
             }"
           >
@@ -1067,6 +1110,7 @@ const expandedGrupos = ref<Set<string>>(new Set())
 const modalOpen = ref(false)
 const custosModalOpen = ref(false)
 const deleteModalOpen = ref(false)
+const confirmBeneficiamentoModalOpen = ref(false)
 const editingProduto = ref<Produto | null>(null)
 const selectedProduto = ref<Produto | null>(null)
 const deletingProduto = ref<Produto | null>(null)
@@ -1346,7 +1390,6 @@ const openModal = async (produto?: Produto) => {
         const links = await getProdutosBeneficiamento(produto.id)
         produtosFinaisExistentes.value = links as any
       } catch (e) {
-        console.error('Erro ao carregar produtos finais:', e)
       } finally {
         loadingProdutosFinais.value = false
       }
@@ -1418,7 +1461,6 @@ watch(custoAno, async () => {
         custosForm.value[c.mes] = c.custo
       })
     } catch (error) {
-      console.error('Erro ao carregar custos:', error)
     }
   }
 })
@@ -1457,6 +1499,20 @@ const saveProduto = async () => {
         return
       }
     }
+  }
+
+  // Se beneficiável e sem eficiência, pedir confirmação
+  if (isBeneficiavel && !form.value.eficiencia_beneficiamento) {
+    confirmBeneficiamentoModalOpen.value = true
+    return
+  }
+
+  await executeSaveProduto(isBeneficiavel)
+}
+
+const executeSaveProduto = async (isBeneficiavel?: boolean) => {
+  if (isBeneficiavel === undefined) {
+    isBeneficiavel = form.value.beneficiavel === true || form.value.beneficiavel === 'true'
   }
 
   // Formata o nome antes de salvar
@@ -1557,6 +1613,11 @@ const saveProduto = async () => {
   } finally {
     saving.value = false
   }
+}
+
+const confirmarSalvarSemEficiencia = async () => {
+  confirmBeneficiamentoModalOpen.value = false
+  await executeSaveProduto()
 }
 
 const confirmDelete = (produto: Produto) => {
@@ -1957,6 +2018,10 @@ const anyGrupoSubModalOpen = computed(() =>
 )
 
 // Fix agora é declarativo via <div :inert="..."> dentro de cada USlideover template
+
+// Realtime
+const { onTableChange } = useRealtime()
+onTableChange(['produtos', 'grupos', 'subgrupos', 'categorias', 'unidades', 'fornecedores', 'produtos_beneficiamento'], () => loadData())
 
 // Recarregar dados quando a empresa ativa mudar
 watch(empresaId, () => {

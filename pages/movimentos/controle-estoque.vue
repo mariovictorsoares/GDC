@@ -5,6 +5,11 @@
     <div class="flex items-center justify-between">
       <h1 class="text-2xl font-semibold text-[#5a5a66]">Controle de Estoque</h1>
       <div class="flex gap-2 flex-shrink-0">
+        <UButton v-if="pendentesTransfCount > 0" color="white" class="hover:!bg-blue-50 hover:!ring-blue-200" :ui="toolbarButtonUi" @click="showPendentesTransf = true">
+          <UIcon name="i-heroicons-truck" class="w-4 h-4 mr-1.5 text-blue-500" />
+          Transferências
+          <span class="ml-1.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold leading-none rounded-full bg-blue-500 text-white">{{ pendentesTransfCount }}</span>
+        </UButton>
         <UButton v-if="pendentesCount > 0" color="white" class="hover:!bg-purple-50 hover:!ring-purple-200" :ui="toolbarButtonUi" @click="showPendentes = true">
           <UIcon name="i-heroicons-beaker" class="w-4 h-4 mr-1.5 text-purple-500" />
           Produções
@@ -129,7 +134,7 @@
         :ui="{
           divide: 'divide-y divide-operacao-50 dark:divide-operacao-700',
           thead: '',
-          th: { base: 'bg-operacao-100/70 dark:bg-operacao-800 border-b border-operacao-200/60 [&_button]:font-medium [&_button]:uppercase [&_button]:tracking-wider [&_button]:text-xs [&_button]:text-[#5a5a66]', color: 'text-[#5a5a66] dark:text-operacao-400', font: 'font-medium', size: 'text-xs uppercase tracking-wider', padding: 'px-4 py-2' },
+          th: { base: 'bg-operacao-100/70 dark:bg-operacao-800 border-b border-operacao-200/60 [&_button]:font-medium [&_button]:uppercase [&_button]:tracking-wider [&_button]:text-xs [&_button]:text-[#5a5a66] [&_button>span+span]:text-operacao-300 [&_button>span+span]:!w-3.5 [&_button>span+span]:!h-3.5', color: 'text-[#5a5a66] dark:text-operacao-400', font: 'font-medium', size: 'text-xs uppercase tracking-wider', padding: 'px-4 py-2' },
           td: { color: 'text-operacao-600 dark:text-operacao-200', size: 'text-sm', padding: 'px-4 py-2.5' }
         }"
       >
@@ -171,24 +176,6 @@
           {{ row.numero_nf || '-' }}
         </template>
 
-        <template #actions-data="{ row }">
-          <div class="flex gap-2 justify-end">
-            <UButton
-              color="gray"
-              variant="ghost"
-              icon="i-heroicons-pencil-square"
-              size="xs"
-              @click="editRow(row)"
-            />
-            <UButton
-              color="red"
-              variant="ghost"
-              icon="i-heroicons-trash"
-              size="xs"
-              @click="confirmDeleteRow(row)"
-            />
-          </div>
-        </template>
       </UTable>
       <TablePagination
         v-model="page"
@@ -232,6 +219,48 @@
               </div>
             </template>
           </UPopover>
+
+          <!-- Dropdown: Estoque Principal / Apoio -->
+          <UPopover :popper="{ placement: 'bottom-start' }">
+            <UButton color="white" class="w-full sm:w-auto justify-between" trailing-icon="i-heroicons-chevron-down-20-solid" :ui="toolbarButtonUi">
+              <span class="truncate text-left font-normal"><span class="text-operacao-400">Estoque:</span> <span class="text-gray-900">{{ painelEstoque === 'principal' ? 'Principal' : 'Apoio' }}</span></span>
+            </UButton>
+            <template #panel="{ close }">
+              <div class="w-48 py-1">
+                <button
+                  v-for="opt in [{ key: 'principal', label: 'Principal' }, { key: 'apoio', label: 'Apoio' }]"
+                  :key="opt.key"
+                  class="w-full text-left px-3 py-1.5 text-sm rounded transition-colors"
+                  :class="painelEstoque === opt.key ? 'text-guardian-600 font-medium bg-guardian-50' : 'text-operacao-600 hover:bg-operacao-50'"
+                  @click="painelEstoque = opt.key as any; close()"
+                >{{ opt.label }}</button>
+              </div>
+            </template>
+          </UPopover>
+
+          <!-- Multi-select: Tipos de saída (só Principal) -->
+          <UPopover v-if="painelEstoque === 'principal'" :popper="{ placement: 'bottom-start' }">
+            <UButton color="white" class="w-full sm:w-auto justify-between" trailing-icon="i-heroicons-chevron-down-20-solid" :ui="toolbarButtonUi">
+              <span class="truncate text-left font-normal"><span class="text-operacao-400">Saídas:</span> <span class="text-gray-900">{{ painelTiposSaidaLabel }}</span></span>
+            </UButton>
+            <template #panel>
+              <div class="w-52 py-1.5 px-1">
+                <label
+                  v-for="opt in painelTiposSaidaOptions"
+                  :key="opt.value"
+                  class="flex items-center gap-2 px-2 py-1.5 text-sm rounded-md cursor-pointer transition-colors hover:bg-operacao-50"
+                >
+                  <input
+                    type="checkbox"
+                    :value="opt.value"
+                    v-model="painelTiposSaida"
+                    class="rounded border-operacao-300 text-guardian-600 focus:ring-guardian-500"
+                  />
+                  <span class="text-operacao-700">{{ opt.label }}</span>
+                </label>
+              </div>
+            </template>
+          </UPopover>
         </div>
         <!-- View Switcher -->
         <div class="inline-flex items-center rounded-lg bg-operacao-100/80 p-0.5 ring-1 ring-operacao-200/60 flex-shrink-0">
@@ -243,8 +272,10 @@
         </div>
       </div>
 
-      <!-- Loading skeleton -->
-      <div v-if="painelLoading" class="space-y-4">
+      <!-- ============ ESTOQUE PRINCIPAL ============ -->
+
+      <!-- Loading skeleton (Principal) -->
+      <div v-if="painelLoading && painelEstoque === 'principal'" class="space-y-4">
         <div class="grid grid-cols-4 gap-4">
           <USkeleton v-for="i in 4" :key="i" class="h-24 rounded-lg" />
         </div>
@@ -256,8 +287,7 @@
         </div>
       </div>
 
-      <template v-if="!painelLoading">
-        <!-- ============ TABELA POR PRODUTO ============ -->
+      <template v-if="!painelLoading && painelEstoque === 'principal'">
         <div class="relative overflow-x-auto rounded-lg bg-white ring-1 ring-[#EBEBED] shadow-sm">
           <table class="min-w-full divide-y divide-operacao-200">
             <thead class="bg-operacao-50">
@@ -266,9 +296,7 @@
                 <th rowspan="2" class="px-3 py-3 text-center text-xs font-medium text-[#5a5a66] uppercase tracking-wider border-r w-14">E.I.</th>
                 <th :colspan="painelSemanas.length + 1" class="px-3 py-2 text-center text-xs font-medium text-[#5a5a66] uppercase tracking-wider border-r bg-controle-50">Entradas</th>
                 <th :colspan="painelSemanas.length + 1" class="px-3 py-2 text-center text-xs font-medium text-[#5a5a66] uppercase tracking-wider border-r bg-red-50">Saídas</th>
-                <th rowspan="2" class="px-3 py-3 text-center text-xs font-medium text-[#5a5a66] uppercase tracking-wider border-r w-14">E.F.</th>
-                <th colspan="4" class="px-3 py-2 text-center text-xs font-medium text-[#5a5a66] uppercase tracking-wider bg-operacao-100/50 border-r">Breakdown Saídas</th>
-                <th colspan="2" class="px-3 py-2 text-center text-xs font-medium text-violet-600 uppercase tracking-wider bg-violet-50/60">Est. Apoio</th>
+                <th rowspan="2" class="px-3 py-3 text-center text-xs font-medium text-[#5a5a66] uppercase tracking-wider w-14">E.F.</th>
               </tr>
               <tr>
                 <th v-for="sem in painelSemanas" :key="'dent-' + sem.label" class="px-2 py-1 text-center text-xs font-medium text-[#5a5a66] bg-controle-50">
@@ -283,12 +311,6 @@
                   </MiniCalendar>
                 </th>
                 <th class="px-2 py-1 text-center text-xs font-medium text-[#5a5a66] bg-red-50 border-r">Tot</th>
-                <th class="px-2 py-1 text-center text-[10px] font-medium text-orange-500 bg-orange-50/50" title="Saída Definitiva">Defin.</th>
-                <th class="px-2 py-1 text-center text-[10px] font-medium text-blue-500 bg-blue-50/50" title="Transferência para Loja">Tr.Loja</th>
-                <th class="px-2 py-1 text-center text-[10px] font-medium text-violet-500 bg-violet-50/50" title="Transferência para Apoio">Tr.Apoio</th>
-                <th class="px-2 py-1 text-center text-[10px] font-medium text-purple-500 bg-purple-50/50 border-r" title="Produção (Beneficiamento)">Prod.</th>
-                <th class="px-2 py-1 text-center text-[10px] font-medium text-violet-600 bg-violet-50/60" title="Entradas no Estoque de Apoio">Ent</th>
-                <th class="px-2 py-1 text-center text-[10px] font-medium text-violet-600 bg-violet-50/60" title="Saídas do Estoque de Apoio (definitivas)">Saí</th>
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-operacao-200">
@@ -298,42 +320,79 @@
                 </td>
               </tr>
               <tr v-for="item in painelPaginatedItems" :key="item.produto_id" class="hover:bg-operacao-50">
-                <td class="px-2 py-2 text-xs font-medium text-operacao-800 border-r truncate max-w-[120px]" :title="item.produto">{{ item.produto }}</td>
+                <td class="px-2 py-2 text-xs font-medium text-operacao-800 border-r truncate max-w-[120px]" :title="item.produto">{{ item.produto }} <span class="text-[10px] text-operacao-400 font-normal">({{ item.unidade }})</span></td>
                 <td class="px-2 py-2 text-xs text-center text-operacao-500 border-r">{{ painelFormatQtd(item.estoque_inicial) }}</td>
                 <td v-for="(_, idx) in painelSemanas" :key="'dent-' + idx" class="px-1 py-2 text-xs text-center text-controle-600 bg-controle-50/50">{{ painelFormatQtd(item.entradas_por_semana[idx]) }}</td>
                 <td class="px-1 py-2 text-xs text-center font-medium text-controle-700 bg-controle-100 border-r">{{ painelFormatQtd(item.total_entradas) }}</td>
                 <td v-for="(_, idx) in painelSemanas" :key="'dsai-' + idx" class="px-1 py-2 text-xs text-center text-red-600 bg-red-50/50">{{ painelFormatQtd(item.saidas_por_semana[idx]) }}</td>
                 <td class="px-1 py-2 text-xs text-center font-medium text-red-700 bg-red-100 border-r">{{ painelFormatQtd(item.total_saidas) }}</td>
-                <td class="px-2 py-2 text-xs text-center font-medium text-guardian-600 border-r">{{ painelFormatQtd(item.estoque_final) }}</td>
-                <td class="px-1 py-2 text-xs text-center font-medium text-orange-500 bg-orange-50/30">{{ painelFormatQtd(item.saidas_definitiva) }}</td>
-                <td class="px-1 py-2 text-xs text-center font-medium text-blue-500 bg-blue-50/30">{{ painelFormatQtd(item.saidas_transf_loja) }}</td>
-                <td class="px-1 py-2 text-xs text-center font-medium text-violet-500 bg-violet-50/30">{{ painelFormatQtd(item.saidas_transf_apoio) }}</td>
-                <td class="px-1 py-2 text-xs text-center font-medium text-purple-500 bg-purple-50/30 border-r">{{ painelFormatQtd(item.saidas_beneficiamento) }}</td>
-                <td class="px-1 py-2 text-xs text-center font-medium text-violet-600 bg-violet-50/20">{{ painelFormatQtd(item.saidas_transf_apoio) }}</td>
-                <td class="px-1 py-2 text-xs text-center font-medium text-violet-400 bg-violet-50/20">-</td>
+                <td class="px-2 py-2 text-xs text-center font-medium text-guardian-600">{{ painelFormatQtd(item.estoque_final) }}</td>
               </tr>
             </tbody>
-            <tfoot class="bg-operacao-100">
-              <tr class="font-semibold">
-                <td class="px-3 py-2 text-xs text-operacao-600 border-r">TOTAL</td>
-                <td class="px-3 py-2 text-xs text-center text-operacao-600 border-r">-</td>
-                <td :colspan="painelSemanas.length + 1" class="px-3 py-2 text-xs text-center text-controle-700 border-r bg-controle-100">{{ painelFormatQtd(painelTotais.entradas) }}</td>
-                <td :colspan="painelSemanas.length + 1" class="px-3 py-2 text-xs text-center text-red-700 border-r bg-red-100">{{ painelFormatQtd(painelTotais.saidas) }}</td>
-                <td class="px-3 py-2 text-xs text-center text-guardian-700 border-r">-</td>
-                <td class="px-3 py-2 text-xs text-center font-medium text-orange-600 bg-orange-50">{{ painelFormatQtd(painelTotais.definitiva) }}</td>
-                <td class="px-3 py-2 text-xs text-center font-medium text-blue-600 bg-blue-50">{{ painelFormatQtd(painelTotais.transfLoja) }}</td>
-                <td class="px-3 py-2 text-xs text-center font-medium text-violet-600 bg-violet-50">{{ painelFormatQtd(painelTotais.transfApoio) }}</td>
-                <td class="px-3 py-2 text-xs text-center font-medium text-purple-600 bg-purple-50 border-r">{{ painelFormatQtd(painelTotais.beneficiamento) }}</td>
-                <td class="px-3 py-2 text-xs text-center font-medium text-violet-600 bg-violet-50/60">{{ painelFormatQtd(painelTotais.transfApoio) }}</td>
-                <td class="px-3 py-2 text-xs text-center font-medium text-violet-400 bg-violet-50/60">-</td>
-              </tr>
-            </tfoot>
           </table>
         </div>
         <TablePagination
           v-model="painelPage"
           :page-size="painelPageSize"
           :total-items="painelFiltered.length"
+          @update:page-size="painelPageSize = $event"
+        />
+      </template>
+
+      <!-- ============ ESTOQUE DE APOIO (DIÁRIO) ============ -->
+
+      <!-- Loading skeleton (Apoio) -->
+      <div v-if="painelApoioLoading && painelEstoque === 'apoio'" class="space-y-4">
+        <div class="rounded-lg bg-white ring-1 ring-[#EBEBED] shadow-sm overflow-hidden">
+          <div class="p-4 space-y-3">
+            <USkeleton class="h-8 w-full" />
+            <USkeleton v-for="i in 6" :key="i" class="h-10 w-full" />
+          </div>
+        </div>
+      </div>
+
+      <template v-if="!painelApoioLoading && painelEstoque === 'apoio'">
+        <div class="relative overflow-x-auto rounded-lg bg-white ring-1 ring-[#EBEBED] shadow-sm">
+          <table class="min-w-full divide-y divide-operacao-200">
+            <thead class="bg-operacao-50">
+              <tr>
+                <th rowspan="2" class="px-3 py-3 text-left text-xs font-medium text-[#5a5a66] uppercase tracking-wider border-r">Produto</th>
+                <th rowspan="2" class="px-3 py-3 text-center text-xs font-medium text-[#5a5a66] uppercase tracking-wider border-r w-14">E.I.</th>
+                <th :colspan="painelApoioDias.length + 1" class="px-3 py-2 text-center text-xs font-medium text-[#5a5a66] uppercase tracking-wider border-r bg-controle-50">Entradas</th>
+                <th :colspan="painelApoioDias.length + 1" class="px-3 py-2 text-center text-xs font-medium text-[#5a5a66] uppercase tracking-wider border-r bg-red-50">Saídas</th>
+                <th rowspan="2" class="px-3 py-3 text-center text-xs font-medium text-[#5a5a66] uppercase tracking-wider w-14">E.F.</th>
+              </tr>
+              <tr>
+                <th v-for="dia in painelApoioDias" :key="'aent-' + dia.data" class="px-1 py-1 text-center text-xs font-medium text-[#5a5a66] bg-controle-50 w-10">{{ dia.label }}</th>
+                <th class="px-2 py-1 text-center text-xs font-medium text-[#5a5a66] bg-controle-50 border-r">Tot</th>
+                <th v-for="dia in painelApoioDias" :key="'asai-' + dia.data" class="px-1 py-1 text-center text-xs font-medium text-[#5a5a66] bg-red-50 w-10">{{ dia.label }}</th>
+                <th class="px-2 py-1 text-center text-xs font-medium text-[#5a5a66] bg-red-50 border-r">Tot</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-operacao-200">
+              <tr v-if="painelApoioFiltered.length === 0">
+                <td :colspan="(painelApoioDias.length + 1) * 2 + 3" class="px-3 py-8 text-center text-operacao-400">
+                  Nenhum dado encontrado para o período
+                </td>
+              </tr>
+              <tr v-for="item in painelApoioPaginatedItems" :key="item.produto_id" class="hover:bg-operacao-50">
+                <td class="px-2 py-2 text-xs font-medium text-operacao-800 border-r truncate max-w-[120px]" :title="item.produto">
+                  {{ item.produto }} <span class="text-[10px] text-operacao-400 font-normal">({{ item.unidade }})</span>
+                </td>
+                <td class="px-2 py-2 text-xs text-center text-operacao-500 border-r">{{ painelFormatQtd(item.estoque_inicial) }}</td>
+                <td v-for="(val, idx) in item.entradas_por_dia" :key="'aent-' + idx" class="px-1 py-2 text-xs text-center text-controle-600 bg-controle-50/50">{{ painelFormatQtd(val) }}</td>
+                <td class="px-1 py-2 text-xs text-center font-medium text-controle-700 bg-controle-100 border-r">{{ painelFormatQtd(item.total_entradas) }}</td>
+                <td v-for="(val, idx) in item.saidas_por_dia" :key="'asai-' + idx" class="px-1 py-2 text-xs text-center text-red-600 bg-red-50/50">{{ painelFormatQtd(val) }}</td>
+                <td class="px-1 py-2 text-xs text-center font-medium text-red-700 bg-red-100 border-r">{{ painelFormatQtd(item.total_saidas) }}</td>
+                <td class="px-2 py-2 text-xs text-center font-medium text-guardian-600">{{ painelFormatQtd(item.estoque_final) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <TablePagination
+          v-model="painelPage"
+          :page-size="painelPageSize"
+          :total-items="painelApoioFiltered.length"
           @update:page-size="painelPageSize = $event"
         />
       </template>
@@ -945,6 +1004,72 @@
       </div>
     </USlideover>
 
+    <!-- ======================== SLIDEOVER: TRANSFERÊNCIAS PENDENTES ======================== -->
+    <USlideover
+      v-model="showPendentesTransf"
+      :ui="{
+        width: 'max-w-md',
+        overlay: { background: 'bg-operacao-900/50 backdrop-blur-sm' },
+        background: 'bg-white dark:bg-operacao-800'
+      }"
+    >
+      <div class="flex flex-col h-full">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-operacao-200 dark:border-operacao-700">
+          <div class="flex items-center gap-3">
+            <div class="p-2 bg-blue-100 rounded-lg">
+              <UIcon name="i-heroicons-truck" class="w-5 h-5 text-blue-600" />
+            </div>
+            <div>
+              <h3 class="text-lg font-semibold text-operacao-800">Transferências Pendentes</h3>
+              <p class="text-xs text-operacao-400">
+                {{ pendentesTransfCount }} {{ pendentesTransfCount === 1 ? 'transferência aguardando' : 'transferências aguardando' }} recebimento
+              </p>
+            </div>
+          </div>
+          <UButton color="gray" variant="ghost" icon="i-heroicons-x-mark" @click="showPendentesTransf = false" />
+        </div>
+
+        <div class="flex-1 overflow-y-auto px-6 py-4 space-y-3">
+          <div
+            v-for="transf in pendentesTransf"
+            :key="transf.id"
+            class="p-4 rounded-xl border border-operacao-200 hover:border-blue-300 bg-white hover:bg-blue-50/30 transition-all cursor-pointer group"
+            @click="openTransfRecebimento(transf)"
+          >
+            <div class="flex items-start justify-between gap-3">
+              <div class="flex-1 min-w-0">
+                <p class="font-medium text-operacao-800 truncate">{{ transf.produto_origem?.nome }}</p>
+                <div class="flex items-center gap-2 mt-1">
+                  <UBadge color="blue" variant="subtle" size="xs">
+                    {{ formatNumber(transf.quantidade) }} {{ transf.produto_origem?.unidade?.sigla }}
+                  </UBadge>
+                  <span class="text-xs text-operacao-400">{{ formatDate(transf.data) }}</span>
+                </div>
+                <p class="text-xs text-operacao-400 mt-1.5">
+                  De: {{ transf.empresa_origem?.nome }} · {{ formatCurrency(transf.custo_total) }}
+                </p>
+              </div>
+              <UIcon name="i-heroicons-chevron-right" class="w-5 h-5 text-operacao-300 group-hover:text-blue-500 transition-colors flex-shrink-0 mt-1" />
+            </div>
+          </div>
+
+          <div v-if="pendentesTransf.length === 0" class="flex flex-col items-center justify-center py-12 text-operacao-400">
+            <UIcon name="i-heroicons-check-circle" class="w-10 h-10 mb-3 text-controle-400" />
+            <p class="text-sm font-medium text-operacao-400">Tudo resolvido!</p>
+            <p class="text-xs text-operacao-400">Nenhuma transferência pendente</p>
+          </div>
+        </div>
+      </div>
+    </USlideover>
+
+    <!-- Modal de Recebimento de Transferência -->
+    <MovimentosTransferenciaRecebimentoModal
+      v-model="transfRecebimentoModalOpen"
+      :transferencia="transfSelecionada"
+      @confirmada="onTransfResolvida"
+      @rejeitada="onTransfResolvida"
+    />
+
     <!-- ======================== MODAL: INFORMAR RENDIMENTO ======================== -->
     <UModal
       v-model="resolucaoModalOpen"
@@ -1424,7 +1549,7 @@
                     </td>
                   </tr>
                   <tr v-for="item in painelPaginatedItems" :key="item.produto_id" class="hover:bg-operacao-50">
-                    <td class="px-2 py-2 text-xs font-medium text-operacao-800 border-r truncate max-w-[120px]" :title="item.produto">{{ item.produto }}</td>
+                    <td class="px-2 py-2 text-xs font-medium text-operacao-800 border-r truncate max-w-[120px]" :title="item.produto">{{ item.produto }} <span class="text-[10px] text-operacao-400 font-normal">({{ item.unidade }})</span></td>
                     <td class="px-2 py-2 text-xs text-center text-operacao-500 border-r">{{ painelFormatQtd(item.estoque_inicial) }}</td>
                     <td v-for="(_, idx) in painelSemanas" :key="'ent-' + idx" class="px-1 py-2 text-xs text-center text-controle-600 bg-controle-50/50">{{ painelFormatQtd(item.entradas_por_semana[idx]) }}</td>
                     <td class="px-1 py-2 text-xs text-center font-medium text-controle-700 bg-controle-100 border-r">{{ painelFormatQtd(item.total_entradas) }}</td>
@@ -1461,11 +1586,17 @@
       </div>
     </USlideover>
 
+    <!-- Modal: Transferência para Apoio -->
+    <MovimentosTransferenciaApoioModal
+      v-model="transferenciaApoioOpen"
+      :itens-entrada="itensParaApoio"
+    />
+
   </div>
 </template>
 
 <script setup lang="ts">
-import type { Entrada, Saida, Produto, TipoSaida, Beneficiamento, PainelMes, SemanaInfo } from '~/types'
+import type { Entrada, Saida, Produto, TipoSaida, Beneficiamento, PainelMes, SemanaInfo, DiaInfo, PainelMesApoio, TransferenciaPendente } from '~/types'
 import { DatePicker as VDatePicker } from 'v-calendar'
 
 // ======================== TOOLBAR UI ========================
@@ -1508,14 +1639,19 @@ const {
   getBeneficiamentosPendentes,
   countBeneficiamentosPendentes,
   resolverBeneficiamento,
-  getProdutosBeneficiamento
+  getProdutosBeneficiamento,
+  createTransferenciaLoja,
+  getTransferenciasPendentes,
+  countTransferenciasPendentes,
+  confirmarTransferencia,
+  rejeitarTransferencia
 } = useEstoque()
 const { empresaId, empresaAtiva, empresas } = useEmpresa()
 const { formatCurrency, formatNumber } = useFormatters()
 const toast = useToast()
 
 // Painel de Controle composable
-const { getPainelMes } = useRelatorios()
+const { getPainelMes, getPainelMesApoio } = useRelatorios()
 
 // ======================== STATE: PAGE ========================
 
@@ -1575,6 +1711,14 @@ const entradaModalOpen = ref(false)
 const saidaModalOpen = ref(false)
 const deleteModalOpen = ref(false)
 const confirmDefinitivaOpen = ref(false)
+
+// Transferência para Apoio
+const transferenciaApoioOpen = ref(false)
+const itensParaApoio = ref<Array<{ produto_id: string; quantidade: number; produto_nome: string; unidade_sigla: string }>>([])
+
+watch(transferenciaApoioOpen, (aberto) => {
+  if (!aberto) itensParaApoio.value = []
+})
 const viewMode = ref<'historico' | 'detalhamento'>('historico')
 const viewModeOptions = [
   { key: 'historico', icon: 'i-heroicons-clock', label: 'Histórico' },
@@ -1605,6 +1749,21 @@ const painelSelectMesAno = (mes: number, ano: number) => {
 const painelPage = ref(1)
 const painelPageSize = ref(10)
 const painelTab = ref<'visao-geral' | 'ranking' | 'detalhamento'>('visao-geral')
+
+// ======================== STATE: FILTROS MAPA VISUAL ========================
+const painelEstoque = ref<'principal' | 'apoio'>('principal')
+const painelTiposSaida = ref<string[]>(['definitiva', 'transf_loja', 'transf_apoio', 'beneficiamento'])
+const painelTiposSaidaOptions = [
+  { value: 'definitiva', label: 'Definitiva' },
+  { value: 'transf_loja', label: 'Transf. Loja' },
+  { value: 'transf_apoio', label: 'Transf. Apoio' },
+  { value: 'beneficiamento', label: 'Produção' }
+]
+
+// ======================== STATE: APOIO DATA ========================
+const painelApoioData = ref<PainelMesApoio[]>([])
+const painelApoioDias = ref<DiaInfo[]>([])
+const painelApoioLoading = ref(false)
 
 // ======================== STATE: ENTRADA MODAL ========================
 
@@ -1644,6 +1803,14 @@ const itensResolucao = ref<Array<{
 }>>([])
 const resolvendo = ref(false)
 
+// ======================== STATE: TRANSFERÊNCIAS PENDENTES ========================
+
+const showPendentesTransf = ref(false)
+const pendentesTransf = ref<TransferenciaPendente[]>([])
+const pendentesTransfCount = ref(0)
+const transfRecebimentoModalOpen = ref(false)
+const transfSelecionada = ref<TransferenciaPendente | null>(null)
+
 // ======================== TABLE COLUMNS ========================
 
 const columns = [
@@ -1652,8 +1819,7 @@ const columns = [
   { key: 'produto', label: 'Produto', sortable: true },
   { key: 'quantidade', label: 'Quantidade' },
   { key: 'valor', label: 'Valor' },
-  { key: 'numero_nf', label: 'NF' },
-  { key: 'actions', label: 'Ações', class: 'text-right', rowClass: 'text-right' }
+  { key: 'numero_nf', label: 'NF' }
 ]
 
 const tipoFilterOptions = [
@@ -1871,7 +2037,6 @@ const carregarSaldoProduto = async (produtoId: string) => {
     const saldo = await getSaldoProduto(produtoId)
     saldosCache.value.set(produtoId, saldo)
   } catch (error) {
-    console.error('Erro ao carregar saldo:', error)
     saldosCache.value.set(produtoId, 0)
   }
 }
@@ -1916,13 +2081,12 @@ const loadProdutos = async () => {
   try {
     produtos.value = await getProdutos()
   } catch (error) {
-    console.error('Erro ao carregar produtos:', error)
   }
 }
 
 const loadAll = async () => {
   loading.value = true
-  await Promise.all([loadEntradas(), loadSaidas(), loadProdutos(), loadPendentes()])
+  await Promise.all([loadEntradas(), loadSaidas(), loadProdutos(), loadPendentes(), loadPendentesTransf()])
   loading.value = false
 }
 
@@ -2012,11 +2176,31 @@ const saveEntrada = async () => {
           : 'Entrada registrada com sucesso',
         color: 'green'
       })
+
+      // Preparar sugestão de transferência para apoio (se habilitado)
+      if (empresaAtiva.value?.sugerir_transferencia_apoio !== false) {
+        itensParaApoio.value = itensValidos.map(item => {
+          const prod = produtos.value.find(p => p.id === item.produto_id)
+          return {
+            produto_id: item.produto_id,
+            quantidade: item.quantidade,
+            produto_nome: prod?.nome || 'Produto',
+            unidade_sigla: prod?.unidade?.sigla || ''
+          }
+        })
+      }
     }
     entradaModalOpen.value = false
     await loadEntradas()
     viewMode.value = 'historico'
     page.value = 1
+
+    // Abrir modal de apoio após modal de entrada fechar
+    if (itensParaApoio.value.length > 0) {
+      setTimeout(() => {
+        transferenciaApoioOpen.value = true
+      }, 350)
+    }
   } catch (error: any) {
     toast.add({ title: 'Erro', description: error.message || 'Erro ao salvar entrada', color: 'red' })
   } finally {
@@ -2131,12 +2315,14 @@ const executeSaveSaida = async () => {
             observacao: item.observacao || undefined
           })
         } else if (isTransferenciaLoja) {
-          await createSaidaTransferenciaLoja({
-            produto_id: item.produto_id,
-            data: saidaFormData.value,
-            quantidade: item.quantidade,
-            observacao: item.observacao || undefined
-          }, empresaDestinoId.value, item.produto_destino_id)
+          await createTransferenciaLoja(
+            item.produto_id,
+            item.produto_destino_id,
+            empresaDestinoId.value,
+            item.quantidade,
+            saidaFormData.value,
+            item.observacao || undefined
+          )
         } else {
           await createSaida({
             produto_id: item.produto_id,
@@ -2151,7 +2337,7 @@ const executeSaveSaida = async () => {
       toast.add({
         title: 'Sucesso',
         description: isTransferenciaLoja
-          ? `Transferência enviada para ${nomeDestino}. Entrada criada automaticamente.`
+          ? `Transferência enviada para ${nomeDestino}. Aguardando confirmação de recebimento.`
           : itensValidos.length > 1
           ? `${itensValidos.length} saídas registradas com sucesso`
           : tipoSaida.value === 'beneficiamento'
@@ -2246,13 +2432,32 @@ const loadPendentes = async () => {
     pendentesCount.value = await countBeneficiamentosPendentes()
     pendentes.value = pendentesCount.value > 0 ? await getBeneficiamentosPendentes() : []
   } catch (error) {
-    console.error('Erro ao carregar beneficiamentos pendentes:', error)
   }
 }
 
 const openResolucaoFromSlideover = (benef: Beneficiamento) => {
   showPendentes.value = false
   setTimeout(() => openResolucao(benef), 300)
+}
+
+// ======================== TRANSFERÊNCIAS PENDENTES ========================
+
+const loadPendentesTransf = async () => {
+  try {
+    pendentesTransfCount.value = await countTransferenciasPendentes()
+    pendentesTransf.value = pendentesTransfCount.value > 0 ? await getTransferenciasPendentes() : []
+  } catch (error) {
+  }
+}
+
+const openTransfRecebimento = (transf: TransferenciaPendente) => {
+  showPendentesTransf.value = false
+  transfSelecionada.value = transf
+  setTimeout(() => { transfRecebimentoModalOpen.value = true }, 300)
+}
+
+const onTransfResolvida = async () => {
+  await Promise.all([loadPendentesTransf(), loadEntradas(), loadSaidas()])
 }
 
 const openResolucao = async (benef: Beneficiamento) => {
@@ -2269,7 +2474,6 @@ const openResolucao = async (benef: Beneficiamento) => {
       gramatura: 0
     }))
   } catch (error) {
-    console.error('Erro ao carregar produtos finais:', error)
     itensResolucao.value = []
   }
   resolucaoModalOpen.value = true
@@ -2310,21 +2514,68 @@ const confirmarResolucao = async () => {
 // ======================== PAINEL DE CONTROLE: COMPUTED ========================
 
 // Colunas da tabela: Produto + E.I. + (semanas+tot)*2 entradas/saídas + E.F. + 4 breakdown + 2 est.apoio
-const painelTotalColunas = computed(() => 2 + (painelSemanas.value.length + 1) * 2 + 1 + 4 + 2)
+const painelTotalColunas = computed(() => 2 + (painelSemanas.value.length + 1) * 2 + 1)
 
 const painelFiltered = computed(() => {
   const term = (search.value || painelSearch.value || '').toLowerCase()
-  if (!term) return painelData.value
-  return painelData.value.filter(p =>
-    p.produto.toLowerCase().includes(term) ||
-    p.categoria.toLowerCase().includes(term)
-  )
+  let data = painelData.value
+  if (term) {
+    data = data.filter(p =>
+      p.produto.toLowerCase().includes(term) ||
+      p.categoria.toLowerCase().includes(term)
+    )
+  }
+
+  const tipos = painelTiposSaida.value
+  const allSelected = tipos.length === 4
+  if (allSelected) return data
+
+  // Recalcular saídas por semana baseado nos tipos selecionados (E.F. não muda)
+  return data.map(p => {
+    const saidas_por_semana = p.saidas_por_semana.map((_, idx) => {
+      let total = 0
+      if (tipos.includes('definitiva')) total += (p.saidas_definitiva_por_semana?.[idx] || 0)
+      if (tipos.includes('transf_loja')) total += (p.saidas_transf_loja_por_semana?.[idx] || 0)
+      if (tipos.includes('transf_apoio')) total += (p.saidas_transf_apoio_por_semana?.[idx] || 0)
+      if (tipos.includes('beneficiamento')) total += (p.saidas_beneficiamento_por_semana?.[idx] || 0)
+      return total
+    })
+    const total_saidas = saidas_por_semana.reduce((sum, v) => sum + v, 0)
+
+    return {
+      ...p,
+      saidas_por_semana,
+      total_saidas
+    }
+  })
+})
+
+const painelTiposSaidaLabel = computed(() => {
+  const sel = painelTiposSaida.value
+  if (sel.length === 4) return 'Todas'
+  if (sel.length === 0) return 'Nenhuma'
+  if (sel.length <= 2) return sel.map(v => painelTiposSaidaOptions.find(o => o.value === v)?.label).join(', ')
+  return `${sel.length} tipos`
 })
 
 const painelPaginatedItems = computed(() => {
   const start = (painelPage.value - 1) * painelPageSize.value
   const end = start + painelPageSize.value
   return painelFiltered.value.slice(start, end)
+})
+
+// ======================== APOIO: COMPUTEDS ========================
+
+const painelApoioFiltered = computed(() => {
+  const term = (search.value || painelSearch.value || '').toLowerCase()
+  if (!term) return painelApoioData.value
+  return painelApoioData.value.filter(p => p.produto.toLowerCase().includes(term))
+})
+
+const painelApoioPaginatedItems = computed(() => {
+  const start = (painelPage.value - 1) * painelPageSize.value
+  const end = start + painelPageSize.value
+  return painelApoioFiltered.value.slice(start, end)
 })
 
 const painelResumo = computed(() => {
@@ -2484,10 +2735,24 @@ const loadPainel = async () => {
   }
 }
 
+const loadPainelApoio = async () => {
+  try {
+    painelApoioLoading.value = true
+    const resultado = await getPainelMesApoio(painelSelectedAno.value, painelSelectedMes.value)
+    painelApoioDias.value = resultado.dias
+    painelApoioData.value = resultado.itens
+  } catch (error: any) {
+    toast.add({ title: 'Erro', description: error.message || 'Erro ao carregar apoio', color: 'red' })
+  } finally {
+    painelApoioLoading.value = false
+  }
+}
+
 // ======================== WATCHERS ========================
 
 watch([painelSelectedMes, painelSelectedAno], () => {
-  loadPainel()
+  if (painelEstoque.value === 'principal') loadPainel()
+  else loadPainelApoio()
 })
 
 watch(showDashboard, (val) => {
@@ -2497,9 +2762,16 @@ watch(showDashboard, (val) => {
 })
 
 watch(viewMode, (val) => {
-  if (val === 'detalhamento' && painelData.value.length === 0) {
-    loadPainel()
+  if (val === 'detalhamento') {
+    if (painelEstoque.value === 'principal' && painelData.value.length === 0) loadPainel()
+    else if (painelEstoque.value === 'apoio' && painelApoioData.value.length === 0) loadPainelApoio()
   }
+})
+
+watch(painelEstoque, (val) => {
+  painelPage.value = 1
+  if (val === 'principal' && painelData.value.length === 0) loadPainel()
+  else if (val === 'apoio' && painelApoioData.value.length === 0) loadPainelApoio()
 })
 
 watch([filtroDataInicio, filtroDataFim], () => {
@@ -2550,11 +2822,14 @@ watch(empresaDestinoId, async (novoId) => {
       }
     })
   } catch (e) {
-    console.error('Erro ao carregar produtos destino:', e)
   } finally {
     loadingProdutosDestino.value = false
   }
 })
+
+// Realtime
+const { onTableChange } = useRealtime()
+onTableChange(['contagens', 'contagem_setores', 'contagem_itens', 'produtos', 'setores', 'setor_produtos', 'responsaveis', 'entradas', 'saidas', 'ajustes'], () => loadAll())
 
 watch(empresaId, () => {
   if (empresaId.value) loadAll()

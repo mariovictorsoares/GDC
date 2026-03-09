@@ -316,6 +316,11 @@ watch(selectedAno, () => {
   loadFaturamentoMensal()
 })
 
+// Realtime
+const { onTableChange } = useRealtime()
+onTableChange(['entradas', 'saidas', 'ajustes', 'produtos'], () => loadCMV())
+onTableChange('faturamentos', () => loadFaturamentoMensal())
+
 watch(empresaId, () => {
   if (empresaId.value) {
     loadCMV()

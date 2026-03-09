@@ -219,7 +219,7 @@
               :to="link.to"
               class="flex items-center gap-3 p-3 rounded-lg border border-operacao-100 hover:bg-operacao-50 hover:border-operacao-200 transition-colors duration-150"
             >
-              <div class="p-1.5 rounded-md" :class="link.iconBg">
+              <div class="flex items-center justify-center p-1.5 rounded-md" :class="link.iconBg">
                 <UIcon :name="link.icon" class="w-4 h-4" :class="link.iconColor" />
               </div>
               <span class="text-sm font-medium text-operacao-600">{{ link.label }}</span>
@@ -247,7 +247,7 @@
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-3">
             <div class="relative">
-              <div class="p-2 bg-alerta-50 rounded-lg">
+              <div class="flex items-center justify-center p-2 bg-alerta-50 rounded-lg">
                 <UIcon name="i-heroicons-exclamation-triangle" class="w-5 h-5 text-alerta-600" />
               </div>
               <span class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse" />
@@ -369,7 +369,8 @@ const { formatCurrency, formatNumber } = useFormatters()
 
 const saudacao = computed(() => {
   const hora = new Date().getHours()
-  const nome = user.value?.user_metadata?.full_name?.split(' ')[0] || ''
+  const meta = user.value?.user_metadata
+  const nome = (meta?.nome || meta?.name || meta?.full_name || '').split(' ')[0]
   if (hora < 12) return `Bom dia${nome ? ', ' + nome : ''}`
   if (hora < 18) return `Boa tarde${nome ? ', ' + nome : ''}`
   return `Boa noite${nome ? ', ' + nome : ''}`
@@ -507,7 +508,7 @@ const saldoBarSaidas = computed(() => {
 const quickLinks = [
   { to: '/relatorios/painel-mes', label: 'Painel de Controle', icon: 'i-heroicons-document-chart-bar', iconBg: 'bg-guardian-50', iconColor: 'text-guardian-600' },
   { to: '/relatorios/curva-abc', label: 'Curva ABC', icon: 'i-heroicons-chart-bar', iconBg: 'bg-alerta-50', iconColor: 'text-alerta-600' },
-  { to: '/relatorios/estoque-minimo', label: 'Planej. Compras', icon: 'i-heroicons-clipboard-document-list', iconBg: 'bg-guardian-50', iconColor: 'text-guardian-600' },
+  { to: '/relatorios/cmc-semanal', label: 'CMC Semanal', icon: 'i-heroicons-currency-dollar', iconBg: 'bg-guardian-50', iconColor: 'text-guardian-600' },
   { to: '/relatorios/cmv', label: 'CMV', icon: 'i-heroicons-calculator', iconBg: 'bg-red-50', iconColor: 'text-red-600' }
 ]
 

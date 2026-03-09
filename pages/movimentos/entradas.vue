@@ -5,6 +5,19 @@
       <h1 class="text-2xl font-semibold text-[#5a5a66] mb-2">Entradas</h1>
       <div class="flex gap-2">
         <UButton
+          v-if="pendentesTransfCount > 0"
+          color="blue"
+          variant="soft"
+          class="w-full sm:w-auto"
+          @click="showPendentesTransf = true"
+        >
+          <UIcon name="i-heroicons-truck" class="w-4 h-4 mr-2" />
+          Transferências Pendentes
+          <UBadge color="blue" variant="solid" size="xs" class="ml-1.5">
+            {{ pendentesTransfCount }}
+          </UBadge>
+        </UButton>
+        <UButton
           v-if="pendentesCount > 0"
           color="purple"
           variant="soft"
@@ -72,7 +85,7 @@
         :ui="{
           divide: 'divide-y divide-operacao-50 dark:divide-operacao-700',
           thead: '',
-          th: { base: 'bg-operacao-100/70 dark:bg-operacao-800 border-b border-operacao-200/60 [&_button]:font-medium [&_button]:uppercase [&_button]:tracking-wider [&_button]:text-xs [&_button]:text-[#5a5a66]', color: 'text-[#5a5a66] dark:text-operacao-400', font: 'font-medium', size: 'text-xs uppercase tracking-wider', padding: 'px-4 py-2' },
+          th: { base: 'bg-operacao-100/70 dark:bg-operacao-800 border-b border-operacao-200/60 [&_button]:font-medium [&_button]:uppercase [&_button]:tracking-wider [&_button]:text-xs [&_button]:text-[#5a5a66] [&_button>span+span]:text-operacao-300 [&_button>span+span]:!w-3.5 [&_button>span+span]:!h-3.5', color: 'text-[#5a5a66] dark:text-operacao-400', font: 'font-medium', size: 'text-xs uppercase tracking-wider', padding: 'px-4 py-2' },
           td: { color: 'text-operacao-600 dark:text-operacao-200', size: 'text-sm', padding: 'px-4 py-2.5' }
         }"
       >
@@ -443,6 +456,75 @@
       </div>
     </USlideover>
 
+    <!-- Slideover de Transferências Pendentes -->
+    <USlideover
+      v-model="showPendentesTransf"
+      :ui="{
+        width: 'max-w-md',
+        overlay: { background: 'bg-operacao-900/50 backdrop-blur-sm' },
+        background: 'bg-white dark:bg-operacao-800'
+      }"
+    >
+      <div class="flex flex-col h-full">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-operacao-200 dark:border-operacao-700">
+          <div class="flex items-center gap-3">
+            <div class="p-2 bg-blue-100 rounded-lg">
+              <UIcon name="i-heroicons-truck" class="w-5 h-5 text-blue-600" />
+            </div>
+            <div>
+              <h3 class="text-lg font-semibold text-operacao-800">Transferências Pendentes</h3>
+              <p class="text-xs text-operacao-400">
+                {{ pendentesTransfCount }} {{ pendentesTransfCount === 1 ? 'transferência aguardando' : 'transferências aguardando' }} recebimento
+              </p>
+            </div>
+          </div>
+          <UButton color="gray" variant="ghost" icon="i-heroicons-x-mark" @click="showPendentesTransf = false" />
+        </div>
+
+        <div class="flex-1 overflow-y-auto px-6 py-4 space-y-3">
+          <div
+            v-for="transf in pendentesTransf"
+            :key="transf.id"
+            class="p-4 rounded-xl border border-operacao-200 hover:border-blue-300 bg-white hover:bg-blue-50/30 transition-all cursor-pointer group"
+            @click="openTransfRecebimento(transf)"
+          >
+            <div class="flex items-start justify-between gap-3">
+              <div class="flex-1 min-w-0">
+                <p class="font-medium text-operacao-800 truncate">{{ transf.produto_origem?.nome }}</p>
+                <div class="flex items-center gap-2 mt-1">
+                  <UBadge color="blue" variant="subtle" size="xs">
+                    {{ formatNumber(transf.quantidade) }} {{ transf.produto_origem?.unidade?.sigla }}
+                  </UBadge>
+                  <span class="text-xs text-operacao-400">{{ formatDate(transf.data) }}</span>
+                </div>
+                <p class="text-xs text-operacao-400 mt-1.5">
+                  De: {{ transf.empresa_origem?.nome }} · {{ formatCurrency(transf.custo_total) }}
+                </p>
+              </div>
+              <UIcon
+                name="i-heroicons-chevron-right"
+                class="w-5 h-5 text-operacao-300 group-hover:text-blue-500 transition-colors flex-shrink-0 mt-1"
+              />
+            </div>
+          </div>
+
+          <div v-if="pendentesTransf.length === 0" class="flex flex-col items-center justify-center py-12 text-operacao-400">
+            <UIcon name="i-heroicons-check-circle" class="w-10 h-10 mb-3 text-controle-400" />
+            <p class="text-sm font-medium text-operacao-400">Tudo resolvido!</p>
+            <p class="text-xs text-operacao-400">Nenhuma transferência pendente</p>
+          </div>
+        </div>
+      </div>
+    </USlideover>
+
+    <!-- Modal de Recebimento de Transferência -->
+    <MovimentosTransferenciaRecebimentoModal
+      v-model="transfRecebimentoModalOpen"
+      :transferencia="transfSelecionada"
+      @confirmada="onTransfResolvida"
+      @rejeitada="onTransfResolvida"
+    />
+
     <!-- Modal de Resolução de Produção -->
     <UModal
       v-model="resolucaoModalOpen"
@@ -592,11 +674,17 @@
         </template>
       </UCard>
     </UModal>
+
+    <!-- Modal: Transferência para Apoio -->
+    <MovimentosTransferenciaApoioModal
+      v-model="transferenciaApoioOpen"
+      :itens-entrada="itensParaApoio"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import type { Entrada, Produto, Beneficiamento } from '~/types'
+import type { Entrada, Produto, Beneficiamento, TransferenciaPendente } from '~/types'
 
 const toolbarInputUi = { color: { white: { outline: 'shadow-sm bg-white text-gray-900 ring-1 ring-inset ring-[#EBEBED] focus:ring-1 focus:ring-operacao-200 dark:ring-operacao-700' } } }
 const toolbarButtonUi = { color: { white: { solid: 'shadow-sm ring-1 ring-inset ring-[#EBEBED] text-gray-700 bg-white hover:bg-gray-50 focus-visible:ring-2 focus-visible:ring-guardian-500 dark:ring-operacao-700 dark:bg-gray-900 dark:text-white dark:hover:bg-gray-800/50' } } }
@@ -618,9 +706,11 @@ const {
   getBeneficiamentosPendentes,
   countBeneficiamentosPendentes,
   resolverBeneficiamento,
-  getProdutosBeneficiamento
+  getProdutosBeneficiamento,
+  getTransferenciasPendentes,
+  countTransferenciasPendentes
 } = useEstoque()
-const { empresaId } = useEmpresa()
+const { empresaId, empresaAtiva } = useEmpresa()
 const toast = useToast()
 
 const entradas = ref<Entrada[]>([])
@@ -636,11 +726,26 @@ const deleteModalOpen = ref(false)
 const editingEntrada = ref<Entrada | null>(null)
 const deletingEntrada = ref<Entrada | null>(null)
 
+// Transferência para Apoio
+const transferenciaApoioOpen = ref(false)
+const itensParaApoio = ref<Array<{ produto_id: string; quantidade: number; produto_nome: string; unidade_sigla: string }>>([])
+
+watch(transferenciaApoioOpen, (aberto) => {
+  if (!aberto) itensParaApoio.value = []
+})
+
 // Beneficiamento
 const showPendentes = ref(false)
 const pendentes = ref<Beneficiamento[]>([])
 const pendentesCount = ref(0)
 const resolucaoModalOpen = ref(false)
+
+// Transferências pendentes
+const showPendentesTransf = ref(false)
+const pendentesTransf = ref<TransferenciaPendente[]>([])
+const pendentesTransfCount = ref(0)
+const transfRecebimentoModalOpen = ref(false)
+const transfSelecionada = ref<TransferenciaPendente | null>(null)
 const resolvingBeneficiamento = ref<Beneficiamento | null>(null)
 const itensResolucao = ref<Array<{
   produto_final_id: string
@@ -790,7 +895,6 @@ const loadProdutos = async () => {
   try {
     produtos.value = await getProdutos()
   } catch (error) {
-    console.error('Erro ao carregar produtos:', error)
   }
 }
 
@@ -898,11 +1002,36 @@ const saveEntrada = async () => {
           : 'Entrada registrada com sucesso',
         color: 'green'
       })
+
+      // Preparar sugestão de transferência para apoio (se habilitado)
+      console.log('[Apoio] empresaAtiva:', empresaAtiva.value?.sugerir_transferencia_apoio, 'itensValidos:', itensValidos.length)
+      if (empresaAtiva.value?.sugerir_transferencia_apoio !== false) {
+        itensParaApoio.value = itensValidos.map(item => {
+          const prod = produtos.value.find(p => p.id === item.produto_id)
+          return {
+            produto_id: item.produto_id,
+            quantidade: item.quantidade,
+            produto_nome: prod?.nome || 'Produto',
+            unidade_sigla: prod?.unidade?.sigla || ''
+          }
+        })
+        console.log('[Apoio] itensParaApoio preparados:', itensParaApoio.value.length)
+      }
     }
 
     modalOpen.value = false
     await loadEntradas()
     page.value = 1
+
+    // Abrir modal de apoio após o modal de entrada terminar de fechar
+    console.log('[Apoio] Verificando abertura do modal:', itensParaApoio.value.length)
+    if (itensParaApoio.value.length > 0) {
+      console.log('[Apoio] Abrindo modal em 300ms...')
+      setTimeout(() => {
+        console.log('[Apoio] setTimeout disparou, transferenciaApoioOpen = true')
+        transferenciaApoioOpen.value = true
+      }, 300)
+    }
   } catch (error: any) {
     toast.add({
       title: 'Erro',
@@ -990,8 +1119,33 @@ const loadPendentes = async () => {
       pendentes.value = []
     }
   } catch (error) {
-    console.error('Erro ao carregar beneficiamentos pendentes:', error)
   }
+}
+
+// Transferências pendentes
+const loadPendentesTransf = async () => {
+  try {
+    pendentesTransfCount.value = await countTransferenciasPendentes()
+    if (pendentesTransfCount.value > 0) {
+      pendentesTransf.value = await getTransferenciasPendentes()
+    } else {
+      pendentesTransf.value = []
+    }
+  } catch (error) {
+  }
+}
+
+const openTransfRecebimento = (transf: TransferenciaPendente) => {
+  showPendentesTransf.value = false
+  setTimeout(() => {
+    transfSelecionada.value = transf
+    transfRecebimentoModalOpen.value = true
+  }, 300)
+}
+
+const onTransfResolvida = () => {
+  loadPendentesTransf()
+  loadEntradas()
 }
 
 const openResolucaoFromSlideover = (benef: Beneficiamento) => {
@@ -1019,7 +1173,6 @@ const openResolucao = async (benef: Beneficiamento) => {
       gramatura: 0
     }))
   } catch (error) {
-    console.error('Erro ao carregar produtos finais:', error)
     itensResolucao.value = []
   }
 
@@ -1077,11 +1230,21 @@ watch([filtroDataInicio, filtroDataFim], () => {
   loadEntradas()
 })
 
+// Realtime
+const { onTableChange } = useRealtime()
+onTableChange(['entradas', 'beneficiamentos', 'beneficiamento_itens'], () => {
+  loadEntradas()
+  loadPendentes()
+  loadPendentesTransf()
+})
+onTableChange('produtos', () => loadProdutos())
+
 watch(empresaId, () => {
   if (empresaId.value) {
     loadEntradas()
     loadProdutos()
     loadPendentes()
+    loadPendentesTransf()
   }
 }, { immediate: true })
 </script>

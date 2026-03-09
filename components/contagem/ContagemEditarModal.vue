@@ -19,7 +19,7 @@
           </div>
           <div>
             <h3 class="text-lg font-semibold text-operacao-800">Editar contagem recorrente</h3>
-            <p class="text-xs text-operacao-400">Altere as configuracoes da contagem</p>
+            <p class="text-xs text-operacao-400">Altere as configurações da contagem</p>
           </div>
         </div>
         <UButton color="gray" variant="ghost" icon="i-heroicons-x-mark" @click="close" />
@@ -56,7 +56,7 @@
 
         <!-- Recorrencia + Horario -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <UFormGroup label="Recorrencia" required>
+          <UFormGroup label="Recorrência" required>
             <USelect
               v-model="recorrencia"
               :options="opcoesRecorrencia"
@@ -114,14 +114,14 @@
 
           <!-- Helper text -->
           <p class="text-xs text-operacao-400 -mt-2">
-            Nos dias em que a contagem deve ser executada, e no horario definido,
-            o responsavel recebera uma notificacao com um link para realizar a contagem.
+            Nos dias em que a contagem deve ser executada, e no horário definido,
+            o responsável receberá uma notificação com um link para realizar a contagem.
           </p>
         </template>
 
         <!-- Responsavel -->
         <div>
-          <h4 class="font-semibold text-operacao-800 mb-1">Responsavel</h4>
+          <h4 class="font-semibold text-operacao-800 mb-1">Responsável</h4>
           <p class="text-sm text-operacao-400 mb-3">Quem vai realizar esta contagem?</p>
 
           <!-- Inline add new responsavel -->
@@ -194,7 +194,7 @@
               {{ setoresSelecionados.size }} selecionado{{ setoresSelecionados.size !== 1 ? 's' : '' }}
             </span>
           </div>
-          <p class="text-sm text-operacao-400 mb-3">Selecione os setores que farao parte desta contagem recorrente.</p>
+          <p class="text-sm text-operacao-400 mb-3">Selecione os setores que farão parte desta contagem recorrente.</p>
 
           <UInput
             v-if="setores.length > 5"
@@ -267,7 +267,7 @@
           <h3 class="text-lg font-semibold text-red-600">Excluir Contagem</h3>
         </template>
         <p>Tem certeza que deseja excluir a contagem <strong>{{ contagem?.nome }}</strong>?</p>
-        <p class="text-sm text-red-500 mt-2">Esta acao nao pode ser desfeita.</p>
+        <p class="text-sm text-red-500 mt-2">Esta ação não pode ser desfeita.</p>
         <template #footer>
           <div class="flex flex-col-reverse sm:flex-row justify-end gap-3">
             <UButton color="gray" variant="ghost" class="w-full sm:w-auto" @click="modalExcluirOpen = false">
@@ -331,8 +331,8 @@ const produtosPorSetor = ref<Record<string, { id: string; nome: string }[]>>({})
 // OPTIONS
 // ==========================================
 const opcoesRecorrencia = [
-  { label: 'Nao definida', value: 'nenhuma' },
-  { label: 'Diaria', value: 'diaria' },
+  { label: 'Não definida', value: 'nenhuma' },
+  { label: 'Diária', value: 'diaria' },
   { label: 'Semanal', value: 'semanal' },
   { label: 'A cada duas semanas', value: 'quinzenal' },
   { label: 'Mensal', value: 'mensal' }
@@ -356,18 +356,18 @@ const diasDaSemana = [
 
 const opcoesMensalPosicao = [
   { label: 'Primeira(o)', value: 'primeira' },
-  { label: 'Ultima(o)', value: 'ultima' }
+  { label: 'Última(o)', value: 'ultima' }
 ]
 
 const opcoesMensalDia = [
-  { label: 'domingo do mes', value: 'domingo' },
-  { label: 'segunda-feira do mes', value: 'segunda' },
-  { label: 'terca-feira do mes', value: 'terca' },
-  { label: 'quarta-feira do mes', value: 'quarta' },
-  { label: 'quinta-feira do mes', value: 'quinta' },
-  { label: 'sexta-feira do mes', value: 'sexta' },
-  { label: 'sabado do mes', value: 'sabado' },
-  { label: 'dia do mes', value: 'dia' }
+  { label: 'domingo do mês', value: 'domingo' },
+  { label: 'segunda-feira do mês', value: 'segunda' },
+  { label: 'terça-feira do mês', value: 'terca' },
+  { label: 'quarta-feira do mês', value: 'quarta' },
+  { label: 'quinta-feira do mês', value: 'quinta' },
+  { label: 'sexta-feira do mês', value: 'sexta' },
+  { label: 'sábado do mês', value: 'sabado' },
+  { label: 'dia do mês', value: 'dia' }
 ]
 
 // ==========================================
@@ -484,9 +484,9 @@ const adicionarResponsavel = async () => {
     responsavel.value = novo
     novoResponsavelNome.value = ''
     novoResponsavelTelefone.value = ''
-    toast.add({ title: 'Sucesso', description: 'Responsavel adicionado', color: 'green' })
+    toast.add({ title: 'Sucesso', description: 'Responsável adicionado', color: 'green' })
   } catch (error: any) {
-    toast.add({ title: 'Erro', description: error.message || 'Erro ao salvar responsavel', color: 'red' })
+    toast.add({ title: 'Erro', description: error.message || 'Erro ao salvar responsável', color: 'red' })
   }
 }
 
@@ -549,7 +549,7 @@ const excluirConfirmado = async () => {
     excluindo.value = true
     await deleteContagem(props.contagem.id)
     modalExcluirOpen.value = false
-    toast.add({ title: 'Sucesso', description: 'Contagem excluida', color: 'green' })
+    toast.add({ title: 'Sucesso', description: 'Contagem excluída', color: 'green' })
     emit('deleted')
     close()
   } catch (error: any) {

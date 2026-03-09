@@ -3,13 +3,8 @@
     <!-- Header -->
     <h1 class="text-2xl font-semibold text-[#5a5a66] mb-2">Giro de Estoque</h1>
 
-    <!-- Filtros -->
+    <!-- Resumo Anual + Year Picker -->
     <div class="flex items-center gap-3">
-      <USelect v-model="selectedAno" :options="anosOptions" class="w-full sm:w-32" :ui="toolbarInputUi" />
-    </div>
-
-    <!-- Resumo Anual -->
-    <div class="grid grid-cols-2 gap-3">
       <div class="rounded-lg bg-white ring-1 ring-[#EBEBED] shadow-sm px-4 py-3">
         <div class="flex items-center gap-1.5 mb-1">
           <span class="w-1.5 h-1.5 rounded-full bg-red-400" />
@@ -22,7 +17,24 @@
           <span class="w-1.5 h-1.5 rounded-full bg-guardian-400" />
           <span class="text-[11px] font-medium text-operacao-400">Giro Médio (dias)</span>
         </div>
-        <p class="text-base font-bold" :class="getGiroClass(resumoAnual.giroMedioDias)">{{ formatNumber(resumoAnual.giroMedioDias) }}</p>
+        <p class="text-base font-bold" :class="getGiroClass(resumoAnual.giroMedioDias)">{{ resumoAnual.giroMedioDias.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</p>
+      </div>
+      <div class="ml-auto inline-flex items-center gap-1 ring-1 ring-[#EBEBED] rounded-lg bg-white shadow-sm">
+        <button
+          class="p-1.5 rounded-l-lg hover:bg-operacao-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          :disabled="selectedAno <= minAno"
+          @click="selectedAno--"
+        >
+          <UIcon name="i-heroicons-chevron-left-20-solid" class="w-4 h-4 text-operacao-500" />
+        </button>
+        <span class="px-3 py-1 text-sm font-semibold text-[#5a5a66] tabular-nums select-none min-w-[3.5rem] text-center">{{ selectedAno }}</span>
+        <button
+          class="p-1.5 rounded-r-lg hover:bg-operacao-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          :disabled="selectedAno >= maxAno"
+          @click="selectedAno++"
+        >
+          <UIcon name="i-heroicons-chevron-right-20-solid" class="w-4 h-4 text-operacao-500" />
+        </button>
       </div>
     </div>
 
@@ -30,12 +42,12 @@
     <UCard :ui="{ base: 'overflow-hidden', body: { padding: '' }, ring: 'ring-1 ring-[#EBEBED]', shadow: 'shadow-sm' }">
       <UTable
         :columns="columns"
-        :rows="paginatedItems"
+        :rows="giroData"
         :loading="loading"
         :ui="{
           divide: 'divide-y divide-operacao-50 dark:divide-operacao-700',
           thead: '',
-          th: { base: 'bg-operacao-100/70 dark:bg-operacao-800 border-b border-operacao-200/60 [&_button]:font-medium [&_button]:uppercase [&_button]:tracking-wider [&_button]:text-xs [&_button]:text-[#5a5a66]', color: 'text-[#5a5a66] dark:text-operacao-400', font: 'font-medium', size: 'text-xs uppercase tracking-wider', padding: 'px-4 py-2' },
+          th: { base: 'bg-operacao-100/70 dark:bg-operacao-800 border-b border-operacao-200/60 [&_button]:font-medium [&_button]:uppercase [&_button]:tracking-wider [&_button]:text-xs [&_button]:text-[#5a5a66] [&_button>span+span]:text-operacao-300 [&_button>span+span]:!w-3.5 [&_button>span+span]:!h-3.5', color: 'text-[#5a5a66] dark:text-operacao-400', font: 'font-medium', size: 'text-xs uppercase tracking-wider', padding: 'px-4 py-2' },
           td: { color: 'text-operacao-600 dark:text-operacao-200', size: 'text-sm', padding: 'px-4 py-2.5' }
         }"
       >
@@ -58,24 +70,16 @@
         </template>
         <template #giro_dias_real-data="{ row }">
           <span :class="getGiroClass(row.giro_dias_real)">
-            {{ formatNumber(row.giro_dias_real) }} dias
+            {{ row.giro_dias_real.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }} dias
           </span>
         </template>
       </UTable>
-      <TablePagination
-        v-model="page"
-        :page-size="pageSize"
-        :total-items="giroData.length"
-        @update:page-size="pageSize = $event"
-      />
     </UCard>
   </div>
 </template>
 
 <script setup lang="ts">
 import type { GiroEstoque } from '~/types'
-
-const toolbarInputUi = { color: { white: { outline: 'shadow-sm bg-white text-gray-900 ring-1 ring-inset ring-[#EBEBED] focus:ring-1 focus:ring-operacao-200 dark:ring-operacao-700' } } }
 
 const { getGiroEstoque } = useRelatorios()
 const { empresaId } = useEmpresa()
@@ -85,7 +89,10 @@ const giroData = ref<GiroEstoque[]>([])
 const loading = ref(false)
 const selectedAno = ref(new Date().getFullYear())
 
-const { page, pageSize, paginatedItems } = usePagination(giroData)
+// Year picker limits
+const currentYear = new Date().getFullYear()
+const minAno = currentYear - 2
+const maxAno = currentYear + 2
 
 const columns = [
   { key: 'mes', label: 'Mês' },
@@ -93,14 +100,6 @@ const columns = [
   { key: 'cmv', label: 'CMV (R$)' },
   { key: 'giro_dias_real', label: 'Giro (dias)' }
 ]
-
-const anosOptions = computed(() => {
-  const currentYear = new Date().getFullYear()
-  return Array.from({ length: 5 }, (_, i) => ({
-    label: String(currentYear - 2 + i),
-    value: currentYear - 2 + i
-  }))
-})
 
 const resumoAnual = computed(() => {
   if (giroData.value.length === 0) {
@@ -144,6 +143,10 @@ const loadGiro = async () => {
 watch(selectedAno, () => {
   loadGiro()
 })
+
+// Realtime
+const { onTableChange } = useRealtime()
+onTableChange(['entradas', 'saidas', 'ajustes', 'produtos', 'faturamentos'], () => loadGiro())
 
 watch(empresaId, () => {
   if (empresaId.value) {

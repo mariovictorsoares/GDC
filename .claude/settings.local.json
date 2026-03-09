@@ -78,7 +78,13 @@
       "Bash(npx kill-port 3000 3002)",
       "Bash(lsof -ti:3000 -ti:3002)",
       "Bash(xargs kill -9)",
-      "Bash(netstat -ano)"
+      "Bash(netstat -ano)",
+      "Bash(xargs grep -l \"stripe\\\\|checkout\\\\|assinatura\\\\|plano\")",
+      "Bash(grep -i \"CREATE TABLE\\\\|CREATE VIEW\" /c/Users/mario/Desktop/estoque-cd/supabase/migrations/*.sql)",
+      "Bash(find /c/Users/mario/Desktop/estoque-cd/supabase -name \"*.sql\" -exec grep -l \"pedido\" {} ;)",
+      "Bash(xargs grep -l \"CREATE TABLE.*pedido\")",
+      "Bash(xargs grep -l \"empresa_destino\\\\|TransferenciaLoja\")",
+      "Bash(xargs grep -l \"pg_cron\\\\|pg_net\\\\|http_post\")"
     ]
   }
 }

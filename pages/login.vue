@@ -197,8 +197,6 @@ const handleLogin = async () => {
       await navigateTo('/')
     }
   } catch (error: any) {
-    console.error('Erro de login:', error)
-
     // Shake nos campos com erro
     emailError.value = true
     passwordError.value = true

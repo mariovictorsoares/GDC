@@ -4,9 +4,15 @@
  * Cria uma Stripe Checkout Session para assinatura de plano.
  * Inclui a taxa de implantação (R$497) como item avulso se ainda não foi paga.
  */
-import { createClient } from '@supabase/supabase-js'
+import { serverSupabaseUser, serverSupabaseServiceRole } from '#supabase/server'
 
 export default defineEventHandler(async (event) => {
+  // Auth: apenas usuários autenticados
+  const user = await serverSupabaseUser(event)
+  if (!user) {
+    throw createError({ statusCode: 401, statusMessage: 'Não autenticado' })
+  }
+
   // Verificar se Stripe está configurado
   if (!isStripeConfigured()) {
     throw createError({
@@ -30,10 +36,19 @@ export default defineEventHandler(async (event) => {
   const appUrl = config.public.appUrl || 'http://localhost:3000'
 
   // Supabase admin client
-  const supabase = createClient(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_KEY!
-  )
+  const supabase = serverSupabaseServiceRole(event)
+
+  // Verificar que o usuário pertence à empresa
+  const { data: vinculo } = await supabase
+    .from('usuarios_empresas')
+    .select('id')
+    .eq('user_id', user.id)
+    .eq('empresa_id', empresa_id)
+    .single()
+
+  if (!vinculo) {
+    throw createError({ statusCode: 403, statusMessage: 'Sem permissão para esta empresa' })
+  }
 
   // Buscar plano
   const { data: plano, error: planoError } = await supabase

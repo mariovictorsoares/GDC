@@ -2,15 +2,11 @@
   <div class="space-y-6">
     <!-- Header -->
     <div class="flex items-center justify-between pb-2">
-      <h1 class="text-2xl font-semibold text-[#5a5a66] mb-2">Planejamento de Compras</h1>
+      <h1 class="text-2xl font-semibold text-[#5a5a66] mb-2">CMC Semanal</h1>
       <div class="flex gap-2">
         <UButton color="primary" variant="outline" @click="gerarCompra" v-if="activeTab === 0" :disabled="produtosEmReposicao.length === 0">
           <UIcon name="i-heroicons-shopping-cart" class="w-4 h-4 mr-2" />
           Gerar Compra
-        </UButton>
-        <UButton color="primary" @click="loadData" :loading="loading">
-          <UIcon name="i-heroicons-arrow-path" class="w-4 h-4 mr-2" />
-          Atualizar
         </UButton>
       </div>
     </div>
@@ -40,7 +36,7 @@
         :ui="{
           divide: 'divide-y divide-operacao-50 dark:divide-operacao-700',
           thead: '',
-          th: { base: 'bg-operacao-100/70 dark:bg-operacao-800 border-b border-operacao-200/60 [&_button]:font-medium [&_button]:uppercase [&_button]:tracking-wider [&_button]:text-xs [&_button]:text-[#5a5a66]', color: 'text-[#5a5a66] dark:text-operacao-400', font: 'font-medium', size: 'text-xs uppercase tracking-wider', padding: 'px-4 py-2' },
+          th: { base: 'bg-operacao-100/70 dark:bg-operacao-800 border-b border-operacao-200/60 [&_button]:font-medium [&_button]:uppercase [&_button]:tracking-wider [&_button]:text-xs [&_button]:text-[#5a5a66] [&_button>span+span]:text-operacao-300 [&_button>span+span]:!w-3.5 [&_button>span+span]:!h-3.5', color: 'text-[#5a5a66] dark:text-operacao-400', font: 'font-medium', size: 'text-xs uppercase tracking-wider', padding: 'px-4 py-2' },
           td: { color: 'text-operacao-600 dark:text-operacao-200', size: 'text-sm', padding: 'px-4 py-2.5' }
         }"
       >
@@ -158,33 +154,78 @@
     <!-- Tab: CMC Semanal -->
     <template v-if="activeTab === 1">
 
-      <!-- Tabela CMC Semanal Agrupada -->
+      <!-- Seletor de Mês -->
+      <div class="flex items-center gap-3">
+        <UPopover :popper="{ placement: 'bottom-start' }">
+          <UButton
+            color="white"
+            class="w-auto justify-between"
+            :ui="toolbarButtonUi"
+          >
+            <UIcon name="i-heroicons-calendar-days" class="w-4 h-4 text-operacao-400 mr-2" />
+            <span class="text-sm font-normal text-gray-900 capitalize">{{ cmcMesAnoLabel }}</span>
+          </UButton>
+          <template #panel="{ close }">
+            <div class="w-64 p-3">
+              <div class="flex items-center justify-between mb-3">
+                <button class="p-1 rounded hover:bg-operacao-100 transition-colors" @click="cmcPickerAno--">
+                  <UIcon name="i-heroicons-chevron-left-20-solid" class="w-4 h-4 text-operacao-500" />
+                </button>
+                <span class="text-sm font-semibold text-gray-700">{{ cmcPickerAno }}</span>
+                <button class="p-1 rounded hover:bg-operacao-100 transition-colors" @click="cmcPickerAno++">
+                  <UIcon name="i-heroicons-chevron-right-20-solid" class="w-4 h-4 text-operacao-500" />
+                </button>
+              </div>
+              <div class="grid grid-cols-3 gap-1.5">
+                <button
+                  v-for="(nome, idx) in mesesNomes"
+                  :key="idx"
+                  class="px-2 py-1.5 text-sm rounded-md transition-colors capitalize"
+                  :class="cmcSelectedMes === idx + 1 && cmcSelectedAno === cmcPickerAno
+                    ? 'bg-guardian-600 text-white font-medium'
+                    : 'text-operacao-600 hover:bg-operacao-50'"
+                  @click="cmcSelectMesAno(idx + 1, cmcPickerAno); close()"
+                >
+                  {{ nome }}
+                </button>
+              </div>
+            </div>
+          </template>
+        </UPopover>
+      </div>
+
+      <!-- Card Resumo -->
       <UCard :ui="{ base: 'overflow-hidden', body: { padding: '' }, ring: 'ring-1 ring-[#EBEBED]', shadow: 'shadow-sm' }">
         <div class="overflow-x-auto">
-          <table class="w-full text-sm">
+          <table class="w-full text-sm" style="table-layout: fixed;">
+            <colgroup>
+              <col style="width: 30%;" />
+              <col v-for="(_, idx) in cmcData?.semanas || []" :key="'rc-'+idx" :style="{ width: cmcColWidth + '%' }" />
+              <col :style="{ width: cmcColWidth + '%' }" />
+            </colgroup>
             <thead>
               <tr class="bg-operacao-100/70 border-b border-operacao-200/60">
-                <th class="px-4 py-3 text-left font-medium text-[#5a5a66] text-xs uppercase tracking-wider min-w-[250px]">Grupo / Subgrupo</th>
+                <th class="px-4 py-3 text-left font-medium text-[#5a5a66] text-xs uppercase tracking-wider"></th>
                 <th
                   v-for="(semana, idx) in cmcData?.semanas || []"
                   :key="idx"
-                  class="px-3 py-3 text-right font-semibold text-[#5a5a66] min-w-[120px]"
+                  class="px-3 py-3 text-center font-medium text-[#5a5a66] text-xs uppercase tracking-wider"
                 >
-                  {{ semana.inicio }} - {{ semana.fim }}
+                  <MiniCalendar :mes="cmcSelectedMes" :ano="cmcSelectedAno" :data-inicio="semana.inicio_date" :data-fim="semana.fim_date">
+                    {{ semana.label }}
+                  </MiniCalendar>
                 </th>
-                <th class="px-3 py-3 text-right font-semibold text-[#5a5a66] min-w-[120px]">Total</th>
+                <th class="px-3 py-3 text-right font-medium text-[#5a5a66] text-xs uppercase tracking-wider">Total</th>
               </tr>
             </thead>
-
-            <!-- Resumo no topo: Total Compras, Faturamento (inline input), CMC % -->
-            <tbody v-if="cmcData?.grupos?.length" class="border-b-2 border-operacao-300">
+            <tbody v-if="cmcData?.semanas?.length" class="divide-y divide-operacao-100">
               <!-- Total Compras -->
-              <tr class="bg-operacao-50">
+              <tr>
                 <td class="px-4 py-2.5 font-bold text-operacao-800">Total Compras</td>
                 <td
                   v-for="(semana, idx) in cmcData.semanas"
                   :key="'total-'+idx"
-                  class="px-3 py-2.5 text-right font-bold text-operacao-800"
+                  class="px-3 py-2.5 text-center font-bold text-operacao-800"
                 >
                   {{ formatCurrency(calcTotalCompraSemana(idx)) }}
                 </td>
@@ -193,7 +234,7 @@
                 </td>
               </tr>
               <!-- Faturamento (editável inline) -->
-              <tr class="bg-guardian-50/30">
+              <tr>
                 <td class="px-4 py-2.5 font-medium text-guardian-700">
                   <div class="flex items-center gap-1.5">
                     <UIcon name="i-heroicons-pencil-square" class="w-3.5 h-3.5" />
@@ -211,7 +252,7 @@
                     @blur="salvarFaturamentoSemanal(idx)"
                     size="xs"
                     placeholder="0,00"
-                    :ui="{ base: 'text-right' }"
+                    :ui="{ base: 'text-center' }"
                   />
                 </td>
                 <td class="px-3 py-2.5 text-right font-bold text-guardian-600">
@@ -219,15 +260,15 @@
                 </td>
               </tr>
               <!-- CMC % -->
-              <tr class="bg-orange-50">
-                <td class="px-4 py-2.5 font-bold text-orange-700">CMC %</td>
+              <tr>
+                <td class="px-4 py-2.5 font-bold text-alerta-700">CMC %</td>
                 <td
                   v-for="(pct, idx) in cmcData.cmc_percentuais"
                   :key="'cmc-'+idx"
-                  class="px-3 py-2.5 text-right font-bold"
+                  class="px-3 py-2.5 text-center font-bold"
                   :class="getCmcColorClass(pct)"
                 >
-                  <span v-if="pct > 0" class="flex items-center justify-end gap-1">
+                  <span v-if="pct > 0" class="inline-flex items-center gap-1">
                     {{ formatPercent(pct) }}
                     <UTooltip :popper="{ placement: 'top' }" :ui="{ width: 'max-w-sm', base: 'whitespace-normal text-center' }">
                       <UIcon :name="getCmcIcon(pct)" class="w-4 h-4 cursor-help" />
@@ -238,10 +279,8 @@
                   </span>
                   <span v-else>-</span>
                 </td>
-                <td class="px-3 py-2.5 text-right font-bold"
-                  :class="getCmcColorClass(cmcMediaGeral)"
-                >
-                  <span v-if="cmcMediaGeral > 0" class="flex items-center justify-end gap-1">
+                <td class="px-3 py-2.5 text-right font-bold" :class="getCmcColorClass(cmcMediaGeral)">
+                  <span v-if="cmcMediaGeral > 0" class="inline-flex items-center justify-end gap-1">
                     {{ formatPercent(cmcMediaGeral) }}
                     <UTooltip :popper="{ placement: 'top' }" :ui="{ width: 'max-w-sm', base: 'whitespace-normal text-center' }">
                       <UIcon :name="getCmcIcon(cmcMediaGeral)" class="w-4 h-4 cursor-help" />
@@ -254,17 +293,28 @@
                 </td>
               </tr>
             </tbody>
+          </table>
+        </div>
+      </UCard>
 
-            <!-- Dados agrupados -->
+      <!-- Card Grupos/Subgrupos -->
+      <UCard :ui="{ base: 'overflow-hidden', body: { padding: '' }, ring: 'ring-1 ring-[#EBEBED]', shadow: 'shadow-sm' }">
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm" style="table-layout: fixed;">
+            <colgroup>
+              <col style="width: 30%;" />
+              <col v-for="(_, idx) in cmcData?.semanas || []" :key="'gc-'+idx" :style="{ width: cmcColWidth + '%' }" />
+              <col :style="{ width: cmcColWidth + '%' }" />
+            </colgroup>
             <tbody v-if="cmcData?.grupos?.length" class="divide-y divide-operacao-100">
               <template v-for="grupo in cmcData.grupos" :key="grupo.grupo_id">
                 <!-- Linha do Grupo -->
-                <tr class="bg-guardian-50/50 hover:bg-guardian-50 cursor-pointer" @click="toggleGrupo(grupo.grupo_id)">
+                <tr class="hover:bg-operacao-50 cursor-pointer" @click="toggleGrupo(grupo.grupo_id)">
                   <td class="px-4 py-2.5">
                     <div class="flex items-center gap-2">
                       <UIcon
                         :name="gruposAbertos.has(grupo.grupo_id) ? 'i-heroicons-chevron-down' : 'i-heroicons-chevron-right'"
-                        class="w-4 h-4 text-guardian-500"
+                        class="w-4 h-4 text-operacao-400"
                       />
                       <span class="font-semibold text-operacao-800">{{ grupo.grupo_nome }}</span>
                     </div>
@@ -272,11 +322,11 @@
                   <td
                     v-for="(val, idx) in grupo.totais_semanas"
                     :key="idx"
-                    class="px-3 py-2.5 text-right font-semibold text-operacao-800"
+                    class="px-3 py-2.5 text-center font-semibold text-operacao-700"
                   >
-                    {{ formatCurrency(val) }}
+                    {{ val > 0 ? formatCurrency(val) : '-' }}
                   </td>
-                  <td class="px-3 py-2.5 text-right font-bold text-guardian-700">
+                  <td class="px-3 py-2.5 text-right font-bold text-operacao-800">
                     {{ formatCurrency(grupo.totais_semanas.reduce((a: number, b: number) => a + b, 0)) }}
                   </td>
                 </tr>
@@ -293,7 +343,7 @@
                     <td
                       v-for="(val, idx) in sub.totais_semanas"
                       :key="idx"
-                      class="px-3 py-2 text-right text-operacao-600"
+                      class="px-3 py-2 text-center text-operacao-600"
                     >
                       {{ val > 0 ? formatCurrency(val) : '-' }}
                     </td>
@@ -333,10 +383,10 @@
       <UCard :ui="{ base: 'overflow-hidden', body: { padding: '' }, ring: 'ring-1 ring-[#EBEBED]', shadow: 'shadow-sm' }">
         <div class="overflow-x-auto">
           <table class="min-w-full text-sm">
-            <thead class="bg-operacao-50">
-              <tr>
-                <th class="px-3 py-3 text-left text-xs font-medium text-[#5a5a66] uppercase tracking-wider sticky left-0 bg-operacao-50 min-w-[200px] z-10">Produto</th>
-                <th class="px-3 py-3 text-left text-xs font-medium text-[#5a5a66] uppercase tracking-wider sticky left-[200px] bg-operacao-50 min-w-[50px] z-10">Un.</th>
+            <thead>
+              <tr class="bg-operacao-100/70 border-b border-operacao-200/60">
+                <th class="px-3 py-3 text-left text-xs font-medium text-[#5a5a66] uppercase tracking-wider sticky left-0 bg-operacao-100/70 min-w-[200px] z-10">Produto</th>
+                <th class="px-3 py-3 text-left text-xs font-medium text-[#5a5a66] uppercase tracking-wider sticky left-[200px] bg-operacao-100/70 min-w-[50px] z-10">Un.</th>
                 <th
                   v-for="dia in vcData?.dias || []"
                   :key="dia.data"
@@ -760,6 +810,33 @@ const cmcLoading = ref(false)
 const gruposAbertos = ref<Set<string>>(new Set())
 const cmcFatInputs = ref<(number | string)[]>([])
 
+// Seletor de mês
+const hojeRef = new Date()
+const cmcSelectedAno = ref(hojeRef.getFullYear())
+const cmcSelectedMes = ref(hojeRef.getMonth() + 1)
+const cmcPickerAno = ref(hojeRef.getFullYear())
+const mesesNomes = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']
+const toolbarButtonUi = { rounded: 'rounded-lg', padding: { sm: 'px-3 py-2' }, color: { white: { solid: 'shadow-sm ring-1 ring-inset ring-[#EBEBED] hover:bg-operacao-50' } } }
+
+// Largura de cada coluna de semana (70% restante dividido entre semanas + total)
+const cmcColWidth = computed(() => {
+  const numSemanas = cmcData.value?.semanas?.length || 4
+  return 70 / (numSemanas + 1) // +1 para a coluna Total
+})
+
+const cmcMesAnoLabel = computed(() => {
+  return `${mesesNomes[cmcSelectedMes.value - 1]} ${cmcSelectedAno.value}`
+})
+
+const cmcSelectMesAno = (mes: number, ano: number) => {
+  cmcSelectedMes.value = mes
+  cmcSelectedAno.value = ano
+}
+
+watch([cmcSelectedAno, cmcSelectedMes], () => {
+  loadCmcSemanal()
+})
+
 const toggleGrupo = (grupoId: string) => {
   if (gruposAbertos.value.has(grupoId)) {
     gruposAbertos.value.delete(grupoId)
@@ -785,7 +862,7 @@ const getCmcColorClass = (pct: number) => {
   if (pct <= 0) return 'text-operacao-400'
   if (pct < 25) return 'text-guardian-600'
   if (pct <= 30) return 'text-controle-600'
-  if (pct <= 35) return 'text-orange-600'
+  if (pct <= 35) return 'text-alerta-600'
   return 'text-red-600'
 }
 
@@ -822,11 +899,9 @@ const salvarFaturamentoSemanal = async (idx: number) => {
 const loadCmcSemanal = async () => {
   try {
     cmcLoading.value = true
-    cmcData.value = await getCmcSemanal(4)
+    cmcData.value = await getCmcSemanal(cmcSelectedAno.value, cmcSelectedMes.value)
     // Sync faturamento inputs
     cmcFatInputs.value = cmcData.value.faturamentos.map(f => f || '')
-    // Abrir todos os grupos por padrão
-    cmcData.value.grupos.forEach(g => gruposAbertos.value.add(g.grupo_id))
   } catch (error: any) {
     toast.add({
       title: 'Erro',
@@ -937,6 +1012,10 @@ const loadData = async () => {
     loading.value = false
   }
 }
+
+// Realtime
+const { onTableChange } = useRealtime()
+onTableChange(['produtos', 'entradas', 'saidas', 'ajustes'], () => loadData())
 
 // Aguardar empresaId estar disponível antes de carregar
 watch(empresaId, (id) => {

@@ -166,8 +166,6 @@ const handleResetPassword = async () => {
     // Fazer logout para forçar novo login com a nova senha
     await client.auth.signOut()
   } catch (error: any) {
-    console.error('Erro ao alterar senha:', error)
-
     // Tratamento de erros específicos
     let titulo = 'Erro ao alterar senha'
     let mensagem = 'Ocorreu um erro inesperado. Tente novamente.'

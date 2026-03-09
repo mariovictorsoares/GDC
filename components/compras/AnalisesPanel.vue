@@ -86,7 +86,7 @@
               :columns="columns"
               :rows="paginatedItems"
               :loading="loading"
-              :ui="{ td: { base: '' }, th: { base: 'bg-operacao-100/70 dark:bg-operacao-800 border-b border-operacao-200/60 [&_button]:font-medium [&_button]:uppercase [&_button]:tracking-wider [&_button]:text-xs [&_button]:text-[#5a5a66]', color: 'text-[#5a5a66] dark:text-operacao-400', font: 'font-medium', size: 'text-xs uppercase tracking-wider', padding: 'px-4 py-2' } }"
+              :ui="{ td: { base: '' }, th: { base: 'bg-operacao-100/70 dark:bg-operacao-800 border-b border-operacao-200/60 [&_button]:font-medium [&_button]:uppercase [&_button]:tracking-wider [&_button]:text-xs [&_button]:text-[#5a5a66] [&_button>span+span]:text-operacao-300 [&_button>span+span]:!w-3.5 [&_button>span+span]:!h-3.5', color: 'text-[#5a5a66] dark:text-operacao-400', font: 'font-medium', size: 'text-xs uppercase tracking-wider', padding: 'px-4 py-2' } }"
             >
               <template #empty-state>
                 <div class="flex flex-col items-center justify-center py-6 text-operacao-400">
@@ -203,13 +203,6 @@
           <!-- Filtros -->
           <UCard>
             <div class="flex flex-wrap gap-4 items-end">
-              <UFormGroup label="Mês">
-                <USelect
-                  v-model="vcMesSelecionado"
-                  :options="vcMesesOptions"
-                  class="w-48"
-                />
-              </UFormGroup>
               <UFormGroup label="Buscar">
                 <UInput
                   v-model="vcSearch"
@@ -217,6 +210,44 @@
                   icon="i-heroicons-magnifying-glass"
                   class="w-64"
                 />
+              </UFormGroup>
+              <UFormGroup label="Mês">
+                <UPopover :popper="{ placement: 'bottom-start' }">
+                  <UButton
+                    color="white"
+                    class="w-48 justify-between"
+                    :ui="toolbarButtonUi"
+                  >
+                    <UIcon name="i-heroicons-calendar-days" class="w-4 h-4 text-operacao-400 mr-2" />
+                    <span class="text-sm font-normal text-gray-900 capitalize">{{ vcMesAnoLabel }}</span>
+                  </UButton>
+                  <template #panel="{ close }">
+                    <div class="w-64 p-3">
+                      <div class="flex items-center justify-between mb-3">
+                        <button class="p-1 rounded hover:bg-operacao-100 transition-colors" @click="vcPickerAno--">
+                          <UIcon name="i-heroicons-chevron-left-20-solid" class="w-4 h-4 text-operacao-500" />
+                        </button>
+                        <span class="text-sm font-semibold text-gray-700">{{ vcPickerAno }}</span>
+                        <button class="p-1 rounded hover:bg-operacao-100 transition-colors" @click="vcPickerAno++">
+                          <UIcon name="i-heroicons-chevron-right-20-solid" class="w-4 h-4 text-operacao-500" />
+                        </button>
+                      </div>
+                      <div class="grid grid-cols-3 gap-1.5">
+                        <button
+                          v-for="(nome, idx) in mesesNomes"
+                          :key="idx"
+                          class="px-2 py-1.5 text-sm rounded-md transition-colors capitalize"
+                          :class="vcSelectedMes === idx + 1 && vcSelectedAno === vcPickerAno
+                            ? 'bg-guardian-600 text-white font-medium'
+                            : 'text-operacao-600 hover:bg-operacao-50'"
+                          @click="vcSelectMesAno(idx + 1, vcPickerAno); close()"
+                        >
+                          {{ nome }}
+                        </button>
+                      </div>
+                    </div>
+                  </template>
+                </UPopover>
               </UFormGroup>
             </div>
           </UCard>
@@ -688,21 +719,22 @@ const vcLoading = ref(false)
 const vcSearch = ref('')
 
 const hoje = new Date()
-const vcMesSelecionado = ref(`${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}`)
+const vcSelectedAno = ref(hoje.getFullYear())
+const vcSelectedMes = ref(hoje.getMonth() + 1)
+const vcPickerAno = ref(hoje.getFullYear())
 
-const vcMesesOptions = computed(() => {
-  const opcoes = []
-  const current = new Date()
-  for (let i = 0; i < 12; i++) {
-    const d = new Date(current.getFullYear(), current.getMonth() - i, 1)
-    const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
-    const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-      'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
-    const label = `${meses[d.getMonth()]} ${d.getFullYear()}`
-    opcoes.push({ label, value })
-  }
-  return opcoes
+const mesesNomes = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']
+
+const vcMesAnoLabel = computed(() => {
+  return `${mesesNomes[vcSelectedMes.value - 1]} ${vcSelectedAno.value}`
 })
+
+const vcSelectMesAno = (mes: number, ano: number) => {
+  vcSelectedMes.value = mes
+  vcSelectedAno.value = ano
+}
+
+const toolbarButtonUi = { color: { white: { solid: 'shadow-sm ring-1 ring-inset ring-[#EBEBED] text-gray-700 bg-white hover:bg-gray-50 focus-visible:ring-2 focus-visible:ring-guardian-500 dark:ring-operacao-700 dark:bg-gray-900 dark:text-white dark:hover:bg-gray-800/50' } } }
 
 const vcFilteredData = computed(() => {
   if (!vcData.value) return []
@@ -717,8 +749,7 @@ const vcFilteredData = computed(() => {
 const loadVariacaoCusto = async () => {
   try {
     vcLoading.value = true
-    const [ano, mes] = vcMesSelecionado.value.split('-').map(Number)
-    vcData.value = await getVariacaoCustoDiaria(ano, mes)
+    vcData.value = await getVariacaoCustoDiaria(vcSelectedAno.value, vcSelectedMes.value)
   } catch (error: any) {
     toast.add({
       title: 'Erro',
@@ -730,7 +761,7 @@ const loadVariacaoCusto = async () => {
   }
 }
 
-watch(vcMesSelecionado, () => {
+watch([vcSelectedAno, vcSelectedMes], () => {
   loadVariacaoCusto()
 })
 

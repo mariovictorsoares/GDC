@@ -3,119 +3,39 @@
     <!-- Header -->
     <div>
       <UButton color="gray" variant="ghost" icon="i-heroicons-arrow-left" size="sm" class="mb-3" @click="$emit('voltar')" />
-      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <h1 class="text-2xl font-semibold text-[#5a5a66]">{{ contagem.nome }}</h1>
-        <div class="flex gap-2">
-          <UButton
-            v-if="contagem.status !== 'finalizada'"
-            color="gray"
-            variant="soft"
-            size="sm"
-            @click="$emit('editar')"
-          >
-            <UIcon name="i-heroicons-pencil-square" class="w-4 h-4 mr-1" />
-            Editar
-          </UButton>
-          <UButton
-            v-if="contagem.status !== 'finalizada'"
-            color="red"
-            variant="soft"
-            size="sm"
-            @click="$emit('excluir')"
-          >
-            <UIcon name="i-heroicons-trash" class="w-4 h-4 mr-1" />
-            Excluir
-          </UButton>
-          <UButton
-            v-if="contagem.responsavel_telefone"
-            color="green"
-            variant="soft"
-            size="sm"
-            @click="$emit('enviar-lembrete')"
-          >
-            <UIcon name="i-heroicons-chat-bubble-left-ellipsis" class="w-4 h-4 mr-1" />
-            Enviar Lembrete
-          </UButton>
-          <UButton
-            v-if="contagem.status !== 'finalizada'"
-            color="primary"
-            @click="$emit('ver-progresso')"
-          >
-            <UIcon name="i-heroicons-eye" class="w-4 h-4 mr-2" />
-            Ver Progresso
-          </UButton>
-        </div>
-      </div>
+      <h1 class="text-2xl font-semibold text-[#5a5a66]">{{ contagem.nome }}</h1>
     </div>
 
-    <!-- Cards de resumo -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-      <!-- Card esquerdo: Status + Progresso circular -->
-      <UCard :ui="{ body: { padding: 'p-5' } }">
-        <div class="flex items-start justify-between">
-          <div>
-            <p class="text-sm text-operacao-400 mb-1">Status</p>
-            <p
-              class="text-lg font-bold"
-              :class="{
-                'text-red-500': contagem.status === 'atrasada',
-                'text-alerta-600': contagem.status === 'aguardando' || contagem.status === 'pendente',
-                'text-guardian-600': contagem.status === 'em_andamento',
-                'text-controle-600': contagem.status === 'finalizada',
-                'text-operacao-400': !contagem.status
-              }"
-            >
-              {{ statusLabel(contagem.status) }}
-            </p>
-            <UButton
-              v-if="contagem.status !== 'finalizada'"
-              color="gray"
-              variant="soft"
-              size="xs"
-              class="mt-4"
-              @click="$emit('ver-progresso')"
-            >
-              <UIcon name="i-heroicons-play" class="w-3 h-3 mr-1" />
-              Ver Progresso
-            </UButton>
-          </div>
-          <!-- Progresso circular -->
-          <CircularProgress
-            :value="progressoGeral"
-            :size="80"
-          />
+    <!-- Cards de resumo + Ações -->
+    <div class="flex items-center gap-3">
+      <div class="flex flex-wrap gap-3">
+        <div class="rounded-lg bg-white ring-1 ring-[#EBEBED] shadow-sm px-4 py-2.5">
+          <span class="text-[11px] font-medium text-operacao-400">Recorrência</span>
+          <p class="text-sm font-bold text-operacao-800">{{ labelRecorrencia(contagem.recorrencia) }}</p>
         </div>
-      </UCard>
-
-      <!-- Card central: Recorrência + Responsável -->
-      <div class="flex flex-col gap-4">
-        <UCard :ui="{ body: { padding: 'p-5' } }">
-          <p class="text-sm text-operacao-400 mb-1">Recorrência</p>
-          <p class="font-semibold text-operacao-800">{{ labelRecorrencia(contagem.recorrencia) }}</p>
-        </UCard>
-        <UCard :ui="{ body: { padding: 'p-5' } }">
-          <p class="text-sm text-operacao-400 mb-1">Responsável</p>
-          <p class="font-semibold text-operacao-800">{{ contagem.responsavel_nome || '-' }}</p>
-          <p v-if="contagem.responsavel_telefone" class="text-xs text-operacao-400">{{ contagem.responsavel_telefone }}</p>
-        </UCard>
-      </div>
-
-      <!-- Card direito: Setores -->
-      <UCard :ui="{ body: { padding: 'p-5' } }">
-        <p class="text-sm text-operacao-400 mb-2">Setores</p>
-        <div v-if="(contagem.contagem_setores || []).length === 0" class="text-operacao-300 text-sm">
-          Nenhum setor vinculado
+        <div class="rounded-lg bg-white ring-1 ring-[#EBEBED] shadow-sm px-4 py-2.5">
+          <span class="text-[11px] font-medium text-operacao-400">Responsável</span>
+          <p class="text-sm font-bold text-operacao-800">{{ contagem.responsavel_nome || '-' }}</p>
         </div>
-        <div v-else class="space-y-1 max-h-[140px] overflow-y-auto">
-          <p
-            v-for="cs in contagem.contagem_setores"
-            :key="cs.id"
-            class="font-medium text-operacao-800 text-sm"
-          >
-            {{ cs.setor?.nome || 'Setor' }}
+        <div class="rounded-lg bg-white ring-1 ring-[#EBEBED] shadow-sm px-4 py-2.5">
+          <span class="text-[11px] font-medium text-operacao-400">Setores</span>
+          <p v-if="(contagem.contagem_setores || []).length === 0" class="text-sm text-operacao-300">-</p>
+          <p v-else class="text-sm font-bold text-operacao-800">
+            {{ (contagem.contagem_setores || []).map(cs => cs.setor?.nome || 'Setor').join(', ') }}
           </p>
         </div>
-      </UCard>
+      </div>
+      <UDropdown
+        v-if="contagem.status !== 'finalizada'"
+        :items="acoes"
+        :popper="{ placement: 'bottom-end' }"
+        class="ml-auto flex-shrink-0"
+      >
+        <UButton color="white" class="shadow-sm ring-1 ring-inset ring-[#EBEBED]">
+          <UIcon name="i-heroicons-ellipsis-vertical" class="w-4 h-4" />
+          Ações
+        </UButton>
+      </UDropdown>
     </div>
 
     <!-- Histórico -->
@@ -170,7 +90,7 @@ const props = defineProps<{
   loadingHistorico: boolean
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
   'voltar': []
   'ver-progresso': []
   'editar': []
@@ -180,26 +100,21 @@ defineEmits<{
 
 const { formatCurrency } = useFormatters()
 
-// Computed
-const progressoGeral = computed(() => {
-  const setores = props.contagem?.contagem_setores
-  if (!setores || setores.length === 0) return 0
-  const soma = setores.reduce((acc, s) => acc + (s.progresso || 0), 0)
-  return Math.round(soma / setores.length)
+// Dropdown actions
+const acoes = computed(() => {
+  const items = [
+    [
+      { label: 'Editar', icon: 'i-heroicons-pencil-square', click: () => emit('editar') },
+      ...(props.contagem.responsavel_telefone
+        ? [{ label: 'Enviar Lembrete', icon: 'i-heroicons-chat-bubble-left-ellipsis', click: () => emit('enviar-lembrete') }]
+        : []),
+      { label: 'Excluir', icon: 'i-heroicons-trash', class: 'text-red-500', click: () => emit('excluir') }
+    ]
+  ]
+  return items
 })
 
 // Helpers
-const statusLabel = (status?: string) => {
-  switch (status) {
-    case 'atrasada': return 'Atrasada'
-    case 'aguardando':
-    case 'pendente': return 'Aguardando Contagem'
-    case 'em_andamento': return 'Em Andamento'
-    case 'finalizada': return 'Finalizada'
-    default: return '-'
-  }
-}
-
 const labelRecorrencia = (recorrencia?: string) => {
   switch (recorrencia) {
     case 'diaria': return 'Diária'

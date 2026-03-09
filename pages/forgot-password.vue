@@ -196,8 +196,6 @@ const handleForgotPassword = async () => {
       color: 'green'
     })
   } catch (error: any) {
-    console.error('Erro ao enviar email:', error)
-
     // Tratamento de erros específicos
     let titulo = 'Erro ao enviar'
     let mensagem = 'Ocorreu um erro inesperado. Tente novamente.'

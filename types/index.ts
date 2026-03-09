@@ -7,6 +7,7 @@ export interface Empresa {
   logo_url?: string
   ativo: boolean
   created_at?: string
+  sugerir_transferencia_apoio?: boolean
   // Campo extra vindo do join (não persiste)
   papel?: string
 }
@@ -185,6 +186,27 @@ export interface BeneficiamentoItem {
   entrada?: Entrada
 }
 
+export interface TransferenciaPendente {
+  id: string
+  empresa_origem_id: string
+  empresa_destino_id: string
+  produto_origem_id: string
+  produto_destino_id: string
+  quantidade: number
+  custo_unitario: number
+  custo_total: number
+  data: string
+  observacao?: string
+  status: 'pendente' | 'confirmada' | 'rejeitada'
+  data_resolucao?: string
+  created_at?: string
+  // Relacionamentos
+  empresa_origem?: Empresa
+  empresa_destino?: Empresa
+  produto_origem?: Produto
+  produto_destino?: Produto
+}
+
 export interface Ajuste {
   id: string
   produto_id: string
@@ -229,6 +251,11 @@ export interface PainelMes {
   estoque_inicial: number
   entradas_por_semana: number[]
   saidas_por_semana: number[]
+  // Breakdown de saídas por semana e tipo
+  saidas_definitiva_por_semana: number[]
+  saidas_transf_loja_por_semana: number[]
+  saidas_transf_apoio_por_semana: number[]
+  saidas_beneficiamento_por_semana: number[]
   total_saidas: number
   total_entradas: number
   estoque_final: number
@@ -249,6 +276,23 @@ export interface SemanaInfo {
   tooltip: string
   inicio: string
   fim: string
+}
+
+export interface DiaInfo {
+  label: string
+  data: string
+}
+
+export interface PainelMesApoio {
+  produto_id: string
+  produto: string
+  unidade: string
+  estoque_inicial: number
+  entradas_por_dia: number[]
+  saidas_por_dia: number[]
+  total_entradas: number
+  total_saidas: number
+  estoque_final: number
 }
 
 export interface CurvaABC {
@@ -368,6 +412,8 @@ export interface CmcSemanalSubgrupo {
 
 export interface CmcSemanalResumo {
   semanas: {
+    label: string   // S1, S2...
+    tooltip: string // dd/mm - dd/mm
     inicio: string  // dd/mm
     fim: string     // dd/mm
     inicio_date: string // yyyy-mm-dd

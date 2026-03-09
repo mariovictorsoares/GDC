@@ -4,8 +4,7 @@
  * Lista todas as assinaturas com dados da empresa e plano.
  * Apenas super-admins podem acessar.
  */
-import { createClient } from '@supabase/supabase-js'
-import { serverSupabaseUser } from '#supabase/server'
+import { serverSupabaseUser, serverSupabaseServiceRole } from '#supabase/server'
 
 export default defineEventHandler(async (event) => {
   // Verificar autenticação
@@ -14,10 +13,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 401, statusMessage: 'Não autenticado' })
   }
 
-  const supabase = createClient(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_KEY!
-  )
+  const supabase = serverSupabaseServiceRole(event)
 
   // Verificar se é super-admin
   const { data: admin } = await supabase

@@ -46,7 +46,7 @@ export const useComprasExport = () => {
           <th>Produto</th>
           <th class="text-center" style="width:50px;">Un.</th>
           <th class="text-right" style="width:80px;">Qtd.</th>
-          <th class="text-right" style="width:100px;">Preco Est.</th>
+          <th class="text-right" style="width:100px;">Preço Est.</th>
           <th class="text-right" style="width:100px;">Total</th>
         </tr></thead>
         <tbody>${linhas}

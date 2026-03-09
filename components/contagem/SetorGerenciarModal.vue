@@ -25,7 +25,7 @@
             </div>
             <div>
               <h3 class="text-lg font-semibold text-operacao-800">Setores</h3>
-              <p class="text-xs text-operacao-400">Organize suas contagens por area/setor</p>
+              <p class="text-xs text-operacao-400">Organize suas contagens por área/setor</p>
             </div>
           </template>
         </div>
@@ -220,7 +220,7 @@
         </template>
         <p>Tem certeza que deseja excluir o setor <strong>{{ setorParaExcluir?.nome }}</strong>?</p>
         <p v-if="setorParaExcluir && (setorProdutosCount[setorParaExcluir.id] || 0) > 0" class="text-sm text-red-500 mt-2">
-          Este setor possui {{ setorProdutosCount[setorParaExcluir.id] }} {{ (setorProdutosCount[setorParaExcluir.id] || 0) === 1 ? 'produto vinculado' : 'produtos vinculados' }} que tambem serao removidos.
+          Este setor possui {{ setorProdutosCount[setorParaExcluir.id] }} {{ (setorProdutosCount[setorParaExcluir.id] || 0) === 1 ? 'produto vinculado' : 'produtos vinculados' }} que também serão removidos.
         </p>
         <template #footer>
           <div class="flex flex-col-reverse sm:flex-row justify-end gap-3">
@@ -367,7 +367,7 @@ const removerSetorConfirmado = async () => {
       setorProdutosLista.value = []
     }
     modalConfirmarExclusaoOpen.value = false
-    toast.add({ title: 'Sucesso', description: 'Setor excluido', color: 'green' })
+    toast.add({ title: 'Sucesso', description: 'Setor excluído', color: 'green' })
     emit('atualizado')
   } catch (error: any) {
     toast.add({ title: 'Erro', description: error.message || 'Erro ao excluir setor', color: 'red' })

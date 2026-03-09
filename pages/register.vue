@@ -316,7 +316,7 @@ const handleRegister = async () => {
       password: form.value.password,
       options: {
         data: {
-          name: form.value.name
+          full_name: form.value.name
         }
       }
     })
@@ -346,8 +346,6 @@ const handleRegister = async () => {
       form.value = { name: '', email: '', password: '', confirmPassword: '' }
     }
   } catch (error: any) {
-    console.error('Erro no registro:', error)
-
     // Tratamento de erros específicos
     let titulo = 'Erro ao criar conta'
     let mensagem = 'Ocorreu um erro inesperado. Tente novamente.'

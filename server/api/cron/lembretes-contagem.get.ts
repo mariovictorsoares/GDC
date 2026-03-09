@@ -78,13 +78,14 @@ function getMinutoAnterior(hora: number, minuto: number): string {
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig()
 
-  // Segurança: verificar CRON_SECRET se estiver configurado
+  // Segurança: verificar CRON_SECRET (fail-closed)
   const cronSecret = process.env.CRON_SECRET
-  if (cronSecret) {
-    const authHeader = getHeader(event, 'authorization')
-    if (authHeader !== `Bearer ${cronSecret}`) {
-      throw createError({ statusCode: 401, message: 'Não autorizado' })
-    }
+  if (!cronSecret) {
+    throw createError({ statusCode: 500, message: 'CRON_SECRET não configurado' })
+  }
+  const authHeader = getHeader(event, 'authorization')
+  if (authHeader !== `Bearer ${cronSecret}`) {
+    throw createError({ statusCode: 401, message: 'Não autorizado' })
   }
 
   // Validar configuração
@@ -93,7 +94,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const supabaseUrl = process.env.SUPABASE_URL
-  const supabaseKey = process.env.SUPABASE_KEY
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY
   if (!supabaseUrl || !supabaseKey) {
     throw createError({ statusCode: 500, message: 'Supabase não configurado' })
   }

@@ -22,7 +22,7 @@
       :loading-historico="loadingHistorico"
       @voltar="etapa = 'principal'"
       @ver-progresso="abrirProgressoModal"
-      @editar="editarModalOpen = true"
+      @editar="abrirEditarContagem"
       @excluir="modalExcluirContagemOpen = true"
       @enviar-lembrete="enviarLembreteManual"
     />
@@ -63,19 +63,9 @@
       @cancelar="cancelarContagem"
     />
 
-    <!-- Modal: Editar Contagem -->
-    <ContagemEditarModal
-      v-model="editarModalOpen"
-      :contagem="contagemSelecionada"
-      :setores="setores"
-      :responsaveis="responsaveis"
-      :setor-produtos-count="setorProdutosCount"
-      @saved="onContagemEditada"
-      @deleted="onContagemExcluida"
-    />
 
     <!-- Slideover: Gerenciar Setores -->
-    <SetorGerenciarModal
+    <ContagemSetorGerenciarModal
       v-model="slideoverSetoresOpen"
       :setores="setores"
       :produtos="produtos"
@@ -99,11 +89,11 @@
         <div class="flex items-center justify-between px-6 py-4 border-b border-operacao-200">
           <div class="flex items-center gap-3">
             <div class="p-2 bg-guardian-100 rounded-lg">
-              <UIcon name="i-heroicons-clipboard-document-check" class="w-5 h-5 text-guardian-600" />
+              <UIcon :name="editandoContagemId ? 'i-heroicons-pencil-square' : 'i-heroicons-clipboard-document-check'" class="w-5 h-5 text-guardian-600" />
             </div>
             <div>
-              <h3 class="text-lg font-semibold text-operacao-800">Nova Contagem</h3>
-              <p class="text-xs text-operacao-400">Configure e selecione os setores para contar</p>
+              <h3 class="text-lg font-semibold text-operacao-800">{{ editandoContagemId ? 'Editar Contagem' : 'Nova Contagem' }}</h3>
+              <p class="text-xs text-operacao-400">{{ editandoContagemId ? 'Altere as configurações da contagem' : 'Configure e selecione os setores para contar' }}</p>
             </div>
           </div>
           <UButton color="gray" variant="ghost" icon="i-heroicons-x-mark" @click="slideoverSetupOpen = false" />
@@ -279,10 +269,10 @@
               color="primary"
               :disabled="!setupNomeContagem.trim() || !setupRecorrencia || !setupResponsavel || setupSetoresSelecionados.size === 0"
               :loading="loadingSetup"
-              @click="criarContagemPersistida"
+              @click="salvarContagem"
             >
               <UIcon name="i-heroicons-check" class="w-4 h-4 mr-1.5" />
-              Criar Contagem
+              {{ editandoContagemId ? 'Salvar' : 'Criar Contagem' }}
             </UButton>
           </div>
         </div>
@@ -337,7 +327,7 @@ const {
   getSaldoEstoque,
   getAjustes,
   getSetores, countSetorProdutos, getAllSetorProdutos,
-  getContagens, createContagem, updateContagemStatus, deleteContagem,
+  getContagens, createContagem, updateContagem, updateContagemStatus, prepararProximoCiclo, deleteContagem,
   deleteContagemItens, resetContagemSetores,
   getResponsaveis, createResponsavel
 } = useEstoque()
@@ -382,7 +372,7 @@ const loadingHistorico = ref(false)
 // ==========================================
 const slideoverSetoresOpen = ref(false)
 const slideoverSetupOpen = ref(false)
-const editarModalOpen = ref(false)
+const editandoContagemId = ref<string | null>(null)
 const progressoModalOpen = ref(false)
 const modalExcluirContagemOpen = ref(false)
 const modalSucessoOpen = ref(false)
@@ -511,7 +501,6 @@ const carregarResponsaveis = async () => {
   try {
     responsaveis.value = await getResponsaveis()
   } catch (error: any) {
-    console.error('Erro ao carregar responsáveis:', error.message)
   }
 }
 
@@ -561,7 +550,6 @@ const carregarHistorico = async () => {
 
     historicoContagem.value = Array.from(map.values()).sort((a, b) => b.data.localeCompare(a.data))
   } catch (error: any) {
-    console.error('Erro ao carregar histórico:', error.message)
   } finally {
     loadingHistorico.value = false
   }
@@ -617,6 +605,16 @@ const iniciarRevisao = () => {
 }
 
 const onContagemFinalizada = async () => {
+  // Se a contagem é recorrente, resetar para o próximo ciclo
+  const contagem = contagemSelecionada.value
+  if (contagem && contagem.recorrencia && contagem.recorrencia !== 'nenhuma') {
+    try {
+      await prepararProximoCiclo(contagem.id)
+    } catch (err) {
+      console.error('Erro ao preparar próximo ciclo:', err)
+    }
+  }
+
   resumoSalvamento.value = 'A contagem foi finalizada e os ajustes foram registrados com sucesso.'
   modalSucessoOpen.value = true
   contagemSelecionada.value = null
@@ -660,21 +658,6 @@ const cancelarContagem = async () => {
 // ==========================================
 // AÇÕES DE CONTAGEM
 // ==========================================
-const onContagemEditada = async () => {
-  editarModalOpen.value = false
-  await carregarContagens()
-  if (contagemSelecionada.value) {
-    const atualizada = contagensPersistidas.value.find(c => c.id === contagemSelecionada.value!.id)
-    if (atualizada) contagemSelecionada.value = atualizada
-  }
-}
-
-const onContagemExcluida = () => {
-  editarModalOpen.value = false
-  contagemSelecionada.value = null
-  etapa.value = 'principal'
-  carregarContagens()
-}
 
 const excluirContagemConfirmada = async () => {
   if (!contagemSelecionada.value) return
@@ -768,6 +751,7 @@ const adicionarResponsavel = async () => {
 }
 
 const abrirModalSetup = async () => {
+  editandoContagemId.value = null
   setupData.value = new Date().toISOString().split('T')[0]
   setupNomeContagem.value = ''
   setupRecorrencia.value = 'nenhuma'
@@ -782,32 +766,100 @@ const abrirModalSetup = async () => {
   try { allSetorProdutosData.value = await getAllSetorProdutos() } catch {}
 }
 
-const criarContagemPersistida = async () => {
+const abrirEditarContagem = async () => {
+  const c = contagemSelecionada.value
+  if (!c) return
+
+  editandoContagemId.value = c.id
+  setupNomeContagem.value = c.nome || ''
+  setupData.value = c.data || new Date().toISOString().split('T')[0]
+  setupBuscaSetor.value = ''
+
+  // Setar recorrência primeiro (dispara watcher que reseta campos dependentes)
+  setupRecorrencia.value = c.recorrencia || 'nenhuma'
+  await nextTick()
+
+  // Agora popular campos dependentes (depois do watcher ter rodado)
+  setupHorarioNotificacao.value = c.horario_notificacao || '07:00'
+  setupDiasSemana.value = new Set(c.dias_semana || [])
+  setupMensalPosicao.value = c.mensal_posicao || 'primeira'
+  setupMensalDia.value = c.mensal_dia || 'segunda'
+
+  // Responsável
+  if (c.responsavel_nome) {
+    const found = responsaveis.value.find(
+      r => r.nome === c.responsavel_nome && r.telefone === c.responsavel_telefone
+    )
+    setupResponsavel.value = found || { nome: c.responsavel_nome, telefone: c.responsavel_telefone || '' }
+  } else {
+    setupResponsavel.value = null
+  }
+
+  // Setores
+  const ids = (c.contagem_setores || []).map((cs: any) => cs.setor_id)
+  setupSetoresSelecionados.value = new Set(ids)
+
+  slideoverSetupOpen.value = true
+  try { allSetorProdutosData.value = await getAllSetorProdutos() } catch {}
+}
+
+const salvarContagem = async () => {
   if (!setupNomeContagem.value.trim() || !setupRecorrencia.value || !setupResponsavel.value || setupSetoresSelecionados.value.size === 0) return
   try {
     loadingSetup.value = true
     const diasSemanaArr = Array.from(setupDiasSemana.value)
-    await createContagem(
-      {
-        nome: setupNomeContagem.value.trim(),
-        tipo: 'estoque' as TipoContagem,
-        data: setupData.value,
-        recorrencia: setupRecorrencia.value,
-        horario_notificacao: setupHorarioNotificacao.value,
-        dias_semana: diasSemanaArr.length > 0 ? diasSemanaArr : undefined,
-        mensal_posicao: setupRecorrencia.value === 'mensal' ? setupMensalPosicao.value : undefined,
-        mensal_dia: setupRecorrencia.value === 'mensal' ? setupMensalDia.value : undefined,
-        responsavel_nome: setupResponsavel.value.nome,
-        responsavel_telefone: setupResponsavel.value.telefone,
-        responsavel_id: (setupResponsavel.value as any).id || undefined
-      },
-      Array.from(setupSetoresSelecionados.value)
-    )
-    slideoverSetupOpen.value = false
-    toast.add({ title: 'Sucesso', description: 'Contagem criada com sucesso', color: 'green' })
-    await carregarContagens()
+    const setorIds = Array.from(setupSetoresSelecionados.value)
+
+    if (editandoContagemId.value) {
+      // Modo edição
+      await updateContagem(
+        editandoContagemId.value,
+        {
+          nome: setupNomeContagem.value.trim(),
+          recorrencia: setupRecorrencia.value,
+          horario_notificacao: setupHorarioNotificacao.value,
+          dias_semana: diasSemanaArr.length > 0 ? diasSemanaArr : undefined,
+          mensal_posicao: setupRecorrencia.value === 'mensal' ? setupMensalPosicao.value : undefined,
+          mensal_dia: setupRecorrencia.value === 'mensal' ? setupMensalDia.value : undefined,
+          responsavel_nome: setupResponsavel.value.nome,
+          responsavel_telefone: setupResponsavel.value.telefone,
+          responsavel_id: (setupResponsavel.value as any).id || undefined
+        },
+        setorIds
+      )
+      slideoverSetupOpen.value = false
+      toast.add({ title: 'Sucesso', description: 'Contagem atualizada com sucesso', color: 'green' })
+      await carregarContagens()
+      // Atualizar contagem selecionada se estiver nos detalhes
+      if (contagemSelecionada.value?.id === editandoContagemId.value) {
+        const atualizada = contagensPersistidas.value.find(c => c.id === editandoContagemId.value)
+        if (atualizada) contagemSelecionada.value = atualizada
+      }
+      editandoContagemId.value = null
+    } else {
+      // Modo criação
+      await createContagem(
+        {
+          nome: setupNomeContagem.value.trim(),
+          tipo: 'estoque' as TipoContagem,
+          data: setupData.value,
+          recorrencia: setupRecorrencia.value,
+          horario_notificacao: setupHorarioNotificacao.value,
+          dias_semana: diasSemanaArr.length > 0 ? diasSemanaArr : undefined,
+          mensal_posicao: setupRecorrencia.value === 'mensal' ? setupMensalPosicao.value : undefined,
+          mensal_dia: setupRecorrencia.value === 'mensal' ? setupMensalDia.value : undefined,
+          responsavel_nome: setupResponsavel.value.nome,
+          responsavel_telefone: setupResponsavel.value.telefone,
+          responsavel_id: (setupResponsavel.value as any).id || undefined
+        },
+        setorIds
+      )
+      slideoverSetupOpen.value = false
+      toast.add({ title: 'Sucesso', description: 'Contagem criada com sucesso', color: 'green' })
+      await carregarContagens()
+    }
   } catch (error: any) {
-    toast.add({ title: 'Erro', description: error.message || 'Erro ao criar contagem', color: 'red' })
+    toast.add({ title: 'Erro', description: error.message || 'Erro ao salvar contagem', color: 'red' })
   } finally {
     loadingSetup.value = false
   }
@@ -826,6 +878,15 @@ const recarregarSetores = async () => {
     setorProdutosCount.value = counts
   } catch {}
 }
+
+// ==========================================
+// REALTIME
+// ==========================================
+const { onTableChange } = useRealtime()
+onTableChange(['contagens', 'contagem_setores', 'contagem_itens'], () => carregarContagens())
+onTableChange(['produtos', 'grupos', 'subgrupos', 'setores', 'setor_produtos'], () => carregarDadosBase())
+onTableChange('responsaveis', () => carregarResponsaveis())
+onTableChange('ajustes', () => carregarContagens())
 
 // ==========================================
 // INIT

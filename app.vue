@@ -8,3 +8,10 @@
     <UNotifications />
   </div>
 </template>
+
+<style>
+/* Corrigir alinhamento vertical de ícones em botões */
+button [class*="i-heroicons-"] {
+  transform: translateY(1px);
+}
+</style>

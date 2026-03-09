@@ -81,7 +81,7 @@
         :ui="{
           divide: 'divide-y divide-operacao-50 dark:divide-operacao-700',
           thead: '',
-          th: { base: 'bg-operacao-100/70 dark:bg-operacao-800 border-b border-operacao-200/60 [&_button]:font-medium [&_button]:uppercase [&_button]:tracking-wider [&_button]:text-xs [&_button]:text-[#5a5a66]', color: 'text-[#5a5a66] dark:text-operacao-400', font: 'font-medium', size: 'text-xs uppercase tracking-wider', padding: 'px-4 py-2' },
+          th: { base: 'bg-operacao-100/70 dark:bg-operacao-800 border-b border-operacao-200/60 [&_button]:font-medium [&_button]:uppercase [&_button]:tracking-wider [&_button]:text-xs [&_button]:text-[#5a5a66] [&_button>span+span]:text-operacao-300 [&_button>span+span]:!w-3.5 [&_button>span+span]:!h-3.5', color: 'text-[#5a5a66] dark:text-operacao-400', font: 'font-medium', size: 'text-xs uppercase tracking-wider', padding: 'px-4 py-2' },
           td: { color: 'text-operacao-600 dark:text-operacao-200', size: 'text-sm', padding: 'px-4 py-2.5' }
         }"
       >
@@ -682,7 +682,6 @@ const carregarSaldoProduto = async (produtoId: string) => {
     const saldo = await getSaldoProduto(produtoId)
     saldosCache.value.set(produtoId, saldo)
   } catch (error) {
-    console.error('Erro ao carregar saldo:', error)
     saldosCache.value.set(produtoId, 0)
   }
 }
@@ -726,7 +725,6 @@ const loadProdutos = async () => {
   try {
     produtos.value = await getProdutos()
   } catch (error) {
-    console.error('Erro ao carregar produtos:', error)
   }
 }
 
@@ -933,6 +931,11 @@ watch(
   },
   { deep: true }
 )
+
+// Realtime
+const { onTableChange } = useRealtime()
+onTableChange('saidas', () => loadSaidas())
+onTableChange('produtos', () => loadProdutos())
 
 watch(empresaId, () => {
   if (empresaId.value) {

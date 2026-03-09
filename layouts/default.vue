@@ -401,7 +401,7 @@
     >
       <UCard :ui="{ background: 'bg-transparent', ring: 'ring-0', shadow: '', divide: 'divide-operacao-100 dark:divide-operacao-700' }">
         <template #header>
-          <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center justify-between">
             <h3 class="text-lg font-semibold text-operacao-800">Configurações</h3>
             <UButton
               color="gray"
@@ -410,57 +410,125 @@
               @click="showPerfilModal = false"
             />
           </div>
-          <!-- Tabs -->
-          <div class="flex gap-1 border-b border-operacao-100 -mx-1">
-            <button
-              class="px-4 py-2 text-sm font-medium transition-colors relative"
-              :class="perfilModalTab === 0 ? 'text-guardian-700' : 'text-operacao-400 hover:text-operacao-600'"
-              @click="perfilModalTab = 0"
-            >
-              <span class="flex items-center gap-1.5">
-                <UIcon name="i-heroicons-user-circle" class="w-4 h-4" />
-                Perfil
-              </span>
-              <div
-                v-if="perfilModalTab === 0"
-                class="absolute bottom-0 left-2 right-2 h-0.5 bg-guardian-600 rounded-full"
-              />
-            </button>
-            <button
-              class="px-4 py-2 text-sm font-medium transition-colors relative"
-              :class="perfilModalTab === 1 ? 'text-guardian-700' : 'text-operacao-400 hover:text-operacao-600'"
-              @click="perfilModalTab = 1; carregarDadosAssinatura()"
-            >
-              <span class="flex items-center gap-1.5">
-                <UIcon name="i-heroicons-credit-card" class="w-4 h-4" />
-                Assinatura
-              </span>
-              <div
-                v-if="perfilModalTab === 1"
-                class="absolute bottom-0 left-2 right-2 h-0.5 bg-guardian-600 rounded-full"
-              />
-            </button>
-          </div>
         </template>
 
-        <!-- ==================== TAB: PERFIL ==================== -->
-        <form v-if="perfilModalTab === 0" @submit.prevent="salvarPerfil" class="space-y-4">
-          <!-- Foto de perfil -->
-          <div class="flex items-center gap-4">
-            <button
-              type="button"
-              class="relative group w-20 h-20 rounded-full bg-guardian-600 text-white flex items-center justify-center text-2xl font-bold overflow-hidden flex-shrink-0 hover:ring-4 hover:ring-guardian-200 transition-all"
-              @click="($refs.avatarInput as HTMLInputElement)?.click()"
-            >
-              <img v-if="perfilForm.foto_url" :src="perfilForm.foto_url" class="w-20 h-20 object-cover" />
-              <span v-else>{{ iniciaisUsuario }}</span>
-              <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-full">
-                <UIcon name="i-heroicons-camera" class="w-6 h-6 text-white" />
+        <div class="space-y-5">
+          <!-- Gerenciar assinatura -->
+          <div class="flex items-center justify-between p-3 bg-operacao-50 rounded-xl">
+            <div class="flex items-center gap-3">
+              <div
+                class="flex-shrink-0 w-9 h-9 rounded-lg flex items-center justify-center"
+                :class="assinaturaStatusIcon.bgClass"
+              >
+                <UIcon :name="assinaturaStatusIcon.icon" class="w-4.5 h-4.5" :class="assinaturaStatusIcon.iconClass" />
               </div>
-              <div v-if="uploadingAvatar" class="absolute inset-0 bg-black/50 flex items-center justify-center rounded-full">
-                <UIcon name="i-heroicons-arrow-path" class="w-6 h-6 text-white animate-spin" />
+              <div>
+                <p class="text-sm font-semibold text-operacao-800">
+                  {{ assinaturaData?.plano?.nome || 'Período de teste' }}
+                  <span
+                    class="ml-1.5 inline-flex items-center px-1.5 py-0.5 text-[10px] font-semibold rounded-full"
+                    :class="assinaturaStatusBadge.class"
+                  >
+                    {{ assinaturaStatusBadge.label }}
+                  </span>
+                </p>
+                <p class="text-xs text-operacao-400">
+                  <template v-if="subscriptionState.state === 'active'">
+                    <span v-if="assinaturaData?.plano">R$ {{ formatarPrecoAssinatura(assinaturaData.plano.preco_mensal) }}/mês</span>
+                  </template>
+                  <template v-else-if="isTrial">
+                    {{ subscriptionState.diasRestantes }} dia{{ subscriptionState.diasRestantes! > 1 ? 's' : '' }} restantes
+                  </template>
+                  <template v-else-if="subscriptionState.state === 'grace'">
+                    Teste expirado
+                  </template>
+                  <template v-else-if="subscriptionState.state === 'past_due'">
+                    Pagamento pendente
+                  </template>
+                  <template v-else-if="subscriptionState.state === 'cancelled'">
+                    Cancelada
+                  </template>
+                </p>
               </div>
-            </button>
+            </div>
+            <div class="flex items-center gap-2">
+              <button
+                v-if="assinaturaData?.stripe_customer_id"
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-operacao-800 text-white hover:bg-operacao-900 transition-colors"
+                :disabled="abrindoPortal"
+                @click="handleAbrirPortalModal"
+              >
+                <UIcon name="i-heroicons-cog-6-tooth" class="w-3.5 h-3.5" />
+                {{ abrindoPortal ? 'Abrindo...' : 'Gerenciar' }}
+              </button>
+              <NuxtLink
+                v-if="!isAssinaturaActive || subscriptionState.state === 'cancelled'"
+                to="/assinatura"
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-guardian-600 text-white hover:bg-guardian-700 transition-colors"
+                @click="showPerfilModal = false"
+              >
+                <UIcon name="i-heroicons-sparkles" class="w-3.5 h-3.5" />
+                Assinar
+              </NuxtLink>
+            </div>
+          </div>
+
+          <!-- Divider -->
+          <div class="border-t border-operacao-100" />
+
+          <!-- Preferências -->
+          <div class="space-y-3">
+            <p class="text-xs font-semibold text-operacao-500 uppercase tracking-wider">Preferências</p>
+            <div class="flex items-center justify-between p-3 bg-operacao-50 rounded-xl">
+              <div class="flex items-center gap-3">
+                <div class="flex-shrink-0 w-9 h-9 rounded-lg flex items-center justify-center bg-blue-100">
+                  <UIcon name="i-heroicons-arrow-path-rounded-square" class="w-4.5 h-4.5 text-blue-600" />
+                </div>
+                <div>
+                  <p class="text-sm font-semibold text-operacao-800">Sugerir transferência para apoio</p>
+                  <p class="text-xs text-operacao-400">Após registrar entradas, sugerir envio ao estoque de apoio</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-guardian-500 focus:ring-offset-2"
+                :class="empresaAtiva?.sugerir_transferencia_apoio !== false ? 'bg-guardian-600' : 'bg-operacao-200'"
+                @click="toggleSugerirApoio"
+              >
+                <span
+                  class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
+                  :class="empresaAtiva?.sugerir_transferencia_apoio !== false ? 'translate-x-5' : 'translate-x-0'"
+                />
+              </button>
+            </div>
+          </div>
+
+          <!-- Divider -->
+          <div class="border-t border-operacao-100" />
+
+          <!-- Perfil -->
+          <form @submit.prevent="salvarPerfil" class="space-y-4">
+          <!-- Foto + Nome na mesma linha -->
+          <div class="flex items-end gap-3">
+            <div class="relative flex-shrink-0">
+              <button
+                type="button"
+                class="relative group w-12 h-12 rounded-full bg-guardian-600 text-white flex items-center justify-center text-base font-bold overflow-hidden hover:ring-2 hover:ring-guardian-200 transition-all"
+                @click="($refs.avatarInput as HTMLInputElement)?.click()"
+              >
+                <img v-if="perfilForm.foto_url" :src="perfilForm.foto_url" class="w-12 h-12 object-cover" />
+                <span v-else>{{ iniciaisUsuario }}</span>
+                <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-full">
+                  <UIcon name="i-heroicons-camera" class="w-4 h-4 text-white" />
+                </div>
+                <div v-if="uploadingAvatar" class="absolute inset-0 bg-black/50 flex items-center justify-center rounded-full">
+                  <UIcon name="i-heroicons-arrow-path" class="w-4 h-4 text-white animate-spin" />
+                </div>
+              </button>
+              <div class="absolute -top-0.5 -right-0.5 w-5 h-5 rounded-full bg-white shadow ring-1 ring-operacao-200 flex items-center justify-center pointer-events-none">
+                <UIcon name="i-heroicons-pencil" class="w-2.5 h-2.5 text-operacao-400" />
+              </div>
+            </div>
             <input
               ref="avatarInput"
               type="file"
@@ -468,195 +536,111 @@
               class="hidden"
               @change="onAvatarSelected"
             />
-            <div class="flex-1">
-              <p class="text-sm font-medium text-operacao-600">Foto de perfil</p>
-              <p class="text-xs text-operacao-400 mt-0.5">Clique na imagem para alterar</p>
-              <p class="text-[10px] text-operacao-400">PNG, JPG ou WebP até 2MB</p>
-            </div>
+            <UFormGroup label="Nome Completo" required class="flex-1">
+              <UInput
+                v-model="perfilForm.nome"
+                placeholder="Seu nome completo"
+                size="lg"
+                icon="i-heroicons-user"
+              />
+            </UFormGroup>
           </div>
 
-          <!-- Nome -->
-          <UFormGroup label="Nome Completo" required>
-            <UInput
-              v-model="perfilForm.nome"
-              placeholder="Seu nome completo"
-              size="lg"
-              icon="i-heroicons-user"
-            />
-          </UFormGroup>
+          <!-- Endereço (colapsável) -->
+          <div class="pt-1">
+            <button
+              type="button"
+              class="flex items-center justify-between w-full py-2 text-sm font-semibold text-operacao-600 hover:text-operacao-800 transition-colors"
+              @click="enderecoAberto = !enderecoAberto"
+            >
+              <span class="flex items-center gap-1.5">
+                <UIcon name="i-heroicons-map-pin" class="w-4 h-4 text-operacao-400" />
+                Endereço
+                <span v-if="!enderecoAberto && enderecoResumo" class="text-xs font-normal text-operacao-400 ml-1 truncate max-w-[200px]">— {{ enderecoResumo }}</span>
+              </span>
+              <UIcon
+                name="i-heroicons-chevron-down"
+                class="w-4 h-4 text-operacao-400 transition-transform duration-200"
+                :class="enderecoAberto ? '' : '-rotate-90'"
+              />
+            </button>
 
-          <!-- Endereço -->
-          <div class="pt-2">
-            <p class="text-sm font-semibold text-operacao-600 mb-3 flex items-center gap-1.5">
-              <UIcon name="i-heroicons-map-pin" class="w-4 h-4 text-operacao-400" />
-              Endereço
-            </p>
+            <div
+              class="grid transition-[grid-template-rows] duration-200 ease-in-out"
+              :class="enderecoAberto ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'"
+            >
+              <div class="overflow-hidden">
+                <div class="pt-1 pb-1 space-y-3">
+                  <div class="grid grid-cols-3 gap-3">
+                    <UFormGroup label="CEP">
+                      <UInput
+                        v-model="perfilForm.cep"
+                        placeholder="00000-000"
+                        size="sm"
+                        maxlength="9"
+                        @input="formatarCepInput"
+                        @blur="buscarCep"
+                      />
+                    </UFormGroup>
+                    <UFormGroup label="Cidade" class="col-span-2">
+                      <UInput
+                        v-model="perfilForm.cidade"
+                        placeholder="Cidade"
+                        size="sm"
+                      />
+                    </UFormGroup>
+                  </div>
 
-            <div class="grid grid-cols-3 gap-3">
-              <UFormGroup label="CEP">
-                <UInput
-                  v-model="perfilForm.cep"
-                  placeholder="00000-000"
-                  size="sm"
-                  maxlength="9"
-                  @input="formatarCepInput"
-                  @blur="buscarCep"
-                />
-              </UFormGroup>
-              <UFormGroup label="Cidade" class="col-span-2">
-                <UInput
-                  v-model="perfilForm.cidade"
-                  placeholder="Cidade"
-                  size="sm"
-                />
-              </UFormGroup>
-            </div>
+                  <div class="grid grid-cols-4 gap-3">
+                    <UFormGroup label="Logradouro" class="col-span-2">
+                      <UInput
+                        v-model="perfilForm.logradouro"
+                        placeholder="Rua, Av..."
+                        size="sm"
+                      />
+                    </UFormGroup>
+                    <UFormGroup label="Número">
+                      <UInput
+                        v-model="perfilForm.numero"
+                        placeholder="Nº"
+                        size="sm"
+                      />
+                    </UFormGroup>
+                    <UFormGroup label="Estado">
+                      <UInput
+                        v-model="perfilForm.estado"
+                        placeholder="UF"
+                        size="sm"
+                        maxlength="2"
+                      />
+                    </UFormGroup>
+                  </div>
 
-            <div class="grid grid-cols-4 gap-3 mt-3">
-              <UFormGroup label="Logradouro" class="col-span-2">
-                <UInput
-                  v-model="perfilForm.logradouro"
-                  placeholder="Rua, Av..."
-                  size="sm"
-                />
-              </UFormGroup>
-              <UFormGroup label="Número">
-                <UInput
-                  v-model="perfilForm.numero"
-                  placeholder="Nº"
-                  size="sm"
-                />
-              </UFormGroup>
-              <UFormGroup label="Estado">
-                <UInput
-                  v-model="perfilForm.estado"
-                  placeholder="UF"
-                  size="sm"
-                  maxlength="2"
-                />
-              </UFormGroup>
-            </div>
-
-            <div class="grid grid-cols-2 gap-3 mt-3">
-              <UFormGroup label="Bairro">
-                <UInput
-                  v-model="perfilForm.bairro"
-                  placeholder="Bairro"
-                  size="sm"
-                />
-              </UFormGroup>
-              <UFormGroup label="Complemento">
-                <UInput
-                  v-model="perfilForm.complemento"
-                  placeholder="Apto, Sala..."
-                  size="sm"
-                />
-              </UFormGroup>
+                  <div class="grid grid-cols-2 gap-3">
+                    <UFormGroup label="Bairro">
+                      <UInput
+                        v-model="perfilForm.bairro"
+                        placeholder="Bairro"
+                        size="sm"
+                      />
+                    </UFormGroup>
+                    <UFormGroup label="Complemento">
+                      <UInput
+                        v-model="perfilForm.complemento"
+                        placeholder="Apto, Sala..."
+                        size="sm"
+                      />
+                    </UFormGroup>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </form>
-
-        <!-- ==================== TAB: ASSINATURA ==================== -->
-        <div v-else-if="perfilModalTab === 1" class="space-y-5">
-          <!-- Status Card -->
-          <div class="flex items-start gap-3">
-            <div
-              class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center"
-              :class="assinaturaStatusIcon.bgClass"
-            >
-              <UIcon :name="assinaturaStatusIcon.icon" class="w-5 h-5" :class="assinaturaStatusIcon.iconClass" />
-            </div>
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center gap-2 mb-0.5">
-                <h4 class="text-sm font-bold text-operacao-800">
-                  {{ assinaturaData?.plano?.nome || 'Período de teste' }}
-                </h4>
-                <span
-                  class="inline-flex items-center px-2 py-0.5 text-[11px] font-semibold rounded-full"
-                  :class="assinaturaStatusBadge.class"
-                >
-                  {{ assinaturaStatusBadge.label }}
-                </span>
-              </div>
-              <p class="text-xs text-operacao-400">
-                <template v-if="subscriptionState.state === 'active'">
-                  Assinatura ativa.
-                  <span v-if="assinaturaData?.plano">R$ {{ formatarPrecoAssinatura(assinaturaData.plano.preco_mensal) }}/mês</span>
-                </template>
-                <template v-else-if="isTrial">
-                  {{ subscriptionState.diasRestantes }} dia{{ subscriptionState.diasRestantes! > 1 ? 's' : '' }} restantes no teste grátis.
-                </template>
-                <template v-else-if="subscriptionState.state === 'grace'">
-                  Teste expirado. Assine para continuar.
-                </template>
-                <template v-else-if="subscriptionState.state === 'past_due'">
-                  Pagamento pendente.
-                </template>
-                <template v-else-if="subscriptionState.state === 'cancelled'">
-                  Assinatura cancelada.
-                </template>
-                <template v-else>
-                  Acesso bloqueado.
-                </template>
-              </p>
-            </div>
-          </div>
-
-          <!-- Plano atual (se ativo) -->
-          <div v-if="assinaturaData?.plano" class="bg-operacao-50 rounded-xl p-4 space-y-3">
-            <p class="text-[11px] font-semibold text-operacao-400 uppercase tracking-wider">Detalhes do plano</p>
-            <div class="grid grid-cols-2 gap-3">
-              <div>
-                <p class="text-[11px] text-operacao-400">Plano</p>
-                <p class="text-sm font-semibold text-operacao-800">{{ assinaturaData.plano.nome }}</p>
-              </div>
-              <div>
-                <p class="text-[11px] text-operacao-400">Valor mensal</p>
-                <p class="text-sm font-semibold text-operacao-800">R$ {{ formatarPrecoAssinatura(assinaturaData.plano.preco_mensal) }}</p>
-              </div>
-            </div>
-            <!-- Recursos -->
-            <div v-if="assinaturaData.plano.recursos?.length" class="pt-2 border-t border-operacao-200/60">
-              <p class="text-[11px] text-operacao-400 mb-2">Recursos incluídos</p>
-              <div class="flex flex-wrap gap-1.5">
-                <span
-                  v-for="recurso in assinaturaData.plano.recursos"
-                  :key="recurso"
-                  class="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium bg-guardian-50 text-guardian-700 rounded-md"
-                >
-                  <UIcon name="i-heroicons-check" class="w-3 h-3" />
-                  {{ recurso }}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Ações -->
-          <div class="flex flex-wrap gap-2 pt-1">
-            <button
-              v-if="assinaturaData?.stripe_customer_id"
-              class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold rounded-xl bg-operacao-800 text-white hover:bg-operacao-900 transition-colors"
-              :disabled="abrindoPortal"
-              @click="handleAbrirPortalModal"
-            >
-              <UIcon name="i-heroicons-cog-6-tooth" class="w-4 h-4" />
-              {{ abrindoPortal ? 'Abrindo...' : 'Gerenciar assinatura' }}
-            </button>
-            <NuxtLink
-              v-if="!isAssinaturaActive || subscriptionState.state === 'cancelled'"
-              to="/assinatura"
-              class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold rounded-xl bg-guardian-600 text-white hover:bg-guardian-700 transition-colors"
-              @click="showPerfilModal = false"
-            >
-              <UIcon name="i-heroicons-sparkles" class="w-4 h-4" />
-              {{ isAssinaturaActive ? 'Trocar de plano' : 'Assinar plano' }}
-            </NuxtLink>
-          </div>
         </div>
 
         <template #footer>
-          <!-- Footer só para aba Perfil -->
-          <div v-if="perfilModalTab === 0" class="flex flex-col-reverse sm:flex-row justify-end gap-3">
+          <div class="flex flex-col-reverse sm:flex-row justify-end gap-3">
             <UButton color="gray" variant="ghost" class="w-full sm:w-auto" @click="showPerfilModal = false">
               Cancelar
             </UButton>
@@ -889,17 +873,11 @@ const {
   isTrial,
   isActive: isAssinaturaActive,
   carregarAssinatura,
-  carregarPlanos,
-  planos: planosDisponiveis,
-  iniciarCheckout,
   abrirPortal,
   showBanner: showAssinaturaBanner
 } = useAssinatura()
 verificarSuperAdmin()
 
-// Aba do modal de perfil
-const perfilModalTab = ref(0) // 0 = Perfil, 1 = Assinatura
-const assinandoPlano = ref<string | null>(null)
 const abrindoPortal = ref(false)
 
 // Computed helpers para aba Assinatura
@@ -934,8 +912,19 @@ const formatarPrecoAssinatura = (valor: number): string => {
   return valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })
 }
 
-const carregarDadosAssinatura = async () => {
-  await carregarAssinatura()
+// Preferências
+const toggleSugerirApoio = async () => {
+  if (!empresaAtiva.value) return
+  const novoValor = empresaAtiva.value.sugerir_transferencia_apoio === false ? true : false
+  try {
+    await atualizarEmpresa(empresaAtiva.value.id, { sugerir_transferencia_apoio: novoValor } as Partial<Empresa>)
+  } catch (error: any) {
+    toast.add({
+      title: 'Erro',
+      description: error.message || 'Erro ao salvar preferência',
+      color: 'red'
+    })
+  }
 }
 
 // Sidebar: label do plano abaixo do nome
@@ -1070,6 +1059,7 @@ const deletandoEmpresa = ref(false)
 const showPerfilModal = ref(false)
 const salvandoPerfil = ref(false)
 const uploadingAvatar = ref(false)
+const enderecoAberto = ref(false)
 const perfilForm = reactive({
   nome: '',
   foto_url: '',
@@ -1086,9 +1076,14 @@ const fotoPerfilUsuario = computed(() => {
   return user.value?.user_metadata?.foto_url || ''
 })
 
+const enderecoResumo = computed(() => {
+  const partes = [perfilForm.logradouro, perfilForm.numero, perfilForm.cidade, perfilForm.estado].filter(Boolean)
+  return partes.join(', ')
+})
+
 watch(showPerfilModal, (abriu) => {
   if (abriu) {
-    perfilModalTab.value = 0
+    enderecoAberto.value = false
     const meta = user.value?.user_metadata || {}
     perfilForm.nome = meta.nome || meta.name || meta.full_name || ''
     perfilForm.foto_url = meta.foto_url || ''
@@ -1221,7 +1216,7 @@ const menuRelatorios = [
   { to: '/relatorios/gestao-inventario', icon: 'i-heroicons-clipboard-document-list', label: 'Inventário' },
   { to: '/relatorios/giro-estoque', icon: 'i-heroicons-arrow-path', label: 'Giro de Estoque' },
   { to: '/relatorios/curva-abc', icon: 'i-heroicons-chart-bar', label: 'Curva ABC' },
-  { to: '/relatorios/estoque-minimo?tab=1', icon: 'i-heroicons-currency-dollar', label: 'CMC Semanal' }
+  { to: '/relatorios/cmc-semanal?tab=1', icon: 'i-heroicons-currency-dollar', label: 'CMC Semanal' }
 ]
 
 const relatoriosOpen = ref(false)

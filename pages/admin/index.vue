@@ -5,8 +5,16 @@
       <UBadge color="purple" label="Super Admin" variant="subtle" />
     </div>
 
+    <!-- Loading -->
+    <div v-if="loading" class="flex items-center justify-center py-20">
+      <svg class="animate-spin h-8 w-8 text-guardian-500" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" />
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+      </svg>
+    </div>
+
     <!-- Acesso negado -->
-    <div v-if="!isSuperAdmin && !loading" class="flex flex-col items-center justify-center py-20">
+    <div v-else-if="!isSuperAdmin" class="flex flex-col items-center justify-center py-20">
       <UIcon name="i-heroicons-lock-closed" class="w-16 h-16 text-operacao-300 mb-4" />
       <h2 class="text-lg font-semibold text-operacao-600">Acesso restrito</h2>
       <p class="text-sm text-operacao-400">Esta página é acessível apenas para administradores.</p>
@@ -56,21 +64,13 @@
         />
       </div>
 
-      <!-- Loading -->
-      <div v-if="loading" class="flex items-center justify-center py-20">
-        <svg class="animate-spin h-8 w-8 text-guardian-500" viewBox="0 0 24 24">
-          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" />
-          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-        </svg>
-      </div>
-
       <!-- Tabela -->
-      <UCard v-else :ui="{ body: { padding: '' } }">
+      <UCard :ui="{ body: { padding: '' } }">
         <UTable
           :rows="filteredEmpresas"
           :columns="columns"
           :ui="{
-            th: { base: '[&_button]:font-medium [&_button]:uppercase [&_button]:tracking-wider [&_button]:text-xs [&_button]:text-[#5a5a66]' },
+            th: { base: '[&_button]:font-medium [&_button]:uppercase [&_button]:tracking-wider [&_button]:text-xs [&_button]:text-[#5a5a66] [&_button>span+span]:text-operacao-300 [&_button>span+span]:!w-3.5 [&_button>span+span]:!h-3.5' },
             tr: { base: 'cursor-pointer' },
           }"
           @select="toggleExpand"

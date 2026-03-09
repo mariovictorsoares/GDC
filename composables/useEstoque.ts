@@ -17,7 +17,8 @@ import type {
 
   SaldoEstoque,
   FiltroData,
-  TipoSaida
+  TipoSaida,
+  TransferenciaPendente
 } from '~/types'
 
 export const useEstoque = () => {
@@ -554,7 +555,7 @@ export const useEstoque = () => {
 
     // 2. Criar entrada na empresa destino com o produto escolhido pelo usuário
     const custoUnit = Number(saidaCriada.custo_saida) / saida.quantidade!
-    await client
+    const { error: entradaError } = await client
       .from('entradas')
       .insert({
         produto_id: produtoDestinoId,
@@ -565,6 +566,12 @@ export const useEstoque = () => {
         valor_total: Number(saidaCriada.custo_saida),
         observacao: `Transferência recebida`
       })
+
+    if (entradaError) {
+      // Reverter a saída criada para não deixar estoque inconsistente
+      await client.from('saidas').delete().eq('id', saidaCriada.id)
+      throw entradaError
+    }
 
     return saidaCriada
   }
@@ -692,7 +699,7 @@ export const useEstoque = () => {
     const { data, error } = await client
       .from('faturamentos')
       .upsert({ ...faturamento, empresa_id: empresaId.value }, {
-        onConflict: 'ano,mes'
+        onConflict: 'empresa_id,ano,mes'
       })
       .select()
       .single()
@@ -709,6 +716,7 @@ export const useEstoque = () => {
     const { data, error } = await client
       .from('v_saldo_estoque')
       .select('*')
+      .eq('empresa_id', empresaId.value)
 
     if (error) throw error
     return data as SaldoEstoque[]
@@ -902,6 +910,163 @@ export const useEstoque = () => {
   }
 
   // ==========================================
+  // TRANSFERÊNCIAS PENDENTES ENTRE LOJAS
+  // ==========================================
+
+  const getTransferenciasPendentes = async () => {
+    if (!empresaId.value) return [] as TransferenciaPendente[]
+
+    const { data, error } = await client
+      .from('transferencias_pendentes')
+      .select(`
+        *,
+        empresa_origem:empresas!transferencias_pendentes_empresa_origem_id_fkey(id, nome),
+        produto_origem:produtos!transferencias_pendentes_produto_origem_id_fkey(
+          id, nome,
+          unidade:unidades(sigla)
+        ),
+        produto_destino:produtos!transferencias_pendentes_produto_destino_id_fkey(
+          id, nome,
+          unidade:unidades(sigla)
+        )
+      `)
+      .eq('empresa_destino_id', empresaId.value)
+      .eq('status', 'pendente')
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+    return data as TransferenciaPendente[]
+  }
+
+  const countTransferenciasPendentes = async (): Promise<number> => {
+    if (!empresaId.value) return 0
+
+    const { count, error } = await client
+      .from('transferencias_pendentes')
+      .select('*', { count: 'exact', head: true })
+      .eq('empresa_destino_id', empresaId.value)
+      .eq('status', 'pendente')
+
+    if (error) throw error
+    return count || 0
+  }
+
+  const createTransferenciaLoja = async (
+    produtoOrigemId: string,
+    produtoDestinoId: string,
+    empresaDestinoId: string,
+    quantidade: number,
+    data: string,
+    observacao?: string
+  ) => {
+    // Buscar custo médio do produto na view de saldo
+    const { data: saldoData, error: saldoError } = await client
+      .from('v_saldo_estoque')
+      .select('custo_medio')
+      .eq('produto_id', produtoOrigemId)
+      .single()
+
+    if (saldoError && saldoError.code !== 'PGRST116') throw saldoError
+    const custoUnitario = Number(saldoData?.custo_medio || 0)
+    const custoTotal = custoUnitario * quantidade
+
+    const { data: transferencia, error } = await client
+      .from('transferencias_pendentes')
+      .insert({
+        empresa_origem_id: empresaId.value,
+        empresa_destino_id: empresaDestinoId,
+        produto_origem_id: produtoOrigemId,
+        produto_destino_id: produtoDestinoId,
+        quantidade,
+        custo_unitario: custoUnitario,
+        custo_total: custoTotal,
+        data,
+        observacao: observacao || null,
+        status: 'pendente'
+      })
+      .select()
+      .single()
+
+    if (error) throw error
+    return transferencia as TransferenciaPendente
+  }
+
+  const confirmarTransferencia = async (transferenciaId: string) => {
+    // 1. Buscar a transferência pendente
+    const { data: transf, error: fetchError } = await client
+      .from('transferencias_pendentes')
+      .select('*')
+      .eq('id', transferenciaId)
+      .eq('status', 'pendente')
+      .single()
+
+    if (fetchError || !transf) throw new Error('Transferência não encontrada ou já processada')
+
+    // 2. Criar saída na empresa de origem
+    const { data: saidaCriada, error: saidaError } = await client
+      .from('saidas')
+      .insert({
+        produto_id: transf.produto_origem_id,
+        empresa_id: transf.empresa_origem_id,
+        tipo: 'transferencia',
+        empresa_destino_id: transf.empresa_destino_id,
+        data: transf.data,
+        quantidade: transf.quantidade,
+        observacao: transf.observacao || 'Transferência entre lojas'
+      })
+      .select()
+      .single()
+
+    if (saidaError) throw saidaError
+
+    // 3. Criar entrada na empresa de destino
+    const { error: entradaError } = await client
+      .from('entradas')
+      .insert({
+        produto_id: transf.produto_destino_id,
+        empresa_id: transf.empresa_destino_id,
+        data: transf.data,
+        quantidade: transf.quantidade,
+        custo_unitario: transf.custo_unitario,
+        valor_total: transf.custo_total,
+        observacao: `Transferência recebida`
+      })
+
+    if (entradaError) {
+      // Reverter saída
+      await client.from('saidas').delete().eq('id', saidaCriada.id)
+      throw entradaError
+    }
+
+    // 4. Atualizar status
+    const { error: updateError } = await client
+      .from('transferencias_pendentes')
+      .update({
+        status: 'confirmada',
+        data_resolucao: new Date().toISOString().split('T')[0]
+      })
+      .eq('id', transferenciaId)
+      .eq('status', 'pendente')
+
+    if (updateError) throw updateError
+  }
+
+  const rejeitarTransferencia = async (transferenciaId: string) => {
+    const { data, error } = await client
+      .from('transferencias_pendentes')
+      .update({
+        status: 'rejeitada',
+        data_resolucao: new Date().toISOString().split('T')[0]
+      })
+      .eq('id', transferenciaId)
+      .eq('status', 'pendente')
+      .select()
+      .single()
+
+    if (error || !data) throw new Error('Transferência não encontrada ou já processada')
+  }
+
+  // ==========================================
   // PEDIDOS DE COMPRA
   // ==========================================
 
@@ -1001,7 +1166,8 @@ export const useEstoque = () => {
     itens: { produto_id: string; quantidade: number; fornecedor_id?: string; observacao?: string; preco_estimado?: number }[]
   ) => {
     // Deletar itens existentes
-    await client.from('pedido_itens').delete().eq('pedido_id', pedidoId)
+    const { error: delError } = await client.from('pedido_itens').delete().eq('pedido_id', pedidoId)
+    if (delError) throw delError
     // Inserir novos
     const payload = itens.map(item => ({
       pedido_id: pedidoId,
@@ -1128,6 +1294,20 @@ export const useEstoque = () => {
     const { error } = await client
       .from('contagens')
       .update({ status, updated_at: new Date().toISOString() })
+      .eq('id', id)
+
+    if (error) throw error
+  }
+
+  const prepararProximoCiclo = async (id: string) => {
+    const { error } = await client
+      .from('contagens')
+      .update({
+        status: 'aguardando',
+        ultima_contagem: new Date().toISOString(),
+        ultimo_lembrete_enviado: null,
+        updated_at: new Date().toISOString()
+      })
       .eq('id', id)
 
     if (error) throw error
@@ -1404,6 +1584,12 @@ export const useEstoque = () => {
     createSaidaTransferenciaLoja,
     updateSaida,
     deleteSaida,
+    // Transferências Pendentes
+    getTransferenciasPendentes,
+    countTransferenciasPendentes,
+    createTransferenciaLoja,
+    confirmarTransferencia,
+    rejeitarTransferencia,
     // Ajustes
     getAjustes,
     createAjuste,
@@ -1450,6 +1636,7 @@ export const useEstoque = () => {
     createContagem,
     updateContagem,
     updateContagemStatus,
+    prepararProximoCiclo,
     deleteContagem,
     // Contagem Itens
     getContagemItens,

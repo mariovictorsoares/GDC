@@ -110,8 +110,6 @@ export const useEmpresa = () => {
       { sigla: 'PC', descricao: 'Pacote' },
       { sigla: 'CX', descricao: 'Caixa' },
       { sigla: 'L', descricao: 'Litro' },
-      { sigla: 'ML', descricao: 'Mililitro' },
-      { sigla: 'G', descricao: 'Grama' },
       { sigla: 'DZ', descricao: 'Dúzia' },
       { sigla: 'FD', descricao: 'Fardo' },
       { sigla: 'PT', descricao: 'Pote' },

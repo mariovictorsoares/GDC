@@ -4,7 +4,15 @@
  *
  * Body: { phone: string, message: string }
  */
+import { serverSupabaseUser } from '#supabase/server'
+
 export default defineEventHandler(async (event) => {
+  // Auth: apenas usuários autenticados
+  const user = await serverSupabaseUser(event)
+  if (!user) {
+    throw createError({ statusCode: 401, message: 'Não autenticado' })
+  }
+
   const config = useRuntimeConfig()
   const body = await readBody(event)
 
@@ -21,12 +29,6 @@ export default defineEventHandler(async (event) => {
       message: 'Z-API não configurada. Verifique as variáveis de ambiente.'
     })
   }
-
-  // Debug temporário - verificar credenciais em uso
-  console.log('[Z-API Debug] instanceId:', config.zapiInstanceId?.slice(0, 8) + '...')
-  console.log('[Z-API Debug] token:', config.zapiToken?.slice(0, 8) + '...')
-  console.log('[Z-API Debug] clientToken:', config.zapiClientToken?.slice(0, 8) + '...')
-  console.log('[Z-API Debug] baseUrl:', config.zapiBaseUrl)
 
   const result = await sendWhatsAppText(
     {

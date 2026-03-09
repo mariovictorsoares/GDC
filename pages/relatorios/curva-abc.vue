@@ -41,13 +41,52 @@
     <!-- Filtros -->
     <div class="flex flex-col lg:flex-row lg:items-center gap-3 lg:gap-6">
       <div class="flex flex-col sm:flex-row flex-wrap gap-3 flex-1 min-w-0">
-        <USelect v-model="selectedAno" :options="anosOptions" class="w-full sm:w-32" :ui="toolbarInputUi" />
-        <USelect v-model="selectedMes" :options="mesesOptions" class="w-full sm:w-40" :ui="toolbarInputUi" />
+        <UInput v-model="search" placeholder="Buscar produto..." icon="i-heroicons-magnifying-glass" class="w-full sm:w-44" :ui="toolbarInputUi" />
+
+        <!-- Seletor Mês/Ano -->
+        <UPopover :popper="{ placement: 'bottom-start' }">
+          <UButton
+            color="white"
+            class="w-full sm:w-auto justify-between"
+            :ui="toolbarButtonUi"
+          >
+            <UIcon name="i-heroicons-calendar-days" class="w-4 h-4 text-operacao-400 mr-2" />
+            <span class="text-sm font-normal text-gray-900 capitalize">{{ mesAnoLabel }}</span>
+          </UButton>
+          <template #panel="{ close }">
+            <div class="w-64 p-3">
+              <!-- Header com navegação de ano -->
+              <div class="flex items-center justify-between mb-3">
+                <button class="p-1 rounded hover:bg-operacao-100 transition-colors" @click="pickerAno--">
+                  <UIcon name="i-heroicons-chevron-left-20-solid" class="w-4 h-4 text-operacao-500" />
+                </button>
+                <span class="text-sm font-semibold text-gray-700">{{ pickerAno }}</span>
+                <button class="p-1 rounded hover:bg-operacao-100 transition-colors" @click="pickerAno++">
+                  <UIcon name="i-heroicons-chevron-right-20-solid" class="w-4 h-4 text-operacao-500" />
+                </button>
+              </div>
+              <!-- Grid de meses -->
+              <div class="grid grid-cols-3 gap-1.5">
+                <button
+                  v-for="(nome, idx) in mesesNomes"
+                  :key="idx"
+                  class="px-2 py-1.5 text-sm rounded-md transition-colors capitalize"
+                  :class="selectedMes === idx + 1 && selectedAno === pickerAno
+                    ? 'bg-guardian-600 text-white font-medium'
+                    : 'text-operacao-600 hover:bg-operacao-50'"
+                  @click="selectMesAno(idx + 1, pickerAno); close()"
+                >
+                  {{ nome }}
+                </button>
+              </div>
+            </div>
+          </template>
+        </UPopover>
 
         <!-- Filtro ABC Estoque -->
         <UPopover :popper="{ placement: 'bottom-start' }">
           <UButton color="white" class="w-full sm:w-auto justify-between" trailing-icon="i-heroicons-chevron-down-20-solid" :ui="toolbarButtonUi">
-            <span class="truncate text-left font-normal"><span class="text-operacao-400">ABC Est.:</span> <span class="text-gray-900">{{ filterClasseEstoqueLabel }}</span></span>
+            <span class="truncate text-left font-normal"><span class="text-operacao-400">ABC Estoque:</span> <span class="text-gray-900">{{ filterClasseEstoqueLabel }}</span></span>
           </UButton>
           <template #panel="{ close }">
             <div class="w-44 py-1">
@@ -59,7 +98,7 @@
         <!-- Filtro ABC Consumo -->
         <UPopover :popper="{ placement: 'bottom-start' }">
           <UButton color="white" class="w-full sm:w-auto justify-between" trailing-icon="i-heroicons-chevron-down-20-solid" :ui="toolbarButtonUi">
-            <span class="truncate text-left font-normal"><span class="text-operacao-400">ABC Cons.:</span> <span class="text-gray-900">{{ filterClasseCMVLabel }}</span></span>
+            <span class="truncate text-left font-normal"><span class="text-operacao-400">ABC Consumo:</span> <span class="text-gray-900">{{ filterClasseCMVLabel }}</span></span>
           </UButton>
           <template #panel="{ close }">
             <div class="w-44 py-1">
@@ -80,51 +119,98 @@
           </template>
         </UPopover>
 
-        <UInput v-model="search" placeholder="Buscar produto..." icon="i-heroicons-magnifying-glass" class="w-full sm:w-44" :ui="toolbarInputUi" />
       </div>
 
-      <UButton variant="ghost" color="gray" size="sm" :icon="showLegend ? 'i-heroicons-information-circle-solid' : 'i-heroicons-information-circle'" @click="showLegend = !showLegend" />
+      <UPopover :popper="{ placement: 'bottom-end' }">
+        <UButton variant="ghost" color="gray" size="sm" icon="i-heroicons-information-circle" />
+        <template #panel>
+          <div class="w-56 p-3 space-y-2.5">
+            <p class="text-[11px] font-semibold text-operacao-400 uppercase tracking-wider">Legenda de Status</p>
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-controle-400 shrink-0" />
+              <span class="text-xs text-gray-700"><span class="font-medium">Equilibrado</span> — mesma curva</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-red-400 shrink-0" />
+              <span class="text-xs text-gray-700"><span class="font-medium">Excessivo</span> — A est. + C cons.</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-orange-400 shrink-0" />
+              <span class="text-xs text-gray-700"><span class="font-medium">Ruptura</span> — C est. + A cons.</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-alerta-400 shrink-0" />
+              <span class="text-xs text-gray-700"><span class="font-medium">Atenção</span> — diferença de 1 curva</span>
+            </div>
+          </div>
+        </template>
+      </UPopover>
     </div>
 
-    <!-- Legenda colapsável -->
-    <Transition
-      enter-active-class="transition-all duration-200 ease-out"
-      enter-from-class="opacity-0 -translate-y-2"
-      enter-to-class="opacity-100 translate-y-0"
-      leave-active-class="transition-all duration-150 ease-in"
-      leave-from-class="opacity-100 translate-y-0"
-      leave-to-class="opacity-0 -translate-y-2"
-    >
-      <UCard v-if="showLegend" :ui="{ ring: 'ring-1 ring-[#EBEBED]', shadow: 'shadow-sm', body: { padding: 'px-5 py-4' } }">
-        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
-          <div class="flex items-start gap-2.5 p-2.5 bg-controle-50 rounded-lg">
-            <UBadge color="green" class="mt-0.5 shrink-0">Equilibrado</UBadge>
-            <p class="text-xs text-controle-700">Mesma classe em estoque e consumo. Estoque alinhado.</p>
-          </div>
-          <div class="flex items-start gap-2.5 p-2.5 bg-red-50 rounded-lg">
-            <UBadge color="red" class="mt-0.5 shrink-0">Excessivo</UBadge>
-            <p class="text-xs text-red-700">Classe A em estoque + C em consumo. Capital parado.</p>
-          </div>
-          <div class="flex items-start gap-2.5 p-2.5 bg-orange-50 rounded-lg">
-            <UBadge color="orange" class="mt-0.5 shrink-0">Ruptura</UBadge>
-            <p class="text-xs text-orange-700">Classe C em estoque + A em consumo. Risco de falta.</p>
-          </div>
-          <div class="flex items-start gap-2.5 p-2.5 bg-alerta-50 rounded-lg">
-            <UBadge color="yellow" class="mt-0.5 shrink-0">Atenção</UBadge>
-            <p class="text-xs text-yellow-700">Diferença de 1 classe. Merece monitoramento.</p>
-          </div>
-        </div>
-      </UCard>
-    </Transition>
-
     <!-- Tabela Unificada -->
-    <UCard :ui="{ base: 'overflow-hidden', body: { padding: '' }, ring: 'ring-1 ring-[#EBEBED]', shadow: 'shadow-sm' }">
+    <UCard :ui="{ base: 'overflow-x-auto', body: { padding: '' }, ring: 'ring-1 ring-[#EBEBED]', shadow: 'shadow-sm' }">
       <UTable :columns="columns" :rows="paginated" :loading="loading" :ui="{
         divide: 'divide-y divide-operacao-50 dark:divide-operacao-700',
         thead: '',
-        th: { base: 'bg-operacao-100/70 dark:bg-operacao-800 border-b border-operacao-200/60 [&_button]:font-medium [&_button]:uppercase [&_button]:tracking-wider [&_button]:text-xs [&_button]:text-[#5a5a66]', color: 'text-[#5a5a66] dark:text-operacao-400', font: 'font-medium', size: 'text-xs uppercase tracking-wider', padding: 'px-4 py-2' },
+        th: { base: 'bg-operacao-100/70 dark:bg-operacao-800 border-b border-operacao-200/60 [&_button]:font-medium [&_button]:uppercase [&_button]:tracking-wider [&_button]:text-xs [&_button]:text-[#5a5a66] [&_button>span+span]:text-operacao-300 [&_button>span+span]:!w-3.5 [&_button>span+span]:!h-3.5', color: 'text-[#5a5a66] dark:text-operacao-400', font: 'font-medium', size: 'text-xs uppercase tracking-wider', padding: 'px-4 py-2' },
         td: { color: 'text-operacao-600 dark:text-operacao-200', size: 'text-sm', padding: 'px-4 py-2.5' }
       }">
+        <template #valor_estoque-header="{ column, sort, onSort }">
+          <div class="group/tip relative">
+            <button class="flex items-center gap-1" @click="onSort(column)">
+              {{ column.label }}
+              <UIcon :name="sort.column === column.key ? (sort.direction === 'asc' ? 'i-heroicons-bars-arrow-up-20-solid' : 'i-heroicons-bars-arrow-down-20-solid') : 'i-heroicons-arrows-up-down-20-solid'" class="w-3.5 h-3.5" :class="sort.column === column.key ? 'text-guardian-500' : 'text-operacao-300'" />
+            </button>
+            <div class="pointer-events-none invisible opacity-0 group-hover/tip:visible group-hover/tip:opacity-100 transition-all duration-150 absolute top-full left-1/2 -translate-x-1/2 mt-2 z-50 w-56 bg-white rounded-lg shadow-lg ring-1 ring-[#EBEBED] px-3 py-2.5">
+              <p class="text-xs text-gray-600 font-normal normal-case tracking-normal">Valor em estoque no fim do mês (qtd × custo última entrada)</p>
+            </div>
+          </div>
+        </template>
+        <template #classe_estoque-header="{ column, sort, onSort }">
+          <div class="group/tip relative">
+            <button class="flex items-center gap-1" @click="onSort(column)">
+              {{ column.label }}
+              <UIcon :name="sort.column === column.key ? (sort.direction === 'asc' ? 'i-heroicons-bars-arrow-up-20-solid' : 'i-heroicons-bars-arrow-down-20-solid') : 'i-heroicons-arrows-up-down-20-solid'" class="w-3.5 h-3.5" :class="sort.column === column.key ? 'text-guardian-500' : 'text-operacao-300'" />
+            </button>
+            <div class="pointer-events-none invisible opacity-0 group-hover/tip:visible group-hover/tip:opacity-100 transition-all duration-150 absolute top-full left-1/2 -translate-x-1/2 mt-2 z-50 w-64 bg-white rounded-lg shadow-lg ring-1 ring-[#EBEBED] px-3 py-2.5">
+              <p class="text-xs text-gray-600 font-normal normal-case tracking-normal">Classificação ABC por valor de estoque: A (50%), B (30%), C (20%)</p>
+            </div>
+          </div>
+        </template>
+        <template #valor_cmv-header="{ column, sort, onSort }">
+          <div class="group/tip relative">
+            <button class="flex items-center gap-1" @click="onSort(column)">
+              {{ column.label }}
+              <UIcon :name="sort.column === column.key ? (sort.direction === 'asc' ? 'i-heroicons-bars-arrow-up-20-solid' : 'i-heroicons-bars-arrow-down-20-solid') : 'i-heroicons-arrows-up-down-20-solid'" class="w-3.5 h-3.5" :class="sort.column === column.key ? 'text-guardian-500' : 'text-operacao-300'" />
+            </button>
+            <div class="pointer-events-none invisible opacity-0 group-hover/tip:visible group-hover/tip:opacity-100 transition-all duration-150 absolute top-full left-1/2 -translate-x-1/2 mt-2 z-50 w-60 bg-white rounded-lg shadow-lg ring-1 ring-[#EBEBED] px-3 py-2.5">
+              <p class="text-xs text-gray-600 font-normal normal-case tracking-normal">Valor total das saídas no mês selecionado (todos os tipos)</p>
+            </div>
+          </div>
+        </template>
+        <template #classe_cmv-header="{ column, sort, onSort }">
+          <div class="group/tip relative">
+            <button class="flex items-center gap-1" @click="onSort(column)">
+              {{ column.label }}
+              <UIcon :name="sort.column === column.key ? (sort.direction === 'asc' ? 'i-heroicons-bars-arrow-up-20-solid' : 'i-heroicons-bars-arrow-down-20-solid') : 'i-heroicons-arrows-up-down-20-solid'" class="w-3.5 h-3.5" :class="sort.column === column.key ? 'text-guardian-500' : 'text-operacao-300'" />
+            </button>
+            <div class="pointer-events-none invisible opacity-0 group-hover/tip:visible group-hover/tip:opacity-100 transition-all duration-150 absolute top-full left-1/2 -translate-x-1/2 mt-2 z-50 w-64 bg-white rounded-lg shadow-lg ring-1 ring-[#EBEBED] px-3 py-2.5">
+              <p class="text-xs text-gray-600 font-normal normal-case tracking-normal">Classificação ABC por valor de consumo: A (50%), B (30%), C (20%)</p>
+            </div>
+          </div>
+        </template>
+        <template #status-header="{ column, sort, onSort }">
+          <div class="group/tip relative">
+            <button class="flex items-center gap-1" @click="onSort(column)">
+              {{ column.label }}
+              <UIcon :name="sort.column === column.key ? (sort.direction === 'asc' ? 'i-heroicons-bars-arrow-up-20-solid' : 'i-heroicons-bars-arrow-down-20-solid') : 'i-heroicons-arrows-up-down-20-solid'" class="w-3.5 h-3.5" :class="sort.column === column.key ? 'text-guardian-500' : 'text-operacao-300'" />
+            </button>
+            <div class="pointer-events-none invisible opacity-0 group-hover/tip:visible group-hover/tip:opacity-100 transition-all duration-150 absolute top-full right-0 mt-2 z-50 w-56 bg-white rounded-lg shadow-lg ring-1 ring-[#EBEBED] px-3 py-2.5">
+              <p class="text-xs text-gray-600 font-normal normal-case tracking-normal">Cruzamento entre curva de estoque e consumo</p>
+            </div>
+          </div>
+        </template>
+
         <template #empty-state>
           <div class="flex flex-col items-center justify-center py-6 text-operacao-400">
             <UIcon name="i-heroicons-inbox" class="w-8 h-8 mb-2" />
@@ -134,9 +220,6 @@
 
         <template #produto-data="{ row }">
           <span class="font-medium">{{ row.produto }}</span>
-        </template>
-        <template #categoria-data="{ row }">
-          <UBadge color="blue" variant="soft">{{ row.categoria || '-' }}</UBadge>
         </template>
         <template #valor_estoque-data="{ row }">
           {{ formatCurrency(row.valor_estoque) }}
@@ -170,6 +253,7 @@ import type { ComparativoABC } from '~/types'
 const toolbarInputUi = { color: { white: { outline: 'shadow-sm bg-white text-gray-900 ring-1 ring-inset ring-[#EBEBED] focus:ring-1 focus:ring-operacao-200 dark:ring-operacao-700' } } }
 const toolbarButtonUi = { color: { white: { solid: 'shadow-sm ring-1 ring-inset ring-[#EBEBED] text-gray-700 bg-white hover:bg-gray-50 focus-visible:ring-2 focus-visible:ring-guardian-500 dark:ring-operacao-700 dark:bg-gray-900 dark:text-white dark:hover:bg-gray-800/50' } } }
 
+
 const { getComparativoABC } = useRelatorios()
 const { empresaId } = useEmpresa()
 const toast = useToast()
@@ -186,25 +270,24 @@ const selectedAno = ref(new Date().getFullYear())
 const selectedMes = ref(new Date().getMonth() + 1)
 const page = ref(1)
 const pageSize = ref(20)
-const showLegend = ref(false)
+
 
 // Colunas
 const columns = [
   { key: 'produto', label: 'Produto', sortable: true },
-  { key: 'categoria', label: 'Categoria' },
-  { key: 'valor_estoque', label: 'Vlr Estoque (mês)', sortable: true },
-  { key: 'classe_estoque', label: 'ABC Est.', sortable: true },
-  { key: 'valor_cmv', label: 'Vlr Consumo (3m)', sortable: true },
-  { key: 'classe_cmv', label: 'ABC Cons.', sortable: true },
+  { key: 'valor_estoque', label: 'Vlr Estoque', sortable: true },
+  { key: 'classe_estoque', label: 'ABC Estoque', sortable: true },
+  { key: 'valor_cmv', label: 'Vlr Consumo', sortable: true },
+  { key: 'classe_cmv', label: 'ABC Consumo', sortable: true },
   { key: 'status', label: 'Status', sortable: true }
 ]
 
 // Opções de filtro
 const classeOptions = [
   { label: 'Todas', value: '' },
-  { label: 'Classe A', value: 'A' },
-  { label: 'Classe B', value: 'B' },
-  { label: 'Classe C', value: 'C' }
+  { label: 'Curva A', value: 'A' },
+  { label: 'Curva B', value: 'B' },
+  { label: 'Curva C', value: 'C' }
 ]
 
 const statusOptions = [
@@ -215,28 +298,18 @@ const statusOptions = [
   { label: 'Atenção', value: 'ATENÇÃO' }
 ]
 
-const anosOptions = computed(() => {
-  const currentYear = new Date().getFullYear()
-  return Array.from({ length: 5 }, (_, i) => ({
-    label: String(currentYear - 2 + i),
-    value: currentYear - 2 + i
-  }))
+// Picker Mês/Ano
+const pickerAno = ref(new Date().getFullYear())
+const mesesNomes = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']
+
+const mesAnoLabel = computed(() => {
+  return `${mesesNomes[selectedMes.value - 1]} ${selectedAno.value}`
 })
 
-const mesesOptions = [
-  { label: 'Janeiro', value: 1 },
-  { label: 'Fevereiro', value: 2 },
-  { label: 'Março', value: 3 },
-  { label: 'Abril', value: 4 },
-  { label: 'Maio', value: 5 },
-  { label: 'Junho', value: 6 },
-  { label: 'Julho', value: 7 },
-  { label: 'Agosto', value: 8 },
-  { label: 'Setembro', value: 9 },
-  { label: 'Outubro', value: 10 },
-  { label: 'Novembro', value: 11 },
-  { label: 'Dezembro', value: 12 }
-]
+const selectMesAno = (mes: number, ano: number) => {
+  selectedMes.value = mes
+  selectedAno.value = ano
+}
 
 // Labels dos filtros
 const filterClasseEstoqueLabel = computed(() => {
@@ -259,7 +332,7 @@ const filtered = computed(() => {
   let result = data.value
   if (search.value) {
     const term = search.value.toLowerCase()
-    result = result.filter(r => r.produto.toLowerCase().includes(term) || r.categoria.toLowerCase().includes(term))
+    result = result.filter(r => r.produto.toLowerCase().includes(term))
   }
   if (filterClasseEstoque.value) {
     result = result.filter(r => r.classe_estoque === filterClasseEstoque.value)
@@ -343,6 +416,10 @@ const loadData = async () => {
 watch([selectedAno, selectedMes], () => {
   loadData()
 })
+
+// Realtime - relatórios dependem de movimentos e produtos
+const { onTableChange } = useRealtime()
+onTableChange(['produtos', 'entradas', 'saidas', 'ajustes', 'custos_mensais'], () => loadData())
 
 watch(empresaId, () => {
   if (empresaId.value) {

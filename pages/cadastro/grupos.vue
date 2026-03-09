@@ -561,6 +561,10 @@ const deleteSubgrupo = async () => {
   }
 }
 
+// Realtime
+const { onTableChange } = useRealtime()
+onTableChange(['grupos', 'subgrupos'], () => loadData())
+
 // Recarregar dados quando a empresa ativa mudar
 watch(empresaId, () => {
   if (empresaId.value) {
