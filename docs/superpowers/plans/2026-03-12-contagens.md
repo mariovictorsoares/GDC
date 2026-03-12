@@ -177,7 +177,7 @@ git commit -m "feat(composable): createSetor accepts tipo parameter"
 Change at line 641 to accept optional `contagem_id`:
 
 ```typescript
-const createAjustesEmLote = async (ajustes: Array<{ produto_id: string; data: string; quantidade: number; motivo: string; contagem_id?: string }>) => {
+const createAjustesEmLote = async (ajustes: Array<{ produto_id: string; data: string; semana: string; quantidade: number; motivo: string; contagem_id?: string }>) => {
     if (!ajustes.length) return []
 
     const payload = ajustes.map(a => ({
