@@ -115,7 +115,7 @@ export default defineEventHandler(async (event) => {
     .select(`
       id, nome, token, recorrencia, horario_notificacao, dias_semana,
       mensal_posicao, mensal_dia, responsavel_nome, responsavel_telefone,
-      status, ultima_contagem, data, ultimo_lembrete_enviado,
+      status, ultima_contagem, data,
       contagem_setores ( setor_id, setores ( nome ) )
     `)
     .neq('recorrencia', 'nenhuma')
@@ -156,20 +156,13 @@ export default defineEventHandler(async (event) => {
     }
 
     // ═══════════════════════════════════════════════════════════════════
-    // DEDUPLICAÇÃO ATÔMICA (claim pattern)
-    //
-    // UPDATE ... WHERE garante que apenas UMA requisição consegue "clamar"
-    // o envio. Se duas requests chegam ao mesmo tempo, o PostgreSQL executa
-    // os UPDATEs sequencialmente — só a primeira vai casar o WHERE.
-    //
-    // Condição: ultimo_lembrete_enviado é NULL ou é de um dia anterior a hoje
+    // DEDUPLICAÇÃO ATÔMICA via RPC (bypassa cache do PostgREST)
     // ═══════════════════════════════════════════════════════════════════
-    const { data: claimed, error: claimError } = await supabase
-      .from('contagens')
-      .update({ ultimo_lembrete_enviado: timestampEnvio })
-      .eq('id', contagem.id)
-      .or(`ultimo_lembrete_enviado.is.null,ultimo_lembrete_enviado.lt.${hojeBrasilia}T00:00:00-03:00`)
-      .select('id')
+    const { data: claimed, error: claimError } = await supabase.rpc('claim_lembrete', {
+      p_contagem_id: contagem.id,
+      p_timestamp: timestampEnvio,
+      p_hoje_inicio: `${hojeBrasilia}T00:00:00-03:00`
+    })
 
     if (claimError) {
       console.error(`[Cron] Erro ao clamar "${contagem.nome}":`, claimError.message)
@@ -177,14 +170,12 @@ export default defineEventHandler(async (event) => {
       continue
     }
 
-    if (!claimed || claimed.length === 0) {
-      // Outro processo já clamou — não envia de novo
+    if (!claimed) {
       console.log(`[Cron] "${contagem.nome}" já foi clamado por outro processo, pulando`)
       resultados.push({ contagem: contagem.nome, sucesso: true, motivo: 'já enviado hoje' })
       continue
     }
 
-    // Claim obtido com sucesso — somos os únicos que vão enviar
     console.log(`[Cron] Claim obtido para "${contagem.nome}", enviando...`)
 
     // Montar nomes dos setores
@@ -219,10 +210,7 @@ export default defineEventHandler(async (event) => {
     if (!result.success) {
       // Envio falhou — LIBERAR o claim para retry no próximo minuto
       console.error(`[Cron] Falha ao enviar "${contagem.nome}", liberando claim para retry`)
-      await supabase
-        .from('contagens')
-        .update({ ultimo_lembrete_enviado: null })
-        .eq('id', contagem.id)
+      await supabase.rpc('release_lembrete', { p_contagem_id: contagem.id })
     }
 
     resultados.push({

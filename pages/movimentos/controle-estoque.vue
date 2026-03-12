@@ -22,7 +22,7 @@
     </div>
 
     <!-- ======================== KPIs ======================== -->
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+    <div class="grid grid-cols-3 gap-3">
       <div class="rounded-lg bg-white ring-1 ring-[#EBEBED] shadow-sm px-4 py-3">
         <div class="flex items-center gap-1.5 mb-1">
           <span class="w-1.5 h-1.5 rounded-full bg-guardian-400" />
@@ -40,18 +40,9 @@
       <div class="rounded-lg bg-white ring-1 ring-[#EBEBED] shadow-sm px-4 py-3">
         <div class="flex items-center gap-1.5 mb-1">
           <span class="w-1.5 h-1.5 rounded-full bg-red-400" />
-          <span class="text-[11px] font-medium text-operacao-400">Saídas</span>
+          <span class="text-[11px] font-medium text-operacao-400">Saídas CMV Consumo</span>
         </div>
         <p class="text-base font-bold text-red-600">{{ formatCurrency(totalSaidas) }}</p>
-      </div>
-      <div class="rounded-lg bg-white ring-1 ring-[#EBEBED] shadow-sm px-4 py-3">
-        <div class="flex items-center gap-1.5 mb-1">
-          <span class="w-1.5 h-1.5 rounded-full" :class="saldoPeriodo >= 0 ? 'bg-controle-400' : 'bg-red-400'" />
-          <span class="text-[11px] font-medium text-operacao-400">Saldo</span>
-        </div>
-        <p class="text-base font-bold" :class="saldoPeriodo >= 0 ? 'text-controle-700' : 'text-red-600'">
-          {{ formatCurrency(saldoPeriodo) }}
-        </p>
       </div>
     </div>
 
@@ -287,11 +278,26 @@
           <table class="min-w-full divide-y divide-operacao-200">
             <thead class="bg-operacao-50">
               <tr>
-                <th rowspan="2" class="px-3 py-3 text-left text-xs font-medium text-[#5a5a66] uppercase tracking-wider border-r">Produto</th>
-                <th rowspan="2" class="px-3 py-3 text-center text-xs font-medium text-[#5a5a66] uppercase tracking-wider border-r w-14">E.I.</th>
-                <th :colspan="painelSemanas.length + 1" class="px-3 py-2 text-center text-xs font-medium text-[#5a5a66] uppercase tracking-wider border-r bg-controle-50">Entradas</th>
-                <th :colspan="painelSemanas.length + 1" class="px-3 py-2 text-center text-xs font-medium text-[#5a5a66] uppercase tracking-wider border-r bg-red-50">Saídas</th>
-                <th rowspan="2" class="px-3 py-3 text-center text-xs font-medium text-[#5a5a66] uppercase tracking-wider w-14">E.F.</th>
+                <th rowspan="2" class="px-2 py-3 text-left text-xs font-medium text-[#5a5a66] uppercase tracking-wider border-r cursor-pointer select-none w-[140px] max-w-[140px]" @click="togglePainelSort('produto')">
+                  Produto
+                  <Icon v-if="painelSortKey === 'produto'" :name="painelSortDir === 'asc' ? 'heroicons:chevron-up-20-solid' : 'heroicons:chevron-down-20-solid'" class="inline w-3.5 h-3.5 text-operacao-400 ml-0.5" />
+                </th>
+                <th :colspan="painelSemanas.length" class="px-3 py-2 text-center text-xs font-medium text-[#5a5a66] uppercase tracking-wider bg-controle-50">Entradas</th>
+                <th rowspan="2" class="px-2 py-2 text-center text-xs font-medium text-[#5a5a66] uppercase tracking-wider border-r bg-controle-50 cursor-pointer select-none" @click="togglePainelSort('total_entradas')">
+                  Total
+                  <span class="inline-flex flex-col -space-y-1.5 align-middle ml-0.5">
+                    <Icon name="heroicons:chevron-up-20-solid" class="w-3 h-3" :class="painelSortKey === 'total_entradas' && painelSortDir === 'asc' ? 'text-operacao-700' : 'text-operacao-300'" />
+                    <Icon name="heroicons:chevron-down-20-solid" class="w-3 h-3" :class="painelSortKey === 'total_entradas' && painelSortDir === 'desc' ? 'text-operacao-700' : 'text-operacao-300'" />
+                  </span>
+                </th>
+                <th :colspan="painelSemanas.length" class="px-3 py-2 text-center text-xs font-medium text-[#5a5a66] uppercase tracking-wider bg-red-50">Saídas</th>
+                <th rowspan="2" class="px-2 py-2 text-center text-xs font-medium text-[#5a5a66] uppercase tracking-wider bg-red-50 cursor-pointer select-none" @click="togglePainelSort('total_saidas')">
+                  Total
+                  <span class="inline-flex flex-col -space-y-1.5 align-middle ml-0.5">
+                    <Icon name="heroicons:chevron-up-20-solid" class="w-3 h-3" :class="painelSortKey === 'total_saidas' && painelSortDir === 'asc' ? 'text-operacao-700' : 'text-operacao-300'" />
+                    <Icon name="heroicons:chevron-down-20-solid" class="w-3 h-3" :class="painelSortKey === 'total_saidas' && painelSortDir === 'desc' ? 'text-operacao-700' : 'text-operacao-300'" />
+                  </span>
+                </th>
               </tr>
               <tr>
                 <th v-for="sem in painelSemanas" :key="'dent-' + sem.label" class="px-2 py-1 text-center text-xs font-medium text-[#5a5a66] bg-controle-50">
@@ -299,13 +305,11 @@
                     {{ sem.label }}
                   </MiniCalendar>
                 </th>
-                <th class="px-2 py-1 text-center text-xs font-medium text-[#5a5a66] bg-controle-50 border-r">Tot</th>
                 <th v-for="sem in painelSemanas" :key="'dsai-' + sem.label" class="px-2 py-1 text-center text-xs font-medium text-[#5a5a66] bg-red-50">
                   <MiniCalendar :mes="painelSelectedMes" :ano="painelSelectedAno" :data-inicio="sem.inicio" :data-fim="sem.fim">
                     {{ sem.label }}
                   </MiniCalendar>
                 </th>
-                <th class="px-2 py-1 text-center text-xs font-medium text-[#5a5a66] bg-red-50 border-r">Tot</th>
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-operacao-200">
@@ -315,13 +319,11 @@
                 </td>
               </tr>
               <tr v-for="item in painelPaginatedItems" :key="item.produto_id" class="hover:bg-operacao-50">
-                <td class="px-2 py-2 text-xs font-medium text-operacao-800 border-r truncate max-w-[120px]" :title="item.produto">{{ item.produto }} <span class="text-[10px] text-operacao-400 font-normal">({{ item.unidade }})</span></td>
-                <td class="px-2 py-2 text-xs text-center text-operacao-500 border-r">{{ painelFormatQtd(item.estoque_inicial) }}</td>
+                <td class="px-2 py-2 text-xs font-medium text-operacao-800 border-r truncate w-[140px] max-w-[140px]" :title="item.produto">{{ item.produto }} <span class="text-[10px] text-operacao-400 font-normal">({{ item.unidade }})</span></td>
                 <td v-for="(_, idx) in painelSemanas" :key="'dent-' + idx" class="px-1 py-2 text-xs text-center text-controle-600 bg-controle-50/50">{{ painelFormatQtd(item.entradas_por_semana[idx]) }}</td>
                 <td class="px-1 py-2 text-xs text-center font-medium text-controle-700 bg-controle-100 border-r">{{ painelFormatQtd(item.total_entradas) }}</td>
                 <td v-for="(_, idx) in painelSemanas" :key="'dsai-' + idx" class="px-1 py-2 text-xs text-center text-red-600 bg-red-50/50">{{ painelFormatQtd(item.saidas_por_semana[idx]) }}</td>
-                <td class="px-1 py-2 text-xs text-center font-medium text-red-700 bg-red-100 border-r">{{ painelFormatQtd(item.total_saidas) }}</td>
-                <td class="px-2 py-2 text-xs text-center font-medium text-guardian-600">{{ painelFormatQtd(item.estoque_final) }}</td>
+                <td class="px-1 py-2 text-xs text-center font-medium text-red-700 bg-red-100">{{ painelFormatQtd(item.total_saidas) }}</td>
               </tr>
             </tbody>
           </table>
@@ -351,35 +353,46 @@
           <table class="min-w-full divide-y divide-operacao-200">
             <thead class="bg-operacao-50">
               <tr>
-                <th rowspan="2" class="px-3 py-3 text-left text-xs font-medium text-[#5a5a66] uppercase tracking-wider border-r">Produto</th>
-                <th rowspan="2" class="px-3 py-3 text-center text-xs font-medium text-[#5a5a66] uppercase tracking-wider border-r w-14">E.I.</th>
-                <th :colspan="painelApoioDias.length + 1" class="px-3 py-2 text-center text-xs font-medium text-[#5a5a66] uppercase tracking-wider border-r bg-controle-50">Entradas</th>
-                <th :colspan="painelApoioDias.length + 1" class="px-3 py-2 text-center text-xs font-medium text-[#5a5a66] uppercase tracking-wider border-r bg-red-50">Saídas</th>
-                <th rowspan="2" class="px-3 py-3 text-center text-xs font-medium text-[#5a5a66] uppercase tracking-wider w-14">E.F.</th>
+                <th rowspan="2" class="px-2 py-3 text-left text-xs font-medium text-[#5a5a66] uppercase tracking-wider border-r cursor-pointer select-none w-[140px] max-w-[140px]" @click="togglePainelApoioSort('produto')">
+                  Produto
+                  <Icon v-if="painelApoioSortKey === 'produto'" :name="painelApoioSortDir === 'asc' ? 'heroicons:chevron-up-20-solid' : 'heroicons:chevron-down-20-solid'" class="inline w-3.5 h-3.5 text-operacao-400 ml-0.5" />
+                </th>
+                <th :colspan="painelApoioDias.length" class="px-3 py-2 text-center text-xs font-medium text-[#5a5a66] uppercase tracking-wider bg-controle-50">Entradas</th>
+                <th rowspan="2" class="px-2 py-2 text-center text-xs font-medium text-[#5a5a66] uppercase tracking-wider border-r bg-controle-50 cursor-pointer select-none" @click="togglePainelApoioSort('total_entradas')">
+                  Total
+                  <span class="inline-flex flex-col -space-y-1.5 align-middle ml-0.5">
+                    <Icon name="heroicons:chevron-up-20-solid" class="w-3 h-3" :class="painelApoioSortKey === 'total_entradas' && painelApoioSortDir === 'asc' ? 'text-operacao-700' : 'text-operacao-300'" />
+                    <Icon name="heroicons:chevron-down-20-solid" class="w-3 h-3" :class="painelApoioSortKey === 'total_entradas' && painelApoioSortDir === 'desc' ? 'text-operacao-700' : 'text-operacao-300'" />
+                  </span>
+                </th>
+                <th :colspan="painelApoioDias.length" class="px-3 py-2 text-center text-xs font-medium text-[#5a5a66] uppercase tracking-wider bg-red-50">Saídas</th>
+                <th rowspan="2" class="px-2 py-2 text-center text-xs font-medium text-[#5a5a66] uppercase tracking-wider bg-red-50 cursor-pointer select-none" @click="togglePainelApoioSort('total_saidas')">
+                  Total
+                  <span class="inline-flex flex-col -space-y-1.5 align-middle ml-0.5">
+                    <Icon name="heroicons:chevron-up-20-solid" class="w-3 h-3" :class="painelApoioSortKey === 'total_saidas' && painelApoioSortDir === 'asc' ? 'text-operacao-700' : 'text-operacao-300'" />
+                    <Icon name="heroicons:chevron-down-20-solid" class="w-3 h-3" :class="painelApoioSortKey === 'total_saidas' && painelApoioSortDir === 'desc' ? 'text-operacao-700' : 'text-operacao-300'" />
+                  </span>
+                </th>
               </tr>
               <tr>
                 <th v-for="dia in painelApoioDias" :key="'aent-' + dia.data" class="px-1 py-1 text-center text-xs font-medium text-[#5a5a66] bg-controle-50 w-10">{{ dia.label }}</th>
-                <th class="px-2 py-1 text-center text-xs font-medium text-[#5a5a66] bg-controle-50 border-r">Tot</th>
                 <th v-for="dia in painelApoioDias" :key="'asai-' + dia.data" class="px-1 py-1 text-center text-xs font-medium text-[#5a5a66] bg-red-50 w-10">{{ dia.label }}</th>
-                <th class="px-2 py-1 text-center text-xs font-medium text-[#5a5a66] bg-red-50 border-r">Tot</th>
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-operacao-200">
               <tr v-if="painelApoioFiltered.length === 0">
-                <td :colspan="(painelApoioDias.length + 1) * 2 + 3" class="px-3 py-8 text-center text-operacao-400">
+                <td :colspan="1 + (painelApoioDias.length + 1) * 2" class="px-3 py-8 text-center text-operacao-400">
                   Nenhum dado encontrado para o período
                 </td>
               </tr>
               <tr v-for="item in painelApoioPaginatedItems" :key="item.produto_id" class="hover:bg-operacao-50">
-                <td class="px-2 py-2 text-xs font-medium text-operacao-800 border-r truncate max-w-[120px]" :title="item.produto">
+                <td class="px-2 py-2 text-xs font-medium text-operacao-800 border-r truncate w-[140px] max-w-[140px]" :title="item.produto">
                   {{ item.produto }} <span class="text-[10px] text-operacao-400 font-normal">({{ item.unidade }})</span>
                 </td>
-                <td class="px-2 py-2 text-xs text-center text-operacao-500 border-r">{{ painelFormatQtd(item.estoque_inicial) }}</td>
                 <td v-for="(val, idx) in item.entradas_por_dia" :key="'aent-' + idx" class="px-1 py-2 text-xs text-center text-controle-600 bg-controle-50/50">{{ painelFormatQtd(val) }}</td>
                 <td class="px-1 py-2 text-xs text-center font-medium text-controle-700 bg-controle-100 border-r">{{ painelFormatQtd(item.total_entradas) }}</td>
                 <td v-for="(val, idx) in item.saidas_por_dia" :key="'asai-' + idx" class="px-1 py-2 text-xs text-center text-red-600 bg-red-50/50">{{ painelFormatQtd(val) }}</td>
-                <td class="px-1 py-2 text-xs text-center font-medium text-red-700 bg-red-100 border-r">{{ painelFormatQtd(item.total_saidas) }}</td>
-                <td class="px-2 py-2 text-xs text-center font-medium text-guardian-600">{{ painelFormatQtd(item.estoque_final) }}</td>
+                <td class="px-1 py-2 text-xs text-center font-medium text-red-700 bg-red-100">{{ painelFormatQtd(item.total_saidas) }}</td>
               </tr>
             </tbody>
           </table>
@@ -1538,6 +1551,28 @@ const painelSelectMesAno = (mes: number, ano: number) => {
 }
 const painelPage = ref(1)
 const painelPageSize = ref(10)
+const painelSortKey = ref<'produto' | 'total_entradas' | 'total_saidas'>('total_saidas')
+const painelSortDir = ref<'asc' | 'desc'>('desc')
+const togglePainelSort = (key: typeof painelSortKey.value) => {
+  if (painelSortKey.value === key) {
+    painelSortDir.value = painelSortDir.value === 'asc' ? 'desc' : 'asc'
+  } else {
+    painelSortKey.value = key
+    painelSortDir.value = key === 'produto' ? 'asc' : 'desc'
+  }
+  painelPage.value = 1
+}
+const painelApoioSortKey = ref<'produto' | 'total_entradas' | 'total_saidas'>('total_saidas')
+const painelApoioSortDir = ref<'asc' | 'desc'>('desc')
+const togglePainelApoioSort = (key: typeof painelApoioSortKey.value) => {
+  if (painelApoioSortKey.value === key) {
+    painelApoioSortDir.value = painelApoioSortDir.value === 'asc' ? 'desc' : 'asc'
+  } else {
+    painelApoioSortKey.value = key
+    painelApoioSortDir.value = key === 'produto' ? 'asc' : 'desc'
+  }
+  painelPage.value = 1
+}
 const painelTab = ref<'visao-geral' | 'ranking' | 'detalhamento'>('visao-geral')
 
 // ======================== STATE: FILTROS MAPA VISUAL ========================
@@ -1941,8 +1976,12 @@ const saveEntrada = async () => {
     }
     entradaModalOpen.value = false
     await loadEntradas()
-    viewMode.value = 'historico'
-    page.value = 1
+    if (viewMode.value === 'detalhamento') {
+      if (painelEstoque.value === 'principal') loadPainel()
+      else loadPainelApoio()
+    } else {
+      page.value = 1
+    }
 
     // Abrir modal de apoio após modal de entrada fechar
     if (itensParaApoio.value.length > 0) {
@@ -2088,8 +2127,12 @@ const executeSaveSaida = async () => {
     confirmDefinitivaOpen.value = false
     saidaModalOpen.value = false
     await loadSaidas()
-    viewMode.value = 'historico'
-    page.value = 1
+    if (viewMode.value === 'detalhamento') {
+      if (painelEstoque.value === 'principal') loadPainel()
+      else loadPainelApoio()
+    } else {
+      page.value = 1
+    }
   } catch (error: any) {
     toast.add({ title: 'Erro', description: error.message || 'Erro ao salvar saída', color: 'red' })
   } finally {
@@ -2127,6 +2170,10 @@ const executeDelete = async () => {
       await loadSaidas()
     }
     deleteModalOpen.value = false
+    if (viewMode.value === 'detalhamento') {
+      if (painelEstoque.value === 'principal') loadPainel()
+      else loadPainelApoio()
+    }
   } catch (error: any) {
     toast.add({ title: 'Erro', description: error.message || 'Erro ao excluir', color: 'red' })
   } finally {
@@ -2154,14 +2201,18 @@ const openTransfRecebimento = (transf: TransferenciaPendente) => {
 
 const onTransfResolvida = async () => {
   await Promise.all([loadPendentesTransf(), loadEntradas(), loadSaidas()])
+  if (viewMode.value === 'detalhamento') {
+    if (painelEstoque.value === 'principal') loadPainel()
+    else loadPainelApoio()
+  }
 }
 
 
 
 // ======================== PAINEL DE CONTROLE: COMPUTED ========================
 
-// Colunas da tabela: Produto + E.I. + (semanas+tot)*2 entradas/saídas + E.F. + 4 breakdown + 2 est.apoio
-const painelTotalColunas = computed(() => 2 + (painelSemanas.value.length + 1) * 2 + 1)
+// Colunas da tabela: Produto + (semanas+tot)*2 entradas/saídas
+const painelTotalColunas = computed(() => 1 + (painelSemanas.value.length + 1) * 2)
 
 const painelFiltered = computed(() => {
   const term = (search.value || painelSearch.value || '').toLowerCase()
@@ -2204,10 +2255,20 @@ const painelTiposSaidaLabel = computed(() => {
   return `${sel.length} tipos`
 })
 
+const painelSorted = computed(() => {
+  const data = [...painelFiltered.value]
+  const key = painelSortKey.value
+  const dir = painelSortDir.value === 'asc' ? 1 : -1
+  return data.sort((a, b) => {
+    if (key === 'produto') return dir * a.produto.localeCompare(b.produto, 'pt-BR')
+    return dir * ((a[key] || 0) - (b[key] || 0))
+  })
+})
+
 const painelPaginatedItems = computed(() => {
   const start = (painelPage.value - 1) * painelPageSize.value
   const end = start + painelPageSize.value
-  return painelFiltered.value.slice(start, end)
+  return painelSorted.value.slice(start, end)
 })
 
 // ======================== APOIO: COMPUTEDS ========================
@@ -2218,10 +2279,20 @@ const painelApoioFiltered = computed(() => {
   return painelApoioData.value.filter(p => p.produto.toLowerCase().includes(term))
 })
 
+const painelApoioSorted = computed(() => {
+  const data = [...painelApoioFiltered.value]
+  const key = painelApoioSortKey.value
+  const dir = painelApoioSortDir.value === 'asc' ? 1 : -1
+  return data.sort((a, b) => {
+    if (key === 'produto') return dir * a.produto.localeCompare(b.produto, 'pt-BR')
+    return dir * ((a[key] || 0) - (b[key] || 0))
+  })
+})
+
 const painelApoioPaginatedItems = computed(() => {
   const start = (painelPage.value - 1) * painelPageSize.value
   const end = start + painelPageSize.value
-  return painelApoioFiltered.value.slice(start, end)
+  return painelApoioSorted.value.slice(start, end)
 })
 
 const painelResumo = computed(() => {
