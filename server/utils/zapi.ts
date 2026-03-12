@@ -80,6 +80,7 @@ export async function sendWhatsAppText(
 export function montarMensagemLembrete(dados: {
   nomeContagem: string
   contagemId?: string
+  token?: string
   responsavelNome: string
   setores: string[]
   recorrencia: string
@@ -98,7 +99,9 @@ export function montarMensagemLembrete(dados: {
   }
 
   const appUrl = dados.baseUrl || 'https://www.cmv360app.com.br'
-  const link = `${appUrl}/movimentos/ajustes`
+  const link = dados.token
+    ? `${appUrl}/contagem/${dados.token}`
+    : `${appUrl}/movimentos/contagens`
 
   return [
     `📋 *Lembrete de Contagem*`,

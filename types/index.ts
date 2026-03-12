@@ -87,9 +87,6 @@ export interface Produto {
   estoque_minimo: number
   margem_seguranca: number
   tempo_reposicao: number
-  beneficiavel: boolean
-  eficiencia_beneficiamento: number | null
-  is_produto_final: boolean
   ativo: boolean
   created_at?: string
   // Relacionamentos
@@ -117,15 +114,13 @@ export interface Entrada {
   valor_total: number
   numero_nf?: string
   observacao?: string
-  origem_beneficiamento?: boolean
-  gramatura?: number | null
   created_at?: string
   // Relacionamentos
   produto?: Produto
   fornecedor?: Fornecedor
 }
 
-export type TipoSaida = 'transferencia' | 'definitiva' | 'beneficiamento'
+export type TipoSaida = 'transferencia' | 'definitiva'
 
 export interface Saida {
   id: string
@@ -152,40 +147,6 @@ export interface ItemSaida {
   showObs: boolean
 }
 
-export interface ProdutoBeneficiamento {
-  id: string
-  produto_origem_id: string
-  produto_final_id: string
-  empresa_id?: string
-  created_at?: string
-  // Relacionamentos
-  produto_final?: Produto
-  produto_origem?: Produto
-}
-
-export interface Beneficiamento {
-  id: string
-  saida_id: string
-  status: 'pendente' | 'resolvido'
-  data_resolucao?: string
-  empresa_id?: string
-  created_at?: string
-  // Relacionamentos
-  saida?: Saida
-}
-
-export interface BeneficiamentoItem {
-  id: string
-  beneficiamento_id: string
-  entrada_id: string
-  produto_final_id: string
-  quantidade: number
-  created_at?: string
-  // Relacionamentos
-  produto_final?: Produto
-  entrada?: Entrada
-}
-
 export interface TransferenciaPendente {
   id: string
   empresa_origem_id: string
@@ -210,6 +171,7 @@ export interface TransferenciaPendente {
 export interface Ajuste {
   id: string
   produto_id: string
+  contagem_id?: string
   data: string
   semana: string
   quantidade: number
@@ -255,7 +217,6 @@ export interface PainelMes {
   saidas_definitiva_por_semana: number[]
   saidas_transf_loja_por_semana: number[]
   saidas_transf_apoio_por_semana: number[]
-  saidas_beneficiamento_por_semana: number[]
   total_saidas: number
   total_entradas: number
   estoque_final: number
@@ -268,7 +229,6 @@ export interface PainelMes {
   saidas_definitiva: number
   saidas_transf_loja: number
   saidas_transf_apoio: number
-  saidas_beneficiamento: number
 }
 
 export interface SemanaInfo {
@@ -442,6 +402,7 @@ export interface Setor {
   id: string
   nome: string
   descricao?: string
+  tipo: 'principal' | 'apoio'
   empresa_id?: string
   created_at?: string
   produtos?: SetorProduto[]
@@ -463,6 +424,7 @@ export type TipoContagem = 'inventario' | 'estoque'
 export interface Contagem {
   id: string
   empresa_id?: string
+  token?: string
   nome: string
   tipo: TipoContagem
   data: string
@@ -499,6 +461,8 @@ export interface ContagemItemDB {
   setor_id: string
   produto_id: string
   quantidade_contada: number | null
+  ajuste_registrado: boolean
+  saldo_no_momento: number | null
   empresa_id?: string
   created_at?: string
   updated_at?: string

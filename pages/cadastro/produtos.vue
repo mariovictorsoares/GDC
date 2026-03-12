@@ -269,143 +269,8 @@
               </div>
             </UFormGroup>
 
-            <!-- Beneficiamento -->
-            <UFormGroup label="Esse produto vai ser beneficiado?" required>
-              <USelect
-                v-model="form.beneficiavel"
-                :options="[
-                  { label: 'Não', value: false },
-                  { label: 'Sim', value: true }
-                ]"
-                value-attribute="value"
-                option-attribute="label"
-              />
-            </UFormGroup>
-
-            <!-- Eficiência do Beneficiamento -->
-            <UFormGroup
-              v-if="form.beneficiavel === true || form.beneficiavel === 'true'"
-              label="Eficiência do beneficiamento (%)"
-            >
-              <UInput
-                v-model.number="form.eficiencia_beneficiamento"
-                type="number"
-                min="1"
-                max="100"
-                step="0.1"
-                placeholder="Ex: 90"
-                :ui="{ icon: { trailing: { pointer: '' } } }"
-              >
-                <template #trailing>
-                  <span class="text-operacao-400 text-xs">%</span>
-                </template>
-              </UInput>
-            </UFormGroup>
           </div>
 
-          <!-- Produtos Finais do Beneficiamento -->
-          <div v-if="form.beneficiavel === true || form.beneficiavel === 'true'" class="space-y-3 mt-2">
-            <div class="border-t border-operacao-200 pt-4">
-              <div class="flex items-center justify-between mb-3">
-                <span class="text-sm font-medium text-operacao-600">
-                  Produtos finais da produção
-                </span>
-                <UBadge
-                  v-if="produtosFinaisExistentes.length + produtosFinais.length > 0"
-                  color="purple" variant="subtle" size="xs"
-                >
-                  {{ produtosFinaisExistentes.length + produtosFinais.length }}
-                  {{ (produtosFinaisExistentes.length + produtosFinais.length) === 1 ? 'produto' : 'produtos' }}
-                </UBadge>
-              </div>
-
-              <!-- Loading -->
-              <div v-if="loadingProdutosFinais" class="flex items-center gap-2 py-4 justify-center text-operacao-400">
-                <UIcon name="i-heroicons-arrow-path" class="w-4 h-4 animate-spin" />
-                <span class="text-sm">Carregando produtos finais...</span>
-              </div>
-
-              <!-- Produtos finais já vinculados (ao editar) -->
-              <div
-                v-for="(link, index) in produtosFinaisExistentes"
-                :key="'existing-' + link.id"
-                class="relative group rounded-xl border border-purple-200 bg-purple-50/50 p-4 mb-3"
-              >
-                <button
-                  type="button"
-                  @click="removerProdutoFinalExistente(link.id, index)"
-                  class="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-sm hover:bg-red-600 z-10"
-                  title="Remover produto final"
-                >
-                  <UIcon name="i-heroicons-x-mark" class="w-3.5 h-3.5" />
-                </button>
-
-                <div class="flex items-center gap-3">
-                  <UIcon name="i-heroicons-check-circle" class="w-5 h-5 text-purple-500 flex-shrink-0" />
-                  <div>
-                    <p class="font-medium text-operacao-800">{{ link.produto_final.nome }}</p>
-                    <p class="text-xs text-operacao-400">
-                      {{ link.produto_final.subgrupo?.grupo?.nome }} / {{ link.produto_final.subgrupo?.nome }}
-                      <span class="ml-1 text-operacao-400">· {{ link.produto_final.unidade?.sigla }}</span>
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Novos produtos finais (formulário) -->
-              <div
-                v-for="(pf, index) in produtosFinais"
-                :key="'new-' + index"
-                class="relative group rounded-xl border border-operacao-200 bg-operacao-50/50 p-4 mb-3"
-              >
-                <button
-                  v-if="produtosFinais.length > 1 || produtosFinaisExistentes.length > 0"
-                  type="button"
-                  @click="produtosFinais.splice(index, 1)"
-                  class="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-sm hover:bg-red-600 z-10"
-                >
-                  <UIcon name="i-heroicons-x-mark" class="w-3.5 h-3.5" />
-                </button>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <UFormGroup label="Nome" required>
-                    <UInput v-model="pf.nome" placeholder="Nome do produto final" />
-                  </UFormGroup>
-                  <UFormGroup label="Grupo" required>
-                    <USelect
-                      v-model="pf.grupo_id"
-                      :options="gruposSelect"
-                      placeholder="Selecione o grupo"
-                      @change="pf.subgrupo_id = ''"
-                    />
-                  </UFormGroup>
-                  <UFormGroup label="Subgrupo" required>
-                    <USelect
-                      v-model="pf.subgrupo_id"
-                      :options="getSubgruposForPF(pf.grupo_id)"
-                      placeholder="Selecione o subgrupo"
-                      :disabled="!pf.grupo_id"
-                    />
-                  </UFormGroup>
-                  <UFormGroup label="Unidade">
-                    <div class="h-[38px] flex items-center px-3 bg-operacao-100 border border-operacao-300 rounded-md">
-                      <span class="text-sm text-operacao-500">UN - Unidade</span>
-                    </div>
-                  </UFormGroup>
-                </div>
-              </div>
-
-              <!-- Botão adicionar produto final -->
-              <button
-                type="button"
-                @click="produtosFinais.push({ nome: '', grupo_id: '', subgrupo_id: '' })"
-                class="w-full py-3 border-2 border-dashed border-operacao-300 rounded-xl text-sm text-operacao-400 hover:border-purple-400 hover:text-purple-600 hover:bg-purple-50/50 transition-all flex items-center justify-center gap-2"
-              >
-                <UIcon name="i-heroicons-plus-circle" class="w-5 h-5" />
-                Adicionar produto final
-              </button>
-            </div>
-          </div>
         </form>
 
         <template #footer>
@@ -509,49 +374,6 @@
             </UButton>
             <UButton color="red" class="w-full sm:w-auto" :loading="deleting" @click="deleteProduto">
               Desativar
-            </UButton>
-          </div>
-        </template>
-      </UCard>
-    </UModal>
-
-    <!-- Modal de Confirmação: Beneficiamento sem Eficiência -->
-    <UModal
-      v-model="confirmBeneficiamentoModalOpen"
-      :ui="{
-        overlay: { background: 'bg-operacao-900/50 backdrop-blur-sm' },
-        background: 'bg-white dark:bg-operacao-800',
-        ring: 'ring-1 ring-operacao-200 dark:ring-operacao-700',
-        shadow: 'shadow-2xl'
-      }"
-    >
-      <UCard :ui="{ background: 'bg-transparent', ring: 'ring-0', shadow: '', divide: 'divide-operacao-100 dark:divide-operacao-700' }">
-        <template #header>
-          <div class="flex items-center gap-2">
-            <UIcon name="i-heroicons-exclamation-triangle" class="w-5 h-5 text-amber-500" />
-            <h3 class="text-lg font-semibold text-amber-600">Produto incompleto</h3>
-          </div>
-        </template>
-
-        <div class="space-y-3">
-          <p class="text-operacao-700">
-            A <strong>eficiência do beneficiamento</strong> não foi informada para este produto.
-          </p>
-          <div class="p-3 bg-amber-50 border border-amber-200 rounded-lg">
-            <p class="text-sm text-amber-700">
-              Sem essa informação, o cálculo do custo do produto beneficiado ficará comprometido. Recomendamos preencher esse campo para ter um controle preciso do CMV.
-            </p>
-          </div>
-          <p class="text-sm text-operacao-500">Deseja salvar mesmo assim?</p>
-        </div>
-
-        <template #footer>
-          <div class="flex flex-col-reverse sm:flex-row justify-end gap-3">
-            <UButton color="gray" variant="ghost" class="w-full sm:w-auto" @click="confirmBeneficiamentoModalOpen = false">
-              Voltar e preencher
-            </UButton>
-            <UButton color="amber" class="w-full sm:w-auto" @click="confirmarSalvarSemEficiencia">
-              Salvar mesmo assim
             </UButton>
           </div>
         </template>
@@ -1082,9 +904,6 @@ const {
   deleteUnidade: removeUnidade,
   getCustosMensais,
   upsertCustoMensal,
-  createProdutoBeneficiamento,
-  getProdutosBeneficiamento,
-  deleteProdutoBeneficiamento,
   createGrupo,
   updateGrupo,
   deleteGrupo: removeGrupo,
@@ -1110,7 +929,6 @@ const expandedGrupos = ref<Set<string>>(new Set())
 const modalOpen = ref(false)
 const custosModalOpen = ref(false)
 const deleteModalOpen = ref(false)
-const confirmBeneficiamentoModalOpen = ref(false)
 const editingProduto = ref<Produto | null>(null)
 const selectedProduto = ref<Produto | null>(null)
 const deletingProduto = ref<Produto | null>(null)
@@ -1140,54 +958,9 @@ const form = ref({
   estoque_minimo: 0,
   margem_seguranca: 0,
   tempo_reposicao: 0,
-  beneficiavel: false as boolean | string,
-  eficiencia_beneficiamento: null as number | null,
   ativo: true
 })
 
-// Beneficiamento - produtos finais
-const produtosFinais = ref<Array<{
-  nome: string
-  grupo_id: string
-  subgrupo_id: string
-}>>([])
-
-// Produtos finais já vinculados (ao editar)
-const produtosFinaisExistentes = ref<Array<{
-  id: string // id do vínculo (produtos_beneficiamento)
-  produto_final: {
-    id: string
-    nome: string
-    unidade?: { sigla: string }
-    subgrupo?: { nome: string; grupo?: { nome: string } }
-  }
-}>>([])
-const loadingProdutosFinais = ref(false)
-
-const removerProdutoFinalExistente = async (vinculoId: string, index: number) => {
-  try {
-    await deleteProdutoBeneficiamento(vinculoId)
-    produtosFinaisExistentes.value.splice(index, 1)
-    toast.add({
-      title: 'Sucesso',
-      description: 'Produto final removido',
-      color: 'green'
-    })
-  } catch (error: any) {
-    toast.add({
-      title: 'Erro',
-      description: error.message || 'Erro ao remover produto final',
-      color: 'red'
-    })
-  }
-}
-
-const getSubgruposForPF = (grupoId: string) => {
-  if (!grupoId) return []
-  return subgrupos.value
-    .filter(s => s.grupo_id === grupoId)
-    .map(s => ({ label: s.nome, value: s.id }))
-}
 
 const columns = [
   { key: 'nome', label: 'Nome', sortable: true },
@@ -1259,11 +1032,6 @@ const unidadesSelect = computed(() =>
   unidades.value.map(u => ({ label: `${u.sigla} - ${u.descricao || u.sigla}`, value: u.id }))
 )
 
-const unidadeUNId = computed(() => {
-  const un = unidades.value.find(u => u.sigla.toUpperCase() === 'UN')
-  return un?.id || ''
-})
-
 const anosOptions = computed(() => {
   const currentYear = new Date().getFullYear()
   return Array.from({ length: 5 }, (_, i) => ({
@@ -1273,8 +1041,7 @@ const anosOptions = computed(() => {
 })
 
 const filteredProdutos = computed(() => {
-  // Oculta produtos finais de beneficiamento da tabela principal
-  let result = produtos.value.filter(p => !p.is_produto_final)
+  let result = [...produtos.value]
 
   if (search.value) {
     const term = search.value.toLowerCase()
@@ -1367,8 +1134,6 @@ const loadData = async () => {
 }
 
 const openModal = async (produto?: Produto) => {
-  produtosFinais.value = []
-  produtosFinaisExistentes.value = []
   if (produto) {
     editingProduto.value = produto
     form.value = {
@@ -1379,20 +1144,7 @@ const openModal = async (produto?: Produto) => {
       estoque_minimo: produto.estoque_minimo,
       margem_seguranca: produto.margem_seguranca,
       tempo_reposicao: produto.tempo_reposicao,
-      beneficiavel: produto.beneficiavel || false,
-      eficiencia_beneficiamento: produto.eficiencia_beneficiamento ?? null,
       ativo: produto.ativo
-    }
-    // Carrega produtos finais vinculados se for beneficiável
-    if (produto.beneficiavel) {
-      loadingProdutosFinais.value = true
-      try {
-        const links = await getProdutosBeneficiamento(produto.id)
-        produtosFinaisExistentes.value = links as any
-      } catch (e) {
-      } finally {
-        loadingProdutosFinais.value = false
-      }
     }
   } else {
     editingProduto.value = null
@@ -1404,8 +1156,6 @@ const openModal = async (produto?: Produto) => {
       estoque_minimo: 0,
       margem_seguranca: 0,
       tempo_reposicao: 0,
-      beneficiavel: false,
-      eficiencia_beneficiamento: null,
       ativo: true
     }
   }
@@ -1475,46 +1225,10 @@ const saveProduto = async () => {
     return
   }
 
-  // Normaliza o valor do beneficiavel (USelect pode retornar string)
-  const isBeneficiavel = form.value.beneficiavel === true || form.value.beneficiavel === 'true'
-
-  // Validar produtos finais se beneficiável
-  if (isBeneficiavel) {
-    const totalFinais = produtosFinaisExistentes.value.length + produtosFinais.value.length
-    if (totalFinais === 0) {
-      toast.add({
-        title: 'Atenção',
-        description: 'Adicione pelo menos um produto final da produção',
-        color: 'amber'
-      })
-      return
-    }
-    for (const pf of produtosFinais.value) {
-      if (!pf.nome || !pf.subgrupo_id) {
-        toast.add({
-          title: 'Atenção',
-          description: 'Preencha todos os campos dos produtos finais (nome, grupo e subgrupo)',
-          color: 'amber'
-        })
-        return
-      }
-    }
-  }
-
-  // Se beneficiável e sem eficiência, pedir confirmação
-  if (isBeneficiavel && !form.value.eficiencia_beneficiamento) {
-    confirmBeneficiamentoModalOpen.value = true
-    return
-  }
-
-  await executeSaveProduto(isBeneficiavel)
+  await executeSaveProduto()
 }
 
-const executeSaveProduto = async (isBeneficiavel?: boolean) => {
-  if (isBeneficiavel === undefined) {
-    isBeneficiavel = form.value.beneficiavel === true || form.value.beneficiavel === 'true'
-  }
-
+const executeSaveProduto = async () => {
   // Formata o nome antes de salvar
   form.value.nome = formatarNome(form.value.nome)
 
@@ -1526,8 +1240,6 @@ const executeSaveProduto = async (isBeneficiavel?: boolean) => {
     estoque_minimo: form.value.estoque_minimo,
     margem_seguranca: form.value.margem_seguranca,
     tempo_reposicao: form.value.tempo_reposicao,
-    beneficiavel: isBeneficiavel,
-    eficiencia_beneficiamento: isBeneficiavel ? (form.value.eficiencia_beneficiamento || null) : null,
     ativo: form.value.ativo
   }
 
@@ -1536,67 +1248,17 @@ const executeSaveProduto = async (isBeneficiavel?: boolean) => {
     if (editingProduto.value) {
       await updateProduto(editingProduto.value.id, dadosProduto)
 
-      // Criar novos produtos finais adicionados durante edição
-      if (isBeneficiavel && produtosFinais.value.length > 0) {
-        for (const pf of produtosFinais.value) {
-          const produtoFinal = await createProduto({
-            nome: formatarNome(pf.nome),
-            subgrupo_id: pf.subgrupo_id,
-            unidade_id: unidadeUNId.value,
-            estoque_inicial: 0,
-            preco_inicial: 0,
-            estoque_minimo: 0,
-            margem_seguranca: 0,
-            tempo_reposicao: 0,
-            beneficiavel: false,
-            is_produto_final: true,
-            ativo: true
-          })
-          await createProdutoBeneficiamento({
-            produto_origem_id: editingProduto.value.id,
-            produto_final_id: produtoFinal.id
-          })
-        }
-      }
-
       toast.add({
         title: 'Sucesso',
-        description: produtosFinais.value.length > 0
-          ? `Produto atualizado e ${produtosFinais.value.length} produto(s) final(is) adicionado(s)`
-          : 'Produto atualizado com sucesso',
+        description: 'Produto atualizado com sucesso',
         color: 'green'
       })
     } else {
-      const novoProduto = await createProduto(dadosProduto)
-
-      // Se beneficiável, criar produtos finais e vincular
-      if (isBeneficiavel) {
-        for (const pf of produtosFinais.value) {
-          const produtoFinal = await createProduto({
-            nome: formatarNome(pf.nome),
-            subgrupo_id: pf.subgrupo_id,
-            unidade_id: unidadeUNId.value,
-            estoque_inicial: 0,
-            preco_inicial: 0,
-            estoque_minimo: 0,
-            margem_seguranca: 0,
-            tempo_reposicao: 0,
-            beneficiavel: false,
-            is_produto_final: true,
-            ativo: true
-          })
-          await createProdutoBeneficiamento({
-            produto_origem_id: novoProduto.id,
-            produto_final_id: produtoFinal.id
-          })
-        }
-      }
+      await createProduto(dadosProduto)
 
       toast.add({
         title: 'Sucesso',
-        description: isBeneficiavel
-          ? `Produto e ${produtosFinais.value.length} produto(s) final(is) criados com sucesso`
-          : 'Produto criado com sucesso',
+        description: 'Produto criado com sucesso',
         color: 'green'
       })
       // Volta para página 1 ao criar novo produto
@@ -1613,11 +1275,6 @@ const executeSaveProduto = async (isBeneficiavel?: boolean) => {
   } finally {
     saving.value = false
   }
-}
-
-const confirmarSalvarSemEficiencia = async () => {
-  confirmBeneficiamentoModalOpen.value = false
-  await executeSaveProduto()
 }
 
 const confirmDelete = (produto: Produto) => {
@@ -2021,7 +1678,7 @@ const anyGrupoSubModalOpen = computed(() =>
 
 // Realtime
 const { onTableChange } = useRealtime()
-onTableChange(['produtos', 'grupos', 'subgrupos', 'categorias', 'unidades', 'fornecedores', 'produtos_beneficiamento'], () => loadData())
+onTableChange(['produtos', 'grupos', 'subgrupos', 'categorias', 'unidades', 'fornecedores'], () => loadData())
 
 // Recarregar dados quando a empresa ativa mudar
 watch(empresaId, () => {

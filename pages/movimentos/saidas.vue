@@ -105,8 +105,8 @@
         </template>
 
         <template #tipo-data="{ row }">
-          <UBadge :color="row.tipo === 'transferencia' ? 'blue' : row.tipo === 'beneficiamento' ? 'purple' : 'red'" variant="soft">
-            {{ row.tipo === 'transferencia' ? 'Transferência' : row.tipo === 'beneficiamento' ? 'Produção' : 'Definitiva' }}
+          <UBadge :color="row.tipo === 'transferencia' ? 'blue' : 'red'" variant="soft">
+            {{ row.tipo === 'transferencia' ? 'Transferência' : 'Definitiva' }}
           </UBadge>
         </template>
 
@@ -160,11 +160,11 @@
         <template #header>
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
-              <div class="p-2 rounded-lg flex items-center justify-center" :class="tipoSaida === 'transferencia' ? 'bg-guardian-100' : tipoSaida === 'beneficiamento' ? 'bg-purple-100' : 'bg-red-100'">
+              <div class="p-2 rounded-lg flex items-center justify-center" :class="tipoSaida === 'transferencia' ? 'bg-guardian-100' : 'bg-red-100'">
                 <UIcon
-                  :name="tipoSaida === 'transferencia' ? 'i-heroicons-arrows-right-left' : tipoSaida === 'beneficiamento' ? 'i-heroicons-beaker' : 'i-heroicons-arrow-up-tray'"
+                  :name="tipoSaida === 'transferencia' ? 'i-heroicons-arrows-right-left' : 'i-heroicons-arrow-up-tray'"
                   class="w-5 h-5"
-                  :class="tipoSaida === 'transferencia' ? 'text-guardian-600' : tipoSaida === 'beneficiamento' ? 'text-purple-600' : 'text-red-600'"
+                  :class="tipoSaida === 'transferencia' ? 'text-guardian-600' : 'text-red-600'"
                 />
               </div>
               <div>
@@ -190,7 +190,7 @@
           <div class="space-y-4">
             <!-- Tipo de Saída -->
             <UFormGroup label="Tipo de Saída" required>
-              <div class="grid grid-cols-3 gap-2">
+              <div class="grid grid-cols-2 gap-2">
                 <button
                   type="button"
                   @click="tipoSaida = 'transferencia'"
@@ -213,23 +213,10 @@
                   <UIcon name="i-heroicons-arrow-up-tray" class="w-4 h-4 flex-shrink-0" />
                   <span class="truncate">Definitiva</span>
                 </button>
-                <button
-                  type="button"
-                  @click="tipoSaida = 'beneficiamento'"
-                  class="px-3 py-2.5 rounded-lg border-2 text-sm font-medium transition-all flex items-center justify-center gap-2"
-                  :class="tipoSaida === 'beneficiamento'
-                    ? 'border-purple-500 bg-purple-50 text-purple-700'
-                    : 'border-operacao-200 bg-white text-operacao-400 hover:border-operacao-300'"
-                >
-                  <UIcon name="i-heroicons-beaker" class="w-4 h-4 flex-shrink-0" />
-                  <span class="truncate">Produção</span>
-                </button>
               </div>
               <p class="text-xs text-operacao-400 mt-1">
                 {{ tipoSaida === 'transferencia'
                   ? 'Move do Estoque Principal para o Estoque de Apoio'
-                  : tipoSaida === 'beneficiamento'
-                  ? 'Envia produto para produção'
                   : 'Saída definitiva do sistema (consumo/venda)' }}
               </p>
             </UFormGroup>
@@ -248,7 +235,7 @@
               <span class="text-sm font-medium text-operacao-600">
                 Itens da saída
               </span>
-              <UBadge :color="tipoSaida === 'transferencia' ? 'blue' : tipoSaida === 'beneficiamento' ? 'purple' : 'red'" variant="subtle" size="xs" v-if="itens.length > 0">
+              <UBadge :color="tipoSaida === 'transferencia' ? 'blue' : 'red'" variant="subtle" size="xs" v-if="itens.length > 0">
                 {{ itens.length }} {{ itens.length === 1 ? 'item' : 'itens' }}
               </UBadge>
             </div>
@@ -259,7 +246,7 @@
                 v-for="(item, index) in itens"
                 :key="index"
                 class="relative group rounded-xl border border-operacao-200 dark:border-operacao-700 bg-operacao-50/50 dark:bg-operacao-900/30 p-4 transition-all"
-                :class="tipoSaida === 'transferencia' ? 'hover:border-guardian-300 hover:shadow-sm' : tipoSaida === 'beneficiamento' ? 'hover:border-purple-300 hover:shadow-sm' : 'hover:border-red-300 hover:shadow-sm'"
+                :class="tipoSaida === 'transferencia' ? 'hover:border-guardian-300 hover:shadow-sm' : 'hover:border-red-300 hover:shadow-sm'"
               >
                 <!-- Botão remover (só se multi-item e não editando) -->
                 <button
@@ -483,7 +470,7 @@
         <p>Tem certeza que deseja excluir esta saída?</p>
         <div class="mt-2 p-3 bg-operacao-50 rounded-lg">
           <p><strong>Produto:</strong> {{ deletingSaida?.produto?.nome }}</p>
-          <p><strong>Tipo:</strong> {{ deletingSaida?.tipo === 'transferencia' ? 'Transferência' : deletingSaida?.tipo === 'beneficiamento' ? 'Produção' : 'Definitiva' }}</p>
+          <p><strong>Tipo:</strong> {{ deletingSaida?.tipo === 'transferencia' ? 'Transferência' : 'Definitiva' }}</p>
           <p><strong>Data:</strong> {{ formatDate(deletingSaida?.data) }}</p>
           <p><strong>Quantidade:</strong> {{ formatNumber(deletingSaida?.quantidade) }}</p>
         </div>
@@ -523,8 +510,7 @@ const {
   updateSaida,
   deleteSaida: removeSaida,
   getProdutos,
-  getSaldoProduto,
-  createSaidaBeneficiamento
+  getSaldoProduto
 } = useEstoque()
 const { empresaId } = useEmpresa()
 const toast = useToast()
@@ -567,8 +553,7 @@ const columns = [
 const tipoFilterOptions = [
   { label: 'Todos', value: '' },
   { label: 'Transferência', value: 'transferencia' },
-  { label: 'Definitiva', value: 'definitiva' },
-  { label: 'Produção', value: 'beneficiamento' }
+  { label: 'Definitiva', value: 'definitiva' }
 ]
 
 const tipoFilterLabel = computed(() => {
@@ -584,20 +569,8 @@ const produtosSelect = computed(() =>
   }))
 )
 
-// Produtos beneficiáveis (apenas para saídas de beneficiamento)
-const produtosSelectBeneficiamento = computed(() =>
-  produtos.value
-    .filter(p => p.beneficiavel)
-    .map(p => ({
-      label: `${p.nome} ${p.unidade?.sigla ? `(${p.unidade.sigla})` : ''}`,
-      value: p.id
-    }))
-)
-
 // Opções do select baseadas no tipo de saída
-const produtosSelectAtual = computed(() =>
-  tipoSaida.value === 'beneficiamento' ? produtosSelectBeneficiamento.value : produtosSelect.value
-)
+const produtosSelectAtual = computed(() => produtosSelect.value)
 
 const filteredSaidas = computed(() => {
   let result = saidas.value
@@ -842,30 +815,18 @@ const executeSaveSaida = async () => {
       })
     } else {
       for (const item of itensValidos) {
-        if (tipoSaida.value === 'beneficiamento') {
-          await createSaidaBeneficiamento({
-            produto_id: item.produto_id,
-            tipo: 'beneficiamento',
-            data: formData.value,
-            quantidade: item.quantidade,
-            observacao: item.observacao || null
-          })
-        } else {
-          await createSaida({
-            produto_id: item.produto_id,
-            tipo: tipoSaida.value,
-            data: formData.value,
-            quantidade: item.quantidade,
-            observacao: item.observacao || null
-          })
-        }
+        await createSaida({
+          produto_id: item.produto_id,
+          tipo: tipoSaida.value,
+          data: formData.value,
+          quantidade: item.quantidade,
+          observacao: item.observacao || null
+        })
       }
       toast.add({
         title: 'Sucesso',
         description: itensValidos.length > 1
           ? `${itensValidos.length} saídas registradas com sucesso`
-          : tipoSaida.value === 'beneficiamento'
-          ? 'Saída de produção registrada. Informe o rendimento na página de Entradas.'
           : 'Saída registrada com sucesso',
         color: 'green'
       })

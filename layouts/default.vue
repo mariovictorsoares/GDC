@@ -1207,7 +1207,7 @@ const menuDashboard = [
 const menuCadastros = [
   { to: '/cadastro/produtos', icon: 'i-heroicons-cube', label: 'Produtos' },
   { to: '/movimentos/controle-estoque', icon: 'i-heroicons-clipboard-document-list', label: 'Controle de Estoque', iconColor: 'text-guardian-500' },
-  { to: '/movimentos/ajustes', icon: 'i-heroicons-clipboard-document-check', label: 'Contagem' },
+  { to: '/movimentos/contagens', icon: 'i-heroicons-clipboard-document-check', label: 'Contagens' },
   { to: '/compras', icon: 'i-heroicons-shopping-cart', label: 'Compras' }
 ]
 

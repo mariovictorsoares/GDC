@@ -9,6 +9,11 @@ export default defineNuxtRouteMiddleware(async (to) => {
     return
   }
 
+  // Rotas de contagem pública (acessadas via token, sem login)
+  if (to.path.startsWith('/contagem/')) {
+    return
+  }
+
   // Se não está logado, redireciona para login
   if (!user.value) {
     return navigateTo('/login')

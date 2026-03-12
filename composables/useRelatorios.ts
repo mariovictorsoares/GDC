@@ -102,7 +102,7 @@ export const useRelatorios = () => {
     return semanas
   }
 
-  const getPainelMes = async (ano: number, mes: number, tipoSaida: 'todos' | 'transferencia' | 'definitiva' | 'beneficiamento' = 'todos'): Promise<{ semanas: SemanaInfo[], itens: PainelMes[] }> => {
+  const getPainelMes = async (ano: number, mes: number, tipoSaida: 'todos' | 'transferencia' | 'definitiva' = 'todos'): Promise<{ semanas: SemanaInfo[], itens: PainelMes[] }> => {
     if (!empresaId.value) return { semanas: [], itens: [] }
 
     // Calcular semanas Seg-Dom reais do mês
@@ -244,15 +244,12 @@ export const useRelatorios = () => {
       const saidas_transf_apoio = prodSaidasAll
         .filter(s => s.tipo === 'transferencia' && !s.empresa_destino_id)
         .reduce((sum, s) => sum + Number(s.quantidade), 0)
-      const saidas_beneficiamento = prodSaidasAll
-        .filter(s => s.tipo === 'beneficiamento')
-        .reduce((sum, s) => sum + Number(s.quantidade), 0)
       const prodCusto = ultimaEntradaPorProduto.get(p.id) || p.preco_inicial || 0
       const categoriaNome = (p.categoria as any)?.nome || ''
 
       const estoqueInicial = movimentosAnteriores.get(p.id) || 0
 
-      // Agrupar por semana real usando a data — TODAS as saídas (incl. beneficiamento)
+      // Agrupar por semana real usando a data
       const entradas_por_semana = new Array(qtdSemanas).fill(0)
       prodEntradas.forEach(e => {
         const idx = getIndiceSemana(e.data)
@@ -263,7 +260,6 @@ export const useRelatorios = () => {
       const saidas_definitiva_por_semana = new Array(qtdSemanas).fill(0)
       const saidas_transf_loja_por_semana = new Array(qtdSemanas).fill(0)
       const saidas_transf_apoio_por_semana = new Array(qtdSemanas).fill(0)
-      const saidas_beneficiamento_por_semana = new Array(qtdSemanas).fill(0)
 
       prodSaidasAll.forEach(s => {
         const idx = getIndiceSemana(s.data)
@@ -273,7 +269,6 @@ export const useRelatorios = () => {
         if (s.tipo === 'definitiva') saidas_definitiva_por_semana[idx] += qty
         else if (s.tipo === 'transferencia' && s.empresa_destino_id) saidas_transf_loja_por_semana[idx] += qty
         else if (s.tipo === 'transferencia' && !s.empresa_destino_id) saidas_transf_apoio_por_semana[idx] += qty
-        else if (s.tipo === 'beneficiamento') saidas_beneficiamento_por_semana[idx] += qty
       })
 
       const total_entradas = entradas_por_semana.reduce((sum, v) => sum + v, 0)
@@ -284,18 +279,17 @@ export const useRelatorios = () => {
       const estoque_final = estoqueInicial + total_entradas - total_saidas + total_ajustes
       const valor_total = estoque_final * Number(prodCusto)
 
-      // CMV: saídas sem beneficiamento × custo unitário (MTP excluído)
-      const saidas_cmv = total_saidas - saidas_beneficiamento
+      // CMV: saídas definitivas × custo unitário (MTP excluído)
       const cmvProduto = categoriaNome.toUpperCase() === 'MTP'
         ? 0
-        : saidas_cmv * Number(prodCusto)
+        : saidas_definitiva * Number(prodCusto)
 
       // Giro em dias
       let giro_dias = 0
       let vezes_mes = 0
 
       if (categoriaNome.toUpperCase() === 'MTP') {
-        const custoSaidasMTP = saidas_cmv * Number(prodCusto)
+        const custoSaidasMTP = saidas_definitiva * Number(prodCusto)
         giro_dias = custoSaidasMTP > 0 ? (valor_total / custoSaidasMTP) * 30 : 0
       } else {
         giro_dias = cmvProduto > 0 ? (valor_total / cmvProduto) * 30 : 0
@@ -313,7 +307,6 @@ export const useRelatorios = () => {
         saidas_definitiva_por_semana,
         saidas_transf_loja_por_semana,
         saidas_transf_apoio_por_semana,
-        saidas_beneficiamento_por_semana,
         total_saidas,
         total_entradas,
         estoque_final,
@@ -324,8 +317,7 @@ export const useRelatorios = () => {
         vezes_mes,
         saidas_definitiva,
         saidas_transf_loja,
-        saidas_transf_apoio,
-        saidas_beneficiamento
+        saidas_transf_apoio
       }
     }) || []
 
@@ -702,7 +694,7 @@ export const useRelatorios = () => {
       .select('produto_id, quantidade, valor_total')
       .lte('data', dataLimite))
 
-    // Buscar saídas que reduzem estoque (definitiva + beneficiamento) até a data
+    // Buscar saídas que reduzem estoque (definitiva) até a data
     const { data: saidas } = await comEmpresa(client
       .from('saidas')
       .select('produto_id, quantidade')
@@ -912,7 +904,7 @@ export const useRelatorios = () => {
         .eq('ativo', true)),
       comEmpresa(client
         .from('entradas')
-        .select('produto_id, quantidade, valor_total, data, origem_beneficiamento')
+        .select('produto_id, quantidade, valor_total, data')
         .gte('data', dataInicioTotal)
         .lte('data', dataFimTotal)),
       comEmpresa(client
@@ -998,9 +990,9 @@ export const useRelatorios = () => {
       const ultimoDiaAnterior = new Date(anoAnterior, mesAnterior, 0).getDate()
       const dataFimAnterior = `${anoAnterior}-${String(mesAnterior).padStart(2, '0')}-${ultimoDiaAnterior}`
 
-      // Compras do mês (excluindo MTP e entradas de beneficiamento) - filtrado em memória
+      // Compras do mês (excluindo MTP) - filtrado em memória
       const compras = todasEntradas
-        ?.filter(e => e.data >= dataInicio && e.data <= dataFim && idsNaoMTP.has(e.produto_id) && !(e as any).origem_beneficiamento)
+        ?.filter(e => e.data >= dataInicio && e.data <= dataFim && idsNaoMTP.has(e.produto_id))
         .reduce((sum, e) => sum + Number(e.valor_total || 0), 0) || 0
 
       // Estoques calculados em memória (sem queries adicionais)
@@ -1280,7 +1272,7 @@ export const useRelatorios = () => {
     const dataInicio = semanasFormatadas[0].inicio_date
     const dataFim = semanasFormatadas[semanasFormatadas.length - 1].fim_date
 
-    // Buscar entradas no período com produto → subgrupo → grupo (excluindo beneficiamento)
+    // Buscar entradas no período com produto → subgrupo → grupo
     const { data: entradas, error } = await comEmpresa(client
       .from('entradas')
       .select(`
@@ -1295,7 +1287,6 @@ export const useRelatorios = () => {
           )
         )
       `)
-      .eq('origem_beneficiamento', false)
       .gte('data', dataInicio)
       .lte('data', dataFim))
 

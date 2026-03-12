@@ -41,6 +41,12 @@
             class="flex-1"
             @keydown.enter="adicionarSetor"
           />
+          <USelect
+            v-model="novoSetorTipo"
+            :options="[{ label: 'Principal', value: 'principal' }, { label: 'Apoio', value: 'apoio' }]"
+            size="sm"
+            class="w-32"
+          />
           <UButton color="primary" :loading="salvandoSetor" :disabled="!novoSetorNome.trim()" @click="adicionarSetor">
             <UIcon name="i-heroicons-plus" class="w-4 h-4" />
           </UButton>
@@ -65,6 +71,9 @@
               </div>
               <div>
                 <span class="font-medium text-operacao-800">{{ setor.nome }}</span>
+                <UBadge :color="setor.tipo === 'apoio' ? 'orange' : 'blue'" variant="subtle" size="xs" class="ml-1.5">
+                  {{ setor.tipo === 'apoio' ? 'Apoio' : 'Principal' }}
+                </UBadge>
                 <p class="text-xs text-operacao-400">{{ setorProdutosCount[setor.id] || 0 }} {{ (setorProdutosCount[setor.id] || 0) === 1 ? 'produto' : 'produtos' }}</p>
                 <!-- Utilizado em: -->
                 <p v-if="utilizadoEm(setor.id).length > 0" class="text-xs text-guardian-600 mt-0.5">
@@ -256,6 +265,7 @@ const { createSetor, deleteSetor, getSetorProdutos, addProdutosToSetor, removePr
 
 // State
 const novoSetorNome = ref('')
+const novoSetorTipo = ref<'principal' | 'apoio'>('principal')
 const salvandoSetor = ref(false)
 const deletandoSetorId = ref<string | null>(null)
 const modalConfirmarExclusaoOpen = ref(false)
@@ -340,8 +350,9 @@ const adicionarSetor = async () => {
   if (!novoSetorNome.value.trim()) return
   try {
     salvandoSetor.value = true
-    await createSetor({ nome: novoSetorNome.value.trim() })
+    await createSetor({ nome: novoSetorNome.value.trim(), tipo: novoSetorTipo.value })
     novoSetorNome.value = ''
+    novoSetorTipo.value = 'principal'
     toast.add({ title: 'Sucesso', description: 'Setor criado', color: 'green' })
     emit('atualizado')
   } catch (error: any) {

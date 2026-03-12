@@ -113,7 +113,7 @@ export default defineEventHandler(async (event) => {
   const { data: contagens, error } = await supabase
     .from('contagens')
     .select(`
-      id, nome, recorrencia, horario_notificacao, dias_semana,
+      id, nome, token, recorrencia, horario_notificacao, dias_semana,
       mensal_posicao, mensal_dia, responsavel_nome, responsavel_telefone,
       status, ultima_contagem, data, ultimo_lembrete_enviado,
       contagem_setores ( setor_id, setores ( nome ) )
@@ -199,7 +199,8 @@ export default defineEventHandler(async (event) => {
       responsavelNome: contagem.responsavel_nome,
       setores,
       recorrencia: contagem.recorrencia,
-      horario
+      horario,
+      token: contagem.token
     })
 
     const result = await sendWhatsAppText(

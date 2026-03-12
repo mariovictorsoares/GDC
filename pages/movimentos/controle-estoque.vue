@@ -10,11 +10,6 @@
           Transferências
           <span class="ml-1.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold leading-none rounded-full bg-blue-500 text-white">{{ pendentesTransfCount }}</span>
         </UButton>
-        <UButton v-if="pendentesCount > 0" color="white" class="hover:!bg-purple-50 hover:!ring-purple-200" :ui="toolbarButtonUi" @click="showPendentes = true">
-          <UIcon name="i-heroicons-beaker" class="w-4 h-4 mr-1.5 text-purple-500" />
-          Produções
-          <span class="ml-1.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold leading-none rounded-full bg-purple-500 text-white">{{ pendentesCount }}</span>
-        </UButton>
         <UButton color="white" class="hover:!bg-emerald-50 hover:!ring-emerald-200" :ui="toolbarButtonUi" @click="openEntradaModal()">
           <UIcon name="i-heroicons-arrow-down-tray" class="w-4 h-4 mr-1.5 text-emerald-500" />
           Entrada
@@ -582,11 +577,11 @@
         <template #header>
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
-              <div class="p-2 rounded-lg flex items-center justify-center" :class="tipoSaida === 'transferencia' && destinoTransferencia === 'loja' ? 'bg-blue-100' : tipoSaida === 'transferencia' ? 'bg-guardian-100' : tipoSaida === 'beneficiamento' ? 'bg-purple-100' : 'bg-red-100'">
+              <div class="p-2 rounded-lg flex items-center justify-center" :class="tipoSaida === 'transferencia' && destinoTransferencia === 'loja' ? 'bg-blue-100' : tipoSaida === 'transferencia' ? 'bg-guardian-100' : 'bg-red-100'">
                 <UIcon
-                  :name="tipoSaida === 'transferencia' && destinoTransferencia === 'loja' ? 'i-heroicons-building-storefront' : tipoSaida === 'transferencia' ? 'i-heroicons-archive-box' : tipoSaida === 'beneficiamento' ? 'i-heroicons-beaker' : 'i-heroicons-arrow-up-tray'"
+                  :name="tipoSaida === 'transferencia' && destinoTransferencia === 'loja' ? 'i-heroicons-building-storefront' : tipoSaida === 'transferencia' ? 'i-heroicons-archive-box' : 'i-heroicons-arrow-up-tray'"
                   class="w-5 h-5"
-                  :class="tipoSaida === 'transferencia' && destinoTransferencia === 'loja' ? 'text-blue-600' : tipoSaida === 'transferencia' ? 'text-guardian-600' : tipoSaida === 'beneficiamento' ? 'text-purple-600' : 'text-red-600'"
+                  :class="tipoSaida === 'transferencia' && destinoTransferencia === 'loja' ? 'text-blue-600' : tipoSaida === 'transferencia' ? 'text-guardian-600' : 'text-red-600'"
                 />
               </div>
               <div>
@@ -605,7 +600,7 @@
         <div class="space-y-5">
           <div class="space-y-4">
             <UFormGroup label="Tipo de Saída" required>
-              <div class="grid grid-cols-4 gap-1.5">
+              <div class="grid grid-cols-3 gap-1.5">
                 <button
                   type="button"
                   @click="tipoSaida = 'transferencia'; destinoTransferencia = 'apoio'; empresaDestinoId = ''"
@@ -642,17 +637,6 @@
                   <UIcon name="i-heroicons-arrow-up-tray" class="w-3.5 h-3.5 flex-shrink-0" />
                   <span class="truncate">Definitiva</span>
                 </button>
-                <button
-                  type="button"
-                  @click="tipoSaida = 'beneficiamento'; destinoTransferencia = 'apoio'; empresaDestinoId = ''"
-                  class="px-2 py-2 rounded-lg border-2 text-xs font-medium transition-all flex items-center justify-center gap-1.5"
-                  :class="tipoSaida === 'beneficiamento'
-                    ? 'border-purple-500 bg-purple-50 text-purple-700'
-                    : 'border-operacao-200 bg-white text-operacao-400 hover:border-operacao-300'"
-                >
-                  <UIcon name="i-heroicons-beaker" class="w-3.5 h-3.5 flex-shrink-0" />
-                  <span class="truncate">Produção</span>
-                </button>
               </div>
             </UFormGroup>
 
@@ -687,7 +671,7 @@
           <div class="space-y-3">
             <div class="flex items-center justify-between">
               <span class="text-sm font-medium text-operacao-600">Itens da saída</span>
-              <UBadge :color="tipoSaida === 'transferencia' ? 'blue' : tipoSaida === 'beneficiamento' ? 'purple' : 'red'" variant="subtle" size="xs" v-if="saidaItens.length > 0">
+              <UBadge :color="tipoSaida === 'transferencia' ? 'blue' : 'red'" variant="subtle" size="xs" v-if="saidaItens.length > 0">
                 {{ saidaItens.length }} {{ saidaItens.length === 1 ? 'item' : 'itens' }}
               </UBadge>
             </div>
@@ -697,7 +681,7 @@
                 v-for="(item, index) in saidaItens"
                 :key="index"
                 class="relative group rounded-xl border border-operacao-200 dark:border-operacao-700 bg-operacao-50/50 dark:bg-operacao-900/30 p-4 transition-all"
-                :class="tipoSaida === 'transferencia' ? 'hover:border-guardian-300 hover:shadow-sm' : tipoSaida === 'beneficiamento' ? 'hover:border-purple-300 hover:shadow-sm' : 'hover:border-red-300 hover:shadow-sm'"
+                :class="tipoSaida === 'transferencia' ? 'hover:border-guardian-300 hover:shadow-sm' : 'hover:border-red-300 hover:shadow-sm'"
               >
                 <button
                   v-if="saidaItens.length > 1 && !editingSaida"
@@ -932,7 +916,7 @@
         <div class="mt-2 p-3 bg-operacao-50 rounded-lg">
           <p><strong>Produto:</strong> {{ deletingRow?.produto?.nome }}</p>
           <p v-if="deletingType === 'saida'">
-            <strong>Tipo:</strong> {{ deletingRow?.tipo === 'transferencia' ? 'Transferência' : deletingRow?.tipo === 'beneficiamento' ? 'Produção' : 'Definitiva' }}
+            <strong>Tipo:</strong> {{ deletingRow?.tipo === 'transferencia' ? 'Transferência' : 'Definitiva' }}
           </p>
           <p><strong>Data:</strong> {{ formatDate(deletingRow?.data) }}</p>
           <p><strong>Quantidade:</strong> {{ formatNumber(deletingRow?.quantidade) }}</p>
@@ -947,62 +931,6 @@
         </template>
       </UCard>
     </UModal>
-
-    <!-- ======================== SLIDEOVER: PRODUÇÕES PENDENTES ======================== -->
-    <USlideover
-      v-model="showPendentes"
-      :ui="{
-        width: 'max-w-md',
-        overlay: { background: 'bg-operacao-900/50 backdrop-blur-sm' },
-        background: 'bg-white dark:bg-operacao-800'
-      }"
-    >
-      <div class="flex flex-col h-full">
-        <div class="flex items-center justify-between px-6 py-4 border-b border-operacao-200 dark:border-operacao-700">
-          <div class="flex items-center gap-3">
-            <div class="p-2 bg-purple-100 rounded-lg">
-              <UIcon name="i-heroicons-beaker" class="w-5 h-5 text-purple-600" />
-            </div>
-            <div>
-              <h3 class="text-lg font-semibold text-operacao-800">Produções Pendentes</h3>
-              <p class="text-xs text-operacao-400">
-                {{ pendentesCount }} {{ pendentesCount === 1 ? 'produção aguardando' : 'produções aguardando' }} rendimento
-              </p>
-            </div>
-          </div>
-          <UButton color="gray" variant="ghost" icon="i-heroicons-x-mark" @click="showPendentes = false" />
-        </div>
-
-        <div class="flex-1 overflow-y-auto px-6 py-4 space-y-3">
-          <div
-            v-for="benef in pendentes"
-            :key="benef.id"
-            class="p-4 rounded-xl border border-operacao-200 hover:border-purple-300 bg-white hover:bg-purple-50/30 transition-all cursor-pointer group"
-            @click="openResolucaoFromSlideover(benef)"
-          >
-            <div class="flex items-start justify-between gap-3">
-              <div class="flex-1 min-w-0">
-                <p class="font-medium text-operacao-800 truncate">{{ benef.saida?.produto?.nome }}</p>
-                <div class="flex items-center gap-2 mt-1">
-                  <UBadge color="purple" variant="subtle" size="xs">
-                    {{ formatNumber(benef.saida?.quantidade) }} {{ benef.saida?.produto?.unidade?.sigla }}
-                  </UBadge>
-                  <span class="text-xs text-operacao-400">{{ formatDate(benef.saida?.data) }}</span>
-                </div>
-                <p class="text-xs text-operacao-400 mt-1.5">Custo: {{ formatCurrency(benef.saida?.custo_saida) }}</p>
-              </div>
-              <UIcon name="i-heroicons-chevron-right" class="w-5 h-5 text-operacao-300 group-hover:text-purple-500 transition-colors flex-shrink-0 mt-1" />
-            </div>
-          </div>
-
-          <div v-if="pendentes.length === 0" class="flex flex-col items-center justify-center py-12 text-operacao-400">
-            <UIcon name="i-heroicons-check-circle" class="w-10 h-10 mb-3 text-controle-400" />
-            <p class="text-sm font-medium text-operacao-400">Tudo resolvido!</p>
-            <p class="text-xs text-operacao-400">Nenhuma produção pendente</p>
-          </div>
-        </div>
-      </div>
-    </USlideover>
 
     <!-- ======================== SLIDEOVER: TRANSFERÊNCIAS PENDENTES ======================== -->
     <USlideover
@@ -1069,133 +997,6 @@
       @confirmada="onTransfResolvida"
       @rejeitada="onTransfResolvida"
     />
-
-    <!-- ======================== MODAL: INFORMAR RENDIMENTO ======================== -->
-    <UModal
-      v-model="resolucaoModalOpen"
-      :ui="{
-        width: 'sm:max-w-2xl',
-        overlay: { background: 'bg-operacao-900/50 backdrop-blur-sm' },
-        background: 'bg-white dark:bg-operacao-800',
-        ring: 'ring-1 ring-operacao-200 dark:ring-operacao-700',
-        shadow: 'shadow-2xl'
-      }"
-    >
-      <UCard :ui="{ background: 'bg-transparent', ring: 'ring-0', shadow: '', divide: 'divide-operacao-100 dark:divide-operacao-700' }">
-        <template #header>
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-3">
-              <div class="p-2 bg-purple-100 rounded-lg flex items-center justify-center">
-                <UIcon name="i-heroicons-beaker" class="w-5 h-5 text-purple-600" />
-              </div>
-              <div>
-                <h3 class="text-lg font-semibold text-operacao-800">Informar Rendimento</h3>
-                <p class="text-sm text-operacao-400">
-                  {{ resolvingBeneficiamento?.saida?.produto?.nome }} —
-                  {{ formatNumber(resolvingBeneficiamento?.saida?.quantidade) }}
-                  {{ resolvingBeneficiamento?.saida?.produto?.unidade?.sigla }}
-                </p>
-              </div>
-            </div>
-            <UButton color="gray" variant="ghost" icon="i-heroicons-x-mark" @click="resolucaoModalOpen = false" />
-          </div>
-        </template>
-
-        <div class="space-y-4">
-          <div class="p-3 bg-purple-50 border border-purple-200 rounded-lg">
-            <div class="flex items-center justify-between text-sm">
-              <span class="text-purple-700">Custo total da saída:</span>
-              <span class="font-semibold text-purple-900">{{ formatCurrency(custoRealSaida) }}</span>
-            </div>
-            <p v-if="eficienciaProdutoOrigem && eficienciaProdutoOrigem < 100" class="text-xs text-purple-500 mt-1">
-              Custo original {{ formatCurrency(resolvingBeneficiamento?.saida?.custo_saida) }}
-              ajustado pela eficiência de {{ eficienciaProdutoOrigem }}%
-            </p>
-          </div>
-
-          <div class="space-y-3">
-            <span class="text-sm font-medium text-operacao-600">Produtos finais obtidos:</span>
-            <div
-              v-for="(item, index) in itensResolucao"
-              :key="index"
-              class="p-4 border border-operacao-200 rounded-lg bg-operacao-50/50"
-            >
-              <div class="flex items-center gap-3 mb-3">
-                <UIcon name="i-heroicons-cube" class="w-4 h-4 text-purple-500 flex-shrink-0" />
-                <div>
-                  <p class="text-sm font-medium text-operacao-800">{{ item.produto_nome }}</p>
-                  <p class="text-xs text-operacao-400">Unidade: {{ item.unidade_sigla }}</p>
-                </div>
-              </div>
-              <div class="grid grid-cols-3 gap-3">
-                <div>
-                  <label class="block text-xs font-medium text-operacao-400 mb-1">Quantidade</label>
-                  <UInput v-model.number="item.quantidade" type="number" step="0.0001" min="0" placeholder="0" size="md" />
-                </div>
-                <div>
-                  <label class="block text-xs font-medium text-operacao-400 mb-1">Peso por un. (kg)</label>
-                  <UInput
-                    :model-value="formatGramatura(item.gramatura)"
-                    @update:model-value="item.gramatura = parseGramatura($event)"
-                    placeholder="Ex: 0,150"
-                    size="md"
-                    inputmode="decimal"
-                    :ui="{ icon: { trailing: { pointer: '' } } }"
-                  >
-                    <template #trailing>
-                      <span class="text-operacao-400 text-xs">kg</span>
-                    </template>
-                  </UInput>
-                </div>
-                <div>
-                  <label class="block text-xs font-medium text-operacao-400 mb-1">Custo unit.</label>
-                  <div class="h-[38px] flex items-center px-3 bg-purple-50 border border-purple-200 rounded-md">
-                    <span class="text-xs font-semibold text-purple-700">
-                      {{ formatCurrency(calcCustoUnitarioResolucao(index)) }}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div
-            v-if="itensResolucao.some(i => i.quantidade > 0)"
-            class="p-3 bg-operacao-50 border border-operacao-200 rounded-lg"
-          >
-            <div class="grid grid-cols-3 gap-3 text-center">
-              <div>
-                <p class="text-xs text-operacao-400">Qtd. total</p>
-                <p class="text-sm font-semibold text-operacao-800">{{ resumoResolucao.qtdTotal }} un</p>
-              </div>
-              <div>
-                <p class="text-xs text-operacao-400">Peso total</p>
-                <p class="text-sm font-semibold text-operacao-800">{{ formatNumber(resumoResolucao.pesoTotal) }} kg</p>
-              </div>
-              <div>
-                <p class="text-xs text-operacao-400">Valor total</p>
-                <p class="text-sm font-semibold text-purple-700">{{ formatCurrency(resumoResolucao.valorTotal) }}</p>
-              </div>
-            </div>
-          </div>
-
-          <div v-if="itensResolucao.length === 0" class="text-center py-4 text-operacao-400">
-            <UIcon name="i-heroicons-exclamation-triangle" class="w-6 h-6 mx-auto mb-2" />
-            <p class="text-sm">Nenhum produto final vinculado a este produto.</p>
-          </div>
-        </div>
-
-        <template #footer>
-          <div class="flex flex-col-reverse sm:flex-row justify-end gap-3">
-            <UButton color="gray" variant="ghost" class="w-full sm:w-auto" @click="resolucaoModalOpen = false">Cancelar</UButton>
-            <UButton color="purple" class="w-full sm:w-auto" :loading="resolvendo" :disabled="itensResolucao.length === 0" @click="confirmarResolucao">
-              <UIcon name="i-heroicons-check" class="w-4 h-4 mr-1.5" />
-              Confirmar Rendimento
-            </UButton>
-          </div>
-        </template>
-      </UCard>
-    </UModal>
 
     <!-- ======================== SLIDEOVER: PAINEL DE CONTROLE (80%) ======================== -->
     <USlideover
@@ -1318,7 +1119,7 @@
                       <p class="font-semibold text-operacao-800 border-b border-operacao-200 pb-1.5">Modos de Visualização</p>
                       <div class="flex gap-2">
                         <span class="inline-block w-1.5 h-1.5 rounded-full bg-primary-500 mt-1.5 shrink-0" />
-                        <div><span class="font-medium text-operacao-700">CMV Consumo:</span> <span class="text-operacao-400">Transf. + Definitiva — custo total das saídas (exceto produção)</span></div>
+                        <div><span class="font-medium text-operacao-700">CMV Consumo:</span> <span class="text-operacao-400">Transf. + Definitiva — custo total das saídas</span></div>
                       </div>
                       <div class="flex gap-2">
                         <span class="inline-block w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 shrink-0" />
@@ -1327,10 +1128,6 @@
                       <div class="flex gap-2">
                         <span class="inline-block w-1.5 h-1.5 rounded-full bg-red-500 mt-1.5 shrink-0" />
                         <div><span class="font-medium text-operacao-700">Definitiva:</span> <span class="text-operacao-400">Apenas saídas finais (consumo, venda, perda)</span></div>
-                      </div>
-                      <div class="flex gap-2">
-                        <span class="inline-block w-1.5 h-1.5 rounded-full bg-purple-500 mt-1.5 shrink-0" />
-                        <div><span class="font-medium text-operacao-700">Produção:</span> <span class="text-operacao-400">Saídas para beneficiamento / industrialização</span></div>
                       </div>
                     </div>
                   </template>
@@ -1596,7 +1393,7 @@
 </template>
 
 <script setup lang="ts">
-import type { Entrada, Saida, Produto, TipoSaida, Beneficiamento, PainelMes, SemanaInfo, DiaInfo, PainelMesApoio, TransferenciaPendente } from '~/types'
+import type { Entrada, Saida, Produto, TipoSaida, PainelMes, SemanaInfo, DiaInfo, PainelMesApoio, TransferenciaPendente } from '~/types'
 import { DatePicker as VDatePicker } from 'v-calendar'
 
 // ======================== TOOLBAR UI ========================
@@ -1633,13 +1430,8 @@ const {
   createSaidaTransferenciaLoja,
   updateSaida,
   deleteSaida: removeSaida,
-  createSaidaBeneficiamento,
   getProdutos,
   getSaldoProduto,
-  getBeneficiamentosPendentes,
-  countBeneficiamentosPendentes,
-  resolverBeneficiamento,
-  getProdutosBeneficiamento,
   createTransferenciaLoja,
   getTransferenciasPendentes,
   countTransferenciasPendentes,
@@ -1725,8 +1517,6 @@ const viewModeOptions = [
   { key: 'detalhamento', icon: 'i-heroicons-table-cells', label: 'Mapa Visual' }
 ]
 const showDashboard = ref(false)
-const showPendentes = ref(false)
-const resolucaoModalOpen = ref(false)
 
 // ======================== STATE: PAINEL DE CONTROLE ========================
 
@@ -1735,7 +1525,7 @@ const painelSemanas = ref<SemanaInfo[]>([])
 const painelLoading = ref(false)
 const painelSearch = ref('')
 // painelTipoVisualizacao mantido para compatibilidade com slideover legado
-const painelTipoVisualizacao = ref<'todos' | 'transferencia' | 'definitiva' | 'beneficiamento'>('todos')
+const painelTipoVisualizacao = ref<'todos' | 'transferencia' | 'definitiva'>('todos')
 const painelHoje = new Date()
 const painelSelectedMes = ref(painelHoje.getMonth() + 1)
 const painelSelectedAno = ref(painelHoje.getFullYear())
@@ -1752,12 +1542,11 @@ const painelTab = ref<'visao-geral' | 'ranking' | 'detalhamento'>('visao-geral')
 
 // ======================== STATE: FILTROS MAPA VISUAL ========================
 const painelEstoque = ref<'principal' | 'apoio'>('principal')
-const painelTiposSaida = ref<string[]>(['definitiva', 'transf_loja', 'transf_apoio', 'beneficiamento'])
+const painelTiposSaida = ref<string[]>(['definitiva', 'transf_loja', 'transf_apoio'])
 const painelTiposSaidaOptions = [
   { value: 'definitiva', label: 'Definitiva' },
   { value: 'transf_loja', label: 'Transf. Loja' },
-  { value: 'transf_apoio', label: 'Transf. Apoio' },
-  { value: 'beneficiamento', label: 'Produção' }
+  { value: 'transf_apoio', label: 'Transf. Apoio' }
 ]
 
 // ======================== STATE: APOIO DATA ========================
@@ -1789,20 +1578,6 @@ const saldosCache = ref<Map<string, number>>(new Map())
 const deletingType = ref<'entrada' | 'saida'>('entrada')
 const deletingRow = ref<any>(null)
 
-// ======================== STATE: BENEFICIAMENTO ========================
-
-const pendentes = ref<Beneficiamento[]>([])
-const pendentesCount = ref(0)
-const resolvingBeneficiamento = ref<Beneficiamento | null>(null)
-const itensResolucao = ref<Array<{
-  produto_final_id: string
-  produto_nome: string
-  unidade_sigla: string
-  quantidade: number
-  gramatura: number
-}>>([])
-const resolvendo = ref(false)
-
 // ======================== STATE: TRANSFERÊNCIAS PENDENTES ========================
 
 const showPendentesTransf = ref(false)
@@ -1826,8 +1601,7 @@ const tipoFilterOptions = [
   { label: 'Todos', value: '' },
   { label: 'Entrada', value: 'entrada' },
   { label: 'Transferência', value: 'transferencia' },
-  { label: 'Definitiva', value: 'definitiva' },
-  { label: 'Produção', value: 'beneficiamento' }
+  { label: 'Definitiva', value: 'definitiva' }
 ]
 
 const tipoFilterLabel = computed(() => {
@@ -1941,18 +1715,7 @@ const produtosSelect = computed(() =>
   }))
 )
 
-const produtosSelectBeneficiamento = computed(() =>
-  produtos.value
-    .filter(p => p.beneficiavel)
-    .map(p => ({
-      label: `${p.nome} ${p.unidade?.sigla ? `(${p.unidade.sigla})` : ''}`,
-      value: p.id
-    }))
-)
-
-const produtosSelectSaida = computed(() =>
-  tipoSaida.value === 'beneficiamento' ? produtosSelectBeneficiamento.value : produtosSelect.value
-)
+const produtosSelectSaida = computed(() => produtosSelect.value)
 
 const outrasEmpresas = computed(() =>
   empresas.value
@@ -1984,7 +1747,6 @@ const getProdutoUnidade = (produtoId: string) => {
 const getTipoBadgeColor = (row: any) => {
   if (row._tipoMov === 'entrada') return 'green' as const
   if (row.tipo === 'transferencia') return 'blue' as const
-  if (row.tipo === 'beneficiamento') return 'purple' as const
   return 'red' as const
 }
 
@@ -1994,7 +1756,6 @@ const getTipoLabel = (row: any): string => {
     if (row.empresa_destino) return `→ ${row.empresa_destino.nome}`
     return 'Transferência'
   }
-  if (row.tipo === 'beneficiamento') return 'Produção'
   return 'Definitiva'
 }
 
@@ -2041,18 +1802,6 @@ const carregarSaldoProduto = async (produtoId: string) => {
   }
 }
 
-const formatGramatura = (value: number) => {
-  if (!value) return ''
-  return String(value).replace('.', ',')
-}
-
-const parseGramatura = (value: string): number => {
-  if (!value) return 0
-  const cleaned = value.replace(',', '.')
-  const num = parseFloat(cleaned)
-  return isNaN(num) ? 0 : num
-}
-
 // ======================== LOAD FUNCTIONS ========================
 
 const loadEntradas = async () => {
@@ -2086,7 +1835,7 @@ const loadProdutos = async () => {
 
 const loadAll = async () => {
   loading.value = true
-  await Promise.all([loadEntradas(), loadSaidas(), loadProdutos(), loadPendentes(), loadPendentesTransf()])
+  await Promise.all([loadEntradas(), loadSaidas(), loadProdutos(), loadPendentesTransf()])
   loading.value = false
 }
 
@@ -2306,15 +2055,7 @@ const executeSaveSaida = async () => {
     } else {
       const isTransferenciaLoja = tipoSaida.value === 'transferencia' && destinoTransferencia.value === 'loja' && empresaDestinoId.value
       for (const item of itensValidos) {
-        if (tipoSaida.value === 'beneficiamento') {
-          await createSaidaBeneficiamento({
-            produto_id: item.produto_id,
-            tipo: 'beneficiamento',
-            data: saidaFormData.value,
-            quantidade: item.quantidade,
-            observacao: item.observacao || undefined
-          })
-        } else if (isTransferenciaLoja) {
+        if (isTransferenciaLoja) {
           await createTransferenciaLoja(
             item.produto_id,
             item.produto_destino_id,
@@ -2340,15 +2081,13 @@ const executeSaveSaida = async () => {
           ? `Transferência enviada para ${nomeDestino}. Aguardando confirmação de recebimento.`
           : itensValidos.length > 1
           ? `${itensValidos.length} saídas registradas com sucesso`
-          : tipoSaida.value === 'beneficiamento'
-          ? 'Saída de produção registrada. Informe o rendimento nas Produções Pendentes.'
           : 'Saída registrada com sucesso',
         color: 'green'
       })
     }
     confirmDefinitivaOpen.value = false
     saidaModalOpen.value = false
-    await Promise.all([loadSaidas(), loadPendentes()])
+    await loadSaidas()
     viewMode.value = 'historico'
     page.value = 1
   } catch (error: any) {
@@ -2395,50 +2134,7 @@ const executeDelete = async () => {
   }
 }
 
-// ======================== BENEFICIAMENTO ========================
 
-const eficienciaProdutoOrigem = computed(() =>
-  resolvingBeneficiamento.value?.saida?.produto?.eficiencia_beneficiamento || null
-)
-
-const custoRealSaida = computed(() => {
-  const custoOriginal = Number(resolvingBeneficiamento.value?.saida?.custo_saida) || 0
-  const eficiencia = eficienciaProdutoOrigem.value
-  if (!eficiencia || eficiencia >= 100) return custoOriginal
-  return custoOriginal / (eficiencia / 100)
-})
-
-const custoPorKg = computed(() => {
-  const qtdSaida = Number(resolvingBeneficiamento.value?.saida?.quantidade) || 0
-  if (qtdSaida <= 0) return 0
-  return custoRealSaida.value / qtdSaida
-})
-
-const resumoResolucao = computed(() => {
-  const qtdTotal = itensResolucao.value.reduce((sum, i) => sum + (i.quantidade || 0), 0)
-  const pesoTotal = itensResolucao.value.reduce((sum, i) => sum + ((i.gramatura || 0) * (i.quantidade || 0)), 0)
-  const valorTotal = itensResolucao.value.reduce((sum, i, idx) => sum + (calcCustoUnitarioResolucao(idx) * (i.quantidade || 0)), 0)
-  return { qtdTotal, pesoTotal, valorTotal }
-})
-
-const calcCustoUnitarioResolucao = (index: number) => {
-  const item = itensResolucao.value[index]
-  if (!item || !item.gramatura) return 0
-  return custoPorKg.value * item.gramatura
-}
-
-const loadPendentes = async () => {
-  try {
-    pendentesCount.value = await countBeneficiamentosPendentes()
-    pendentes.value = pendentesCount.value > 0 ? await getBeneficiamentosPendentes() : []
-  } catch (error) {
-  }
-}
-
-const openResolucaoFromSlideover = (benef: Beneficiamento) => {
-  showPendentes.value = false
-  setTimeout(() => openResolucao(benef), 300)
-}
 
 // ======================== TRANSFERÊNCIAS PENDENTES ========================
 
@@ -2460,56 +2156,7 @@ const onTransfResolvida = async () => {
   await Promise.all([loadPendentesTransf(), loadEntradas(), loadSaidas()])
 }
 
-const openResolucao = async (benef: Beneficiamento) => {
-  resolvingBeneficiamento.value = benef
-  try {
-    const produtoOrigemId = benef.saida?.produto_id
-    if (!produtoOrigemId) return
-    const vinculos = await getProdutosBeneficiamento(produtoOrigemId)
-    itensResolucao.value = vinculos.map((v: any) => ({
-      produto_final_id: v.produto_final?.id || v.produto_final_id,
-      produto_nome: v.produto_final?.nome || 'Produto',
-      unidade_sigla: v.produto_final?.unidade?.sigla || '',
-      quantidade: 0,
-      gramatura: 0
-    }))
-  } catch (error) {
-    itensResolucao.value = []
-  }
-  resolucaoModalOpen.value = true
-}
 
-const confirmarResolucao = async () => {
-  if (!resolvingBeneficiamento.value) return
-  const itensValidos = itensResolucao.value.filter(i => i.quantidade > 0)
-  if (itensValidos.length === 0) {
-    toast.add({ title: 'Atenção', description: 'Informe a quantidade de pelo menos um produto final', color: 'amber' })
-    return
-  }
-  try {
-    resolvendo.value = true
-    await resolverBeneficiamento(
-      resolvingBeneficiamento.value.id,
-      resolvingBeneficiamento.value.saida!,
-      itensValidos.map((i, idx) => {
-        const originalIndex = itensResolucao.value.findIndex(ir => ir.produto_final_id === i.produto_final_id)
-        return {
-          produto_final_id: i.produto_final_id,
-          quantidade: i.quantidade,
-          gramatura: i.gramatura || undefined,
-          custo_unitario: calcCustoUnitarioResolucao(originalIndex >= 0 ? originalIndex : idx)
-        }
-      })
-    )
-    toast.add({ title: 'Sucesso', description: 'Produção resolvida! Entradas dos produtos finais criadas com sucesso.', color: 'green' })
-    resolucaoModalOpen.value = false
-    await Promise.all([loadPendentes(), loadEntradas()])
-  } catch (error: any) {
-    toast.add({ title: 'Erro', description: error.message || 'Erro ao resolver produção', color: 'red' })
-  } finally {
-    resolvendo.value = false
-  }
-}
 
 // ======================== PAINEL DE CONTROLE: COMPUTED ========================
 
@@ -2527,7 +2174,7 @@ const painelFiltered = computed(() => {
   }
 
   const tipos = painelTiposSaida.value
-  const allSelected = tipos.length === 4
+  const allSelected = tipos.length === 3
   if (allSelected) return data
 
   // Recalcular saídas por semana baseado nos tipos selecionados (E.F. não muda)
@@ -2537,7 +2184,6 @@ const painelFiltered = computed(() => {
       if (tipos.includes('definitiva')) total += (p.saidas_definitiva_por_semana?.[idx] || 0)
       if (tipos.includes('transf_loja')) total += (p.saidas_transf_loja_por_semana?.[idx] || 0)
       if (tipos.includes('transf_apoio')) total += (p.saidas_transf_apoio_por_semana?.[idx] || 0)
-      if (tipos.includes('beneficiamento')) total += (p.saidas_beneficiamento_por_semana?.[idx] || 0)
       return total
     })
     const total_saidas = saidas_por_semana.reduce((sum, v) => sum + v, 0)
@@ -2552,7 +2198,7 @@ const painelFiltered = computed(() => {
 
 const painelTiposSaidaLabel = computed(() => {
   const sel = painelTiposSaida.value
-  if (sel.length === 4) return 'Todas'
+  if (sel.length === 3) return 'Todas'
   if (sel.length === 0) return 'Nenhuma'
   if (sel.length <= 2) return sel.map(v => painelTiposSaidaOptions.find(o => o.value === v)?.label).join(', ')
   return `${sel.length} tipos`
@@ -2598,8 +2244,7 @@ const painelTotais = computed(() => {
     cmv: data.reduce((sum, p) => sum + (p.cmv || 0), 0),
     definitiva: data.reduce((sum, p) => sum + (p.saidas_definitiva || 0), 0),
     transfLoja: data.reduce((sum, p) => sum + (p.saidas_transf_loja || 0), 0),
-    transfApoio: data.reduce((sum, p) => sum + (p.saidas_transf_apoio || 0), 0),
-    beneficiamento: data.reduce((sum, p) => sum + (p.saidas_beneficiamento || 0), 0)
+    transfApoio: data.reduce((sum, p) => sum + (p.saidas_transf_apoio || 0), 0)
   }
 })
 
@@ -2613,8 +2258,7 @@ const painelFluxo = computed(() => {
   const definitiva = data.reduce((sum, p) => sum + (p.saidas_definitiva || 0), 0)
   const transfLoja = data.reduce((sum, p) => sum + (p.saidas_transf_loja || 0), 0)
   const transfApoio = data.reduce((sum, p) => sum + (p.saidas_transf_apoio || 0), 0)
-  const beneficiamento = data.reduce((sum, p) => sum + (p.saidas_beneficiamento || 0), 0)
-  const totalSaidasAll = definitiva + transfLoja + transfApoio + beneficiamento
+  const totalSaidasAll = definitiva + transfLoja + transfApoio
 
   const pct = (v: number) => totalSaidasAll > 0 ? (v / totalSaidasAll) * 100 : 0
 
@@ -2631,11 +2275,9 @@ const painelFluxo = computed(() => {
     definitiva,
     transfLoja,
     transfApoio,
-    beneficiamento,
     pctDefinitiva: pct(definitiva),
     pctTransfLoja: pct(transfLoja),
-    pctTransfApoio: pct(transfApoio),
-    pctBeneficiamento: pct(beneficiamento)
+    pctTransfApoio: pct(transfApoio)
   }
 })
 
@@ -2691,10 +2333,9 @@ const painelTopMovers = computed(() => painelRanking.value.slice(0, 8))
 const painelVisualizacaoOptions = [
   { label: 'CMV Consumo', value: 'todos' },
   { label: 'Transferência', value: 'transferencia' },
-  { label: 'Definitiva', value: 'definitiva' },
-  { label: 'Produção', value: 'beneficiamento' }
+  { label: 'Definitiva', value: 'definitiva' }
 ]
-const painelShowCmv = computed(() => painelTipoVisualizacao.value !== 'beneficiamento')
+const painelShowCmv = computed(() => true)
 const painelLabelCmv = computed(() => {
   switch (painelTipoVisualizacao.value) {
     case 'transferencia': return 'Valor Transferência'

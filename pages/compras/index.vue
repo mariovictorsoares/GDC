@@ -15,14 +15,29 @@
           class="w-full sm:w-44"
           :ui="toolbarInputUi"
         />
-        <USelect
-          v-model="statusFilter"
-          :options="statusFilterOptions"
-          value-attribute="value"
-          option-attribute="label"
-          class="w-full sm:w-40"
-          :ui="toolbarInputUi"
-        />
+        <!-- Date Range Picker -->
+        <UPopover :popper="{ placement: 'bottom-start' }">
+          <UButton color="white" class="w-full sm:w-auto justify-between" :ui="toolbarButtonUi">
+            <UIcon name="i-heroicons-calendar-days" class="w-4 h-4 text-operacao-400 mr-2" />
+            <span class="text-sm font-normal" :class="dateRange.start ? 'text-gray-900' : 'text-operacao-400'">
+              {{ dateRangeLabel }}
+            </span>
+          </UButton>
+          <template #panel="{ close }">
+            <div class="p-2">
+              <ClientOnly>
+                <VDatePicker
+                  v-model.range="dateRange"
+                  :columns="1"
+                  locale="pt-BR"
+                  :first-day-of-week="1"
+                  color="blue"
+                  @dayclick="onDayClick(close)"
+                />
+              </ClientOnly>
+            </div>
+          </template>
+        </UPopover>
       </div>
       <!-- Ações (direita) -->
       <div class="flex gap-2 flex-shrink-0">
@@ -34,38 +49,6 @@
           <UIcon name="i-heroicons-plus" class="w-4 h-4 mr-1.5" />
           Nova Lista
         </UButton>
-      </div>
-    </div>
-
-    <!-- ======================== KPI CARDS ======================== -->
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-      <div class="rounded-lg bg-white ring-1 ring-[#EBEBED] shadow-sm px-4 py-3">
-        <div class="flex items-center gap-1.5 mb-1">
-          <span class="w-1.5 h-1.5 rounded-full bg-guardian-400" />
-          <span class="text-[11px] font-medium text-operacao-400">Em reposição</span>
-        </div>
-        <p class="text-base font-bold" :class="produtosReposicao > 0 ? 'text-guardian-600' : 'text-operacao-800'">{{ produtosReposicao }}</p>
-      </div>
-      <div class="rounded-lg bg-white ring-1 ring-[#EBEBED] shadow-sm px-4 py-3">
-        <div class="flex items-center gap-1.5 mb-1">
-          <span class="w-1.5 h-1.5 rounded-full bg-red-400" />
-          <span class="text-[11px] font-medium text-operacao-400">Estoque zerado</span>
-        </div>
-        <p class="text-base font-bold" :class="produtosZerados > 0 ? 'text-red-600' : 'text-operacao-800'">{{ produtosZerados }}</p>
-      </div>
-      <div class="rounded-lg bg-white ring-1 ring-[#EBEBED] shadow-sm px-4 py-3">
-        <div class="flex items-center gap-1.5 mb-1">
-          <span class="w-1.5 h-1.5 rounded-full bg-blue-400" />
-          <span class="text-[11px] font-medium text-operacao-400">Em andamento</span>
-        </div>
-        <p class="text-base font-bold text-operacao-800">{{ totalEmAndamento }}</p>
-      </div>
-      <div class="rounded-lg bg-white ring-1 ring-[#EBEBED] shadow-sm px-4 py-3">
-        <div class="flex items-center gap-1.5 mb-1">
-          <span class="w-1.5 h-1.5 rounded-full bg-controle-400" />
-          <span class="text-[11px] font-medium text-operacao-400">Finalizadas</span>
-        </div>
-        <p class="text-base font-bold text-operacao-800">{{ totalFinalizadas }}</p>
       </div>
     </div>
 
@@ -95,18 +78,12 @@
           <span class="font-semibold text-operacao-800">{{ row.nome || `Pedido ${formatDate(row.data)}` }}</span>
         </template>
 
-        <template #status-data="{ row }">
-          <UBadge :color="getStatusColor(row.status)" variant="soft" size="xs">
-            {{ getStatusLabel(row.status) }}
-          </UBadge>
+        <template #data-data="{ row }">
+          {{ formatDate(row.data) }}
         </template>
 
         <template #itens-data="{ row }">
           {{ row.itens?.length || 0 }}
-        </template>
-
-        <template #valor_estimado-data="{ row }">
-          {{ formatCurrency(calcValorEstimado(row)) }}
         </template>
 
         <template #previsao-data="{ row }">
@@ -153,9 +130,6 @@
               <UBadge color="gray" variant="soft" size="xs">
                 {{ selectedPedido.itens?.length || 0 }} itens
               </UBadge>
-              <span class="text-xs text-operacao-400">
-                Valor estimado: {{ formatCurrency(calcValorEstimado(selectedPedido)) }}
-              </span>
             </div>
           </div>
           <UButton
@@ -165,39 +139,6 @@
             size="sm"
             @click="slideoverOpen = false"
           />
-        </div>
-
-        <!-- Slideover Status -->
-        <div class="px-6 py-3 bg-operacao-50 border-b border-operacao-100">
-          <div class="flex items-center gap-2">
-            <span class="text-xs text-operacao-400">Status:</span>
-            <UBadge
-              :color="getStatusColor(selectedPedido.status)"
-              variant="soft"
-              size="sm"
-            >
-              {{ getStatusLabel(selectedPedido.status) }}
-            </UBadge>
-          </div>
-          <div v-if="selectedPedido.previsao_recebimento" class="mt-1 text-xs text-operacao-400">
-            Previsão de recebimento: {{ formatDate(selectedPedido.previsao_recebimento) }}
-          </div>
-          <div v-if="isReadonly && selectedPedido.data_recebimento" class="mt-1 text-xs text-controle-600 font-medium">
-            Recebido em: {{ formatDate(selectedPedido.data_recebimento) }}
-          </div>
-        </div>
-
-        <!-- Confirmar Recebimento -->
-        <div v-if="isEditable && ['enviado', 'em_andamento'].includes(selectedPedido.status)" class="px-6 py-3 border-b border-operacao-100">
-          <UButton
-            color="green"
-            block
-            :loading="confirmingRecebimento"
-            @click="handleConfirmarRecebimento"
-          >
-            <UIcon name="i-heroicons-check-circle" class="w-4 h-4 mr-2" />
-            Confirmar Recebimento
-          </UButton>
         </div>
 
         <!-- Items List -->
@@ -347,14 +288,14 @@
 </template>
 
 <script setup lang="ts">
-import type { Pedido, PedidoItem, EstoqueMinimo } from '~/types'
+import type { Pedido, PedidoItem } from '~/types'
+import { DatePicker as VDatePicker } from 'v-calendar'
 
 // UI
 const toolbarInputUi = { color: { white: { outline: 'shadow-sm bg-white text-gray-900 ring-1 ring-inset ring-[#EBEBED] focus:ring-1 focus:ring-operacao-200 dark:ring-operacao-700' } } }
 const toolbarButtonUi = { color: { white: { solid: 'shadow-sm ring-1 ring-inset ring-[#EBEBED] text-gray-700 bg-white hover:bg-gray-50 focus-visible:ring-2 focus-visible:ring-guardian-500 dark:ring-operacao-700 dark:bg-gray-900 dark:text-white dark:hover:bg-gray-800/50' } } }
 
-const { getPedidos, deletePedido, confirmarRecebimento, updatePedido, updatePedidoItens } = useEstoque()
-const { getEstoqueMinimo } = useRelatorios()
+const { getPedidos, deletePedido, updatePedido, updatePedidoItens } = useEstoque()
 const { empresaId, empresaAtiva } = useEmpresa()
 const { formatCurrency, formatNumber } = useFormatters()
 const toast = useToast()
@@ -364,16 +305,15 @@ const toast = useToast()
 // ==========================================
 const loading = ref(false)
 const pedidos = ref<Pedido[]>([])
-const estoqueData = ref<EstoqueMinimo[]>([])
 const search = ref('')
-const statusFilter = ref('em_andamento')
+const dateRange = ref<{ start: Date | null; end: Date | null }>({ start: null, end: null })
+const dateRangeClickCount = ref(0)
 const selectedPedido = ref<Pedido | null>(null)
 const slideoverOpen = ref(false)
 const isReadonly = ref(false)
 const deleteModalOpen = ref(false)
 const deleting = ref(false)
 const savingChanges = ref(false)
-const confirmingRecebimento = ref(false)
 const analisesSlideover = ref(false)
 const novaListaOpen = ref(false)
 const editListId = ref<string | null>(null)
@@ -387,28 +327,50 @@ const editItens = ref<PedidoItem[]>([])
 // ==========================================
 const columns = [
   { key: 'nome', label: 'Nome', sortable: true },
-  { key: 'status', label: 'Status' },
+  { key: 'data', label: 'Data', sortable: true },
   { key: 'itens', label: 'Itens' },
-  { key: 'valor_estimado', label: 'Valor Estimado' },
   { key: 'previsao', label: 'Previsão' },
   { key: 'responsavel', label: 'Responsável' }
-]
-
-const statusFilterOptions = [
-  { label: 'Em andamento', value: 'em_andamento' },
-  { label: 'Finalizadas', value: 'finalizada' }
 ]
 
 // ==========================================
 // COMPUTED
 // ==========================================
+const dateRangeLabel = computed(() => {
+  if (!dateRange.value.start) return 'Selecionar período'
+  const fmt = (d: Date) => d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })
+  if (!dateRange.value.end || dateRange.value.start.getTime() === dateRange.value.end.getTime()) {
+    return fmt(dateRange.value.start)
+  }
+  return `${fmt(dateRange.value.start)} — ${fmt(dateRange.value.end)}`
+})
+
+const onDayClick = (close: () => void) => {
+  dateRangeClickCount.value++
+  if (dateRangeClickCount.value >= 2) {
+    dateRangeClickCount.value = 0
+    close()
+  }
+}
+
 const filteredPedidos = computed(() => {
   let result = pedidos.value
 
-  if (statusFilter.value === 'em_andamento') {
-    result = result.filter(p => ['rascunho', 'enviado', 'em_andamento'].includes(p.status))
-  } else {
-    result = result.filter(p => ['concluido', 'finalizada'].includes(p.status))
+  if (dateRange.value.start) {
+    const start = new Date(dateRange.value.start)
+    start.setHours(0, 0, 0, 0)
+    result = result.filter(p => {
+      const d = new Date(p.data)
+      return d >= start
+    })
+  }
+  if (dateRange.value.end) {
+    const end = new Date(dateRange.value.end)
+    end.setHours(23, 59, 59, 999)
+    result = result.filter(p => {
+      const d = new Date(p.data)
+      return d <= end
+    })
   }
 
   if (search.value) {
@@ -421,27 +383,6 @@ const filteredPedidos = computed(() => {
 
 const { page, pageSize, paginatedItems } = usePagination(filteredPedidos)
 
-const totalEmAndamento = computed(() =>
-  pedidos.value.filter(p => ['rascunho', 'enviado', 'em_andamento'].includes(p.status)).length
-)
-
-const totalFinalizadas = computed(() =>
-  pedidos.value.filter(p => ['concluido', 'finalizada'].includes(p.status)).length
-)
-
-const produtosReposicao = computed(() => {
-  const seguranca = 20
-  return estoqueData.value.filter(item => {
-    const pontoReposicao = item.media_semanas * (1 + seguranca / 100)
-    const previsaoCompras = pontoReposicao - item.quantidade_estoque
-    return previsaoCompras > 0
-  }).length
-})
-
-const produtosZerados = computed(() =>
-  estoqueData.value.filter(item => item.quantidade_estoque <= 0).length
-)
-
 const isEditable = computed(() =>
   !isReadonly.value && selectedPedido.value &&
   ['rascunho', 'enviado', 'em_andamento'].includes(selectedPedido.value.status)
@@ -453,12 +394,7 @@ const isEditable = computed(() =>
 const loadData = async () => {
   try {
     loading.value = true
-    const [pedidosData, estoqueResult] = await Promise.all([
-      getPedidos(),
-      getEstoqueMinimo()
-    ])
-    pedidos.value = pedidosData
-    estoqueData.value = estoqueResult
+    pedidos.value = await getPedidos()
   } catch (error: any) {
     toast.add({
       title: 'Erro',
@@ -494,28 +430,6 @@ const calcValorEstimado = (pedido: Pedido): number => {
   return pedido.itens.reduce((sum, item) => {
     return sum + ((item.preco_estimado || 0) * item.quantidade)
   }, 0)
-}
-
-const getStatusColor = (status: string): string => {
-  switch (status) {
-    case 'rascunho': return 'gray'
-    case 'enviado': return 'blue'
-    case 'em_andamento': return 'yellow'
-    case 'concluido':
-    case 'finalizada': return 'green'
-    default: return 'gray'
-  }
-}
-
-const getStatusLabel = (status: string): string => {
-  switch (status) {
-    case 'rascunho': return 'Rascunho'
-    case 'enviado': return 'Enviado'
-    case 'em_andamento': return 'Em andamento'
-    case 'concluido': return 'Concluído'
-    case 'finalizada': return 'Finalizada'
-    default: return status
-  }
 }
 
 // ==========================================
@@ -612,33 +526,6 @@ const saveChanges = async () => {
     })
   } finally {
     savingChanges.value = false
-  }
-}
-
-// ==========================================
-// CONFIRMAR RECEBIMENTO
-// ==========================================
-const handleConfirmarRecebimento = async () => {
-  if (!selectedPedido.value) return
-  confirmingRecebimento.value = true
-  try {
-    const dataHoje = new Date().toISOString().split('T')[0]
-    await confirmarRecebimento(selectedPedido.value.id, dataHoje)
-    toast.add({
-      title: 'Recebimento confirmado',
-      description: 'A lista foi marcada como finalizada',
-      color: 'green'
-    })
-    slideoverOpen.value = false
-    await loadData()
-  } catch (error: any) {
-    toast.add({
-      title: 'Erro',
-      description: error.message || 'Erro ao confirmar recebimento',
-      color: 'red'
-    })
-  } finally {
-    confirmingRecebimento.value = false
   }
 }
 
