@@ -32,24 +32,37 @@ ALTER TABLE setores ADD COLUMN tipo TEXT NOT NULL DEFAULT 'principal'
 
 ```sql
 ALTER TABLE contagens ADD COLUMN token UUID DEFAULT gen_random_uuid();
+UPDATE contagens SET token = gen_random_uuid() WHERE token IS NULL;
+ALTER TABLE contagens ALTER COLUMN token SET NOT NULL;
 CREATE UNIQUE INDEX idx_contagens_token ON contagens(token);
 ```
 
 - Token UUID gerado automaticamente ao criar contagem
 - Permanente (nao expira) - o mesmo link funciona enquanto a contagem existir
 - Index unico para lookup rapido na rota publica
-- Contagens existentes recebem token automaticamente via DEFAULT
+- Backfill: contagens existentes recebem token via UPDATE explicito (DEFAULT so aplica a novas linhas)
 
 ### 1.3 Campo `ajuste_registrado` na tabela `contagem_itens`
 
 ```sql
 ALTER TABLE contagem_itens ADD COLUMN ajuste_registrado BOOLEAN DEFAULT false;
+ALTER TABLE contagem_itens ADD COLUMN saldo_no_momento NUMERIC;
 ```
 
-- Marca se o admin ja registrou o ajuste para aquele item
+- `ajuste_registrado`: marca se o admin ja registrou o ajuste para aquele item
+- `saldo_no_momento`: snapshot do saldo do sistema no momento da finalizacao da contagem (evita que a comparacao mude se o admin revisar dias depois)
 - Evita duplicacao de ajustes
 
-### 1.4 View `v_saldo_estoque`
+### 1.4 Campo `contagem_id` na tabela `ajustes`
+
+```sql
+ALTER TABLE ajustes ADD COLUMN contagem_id UUID REFERENCES contagens(id) ON DELETE SET NULL;
+```
+
+- Rastreabilidade: permite saber quais ajustes vieram de qual contagem
+- `ON DELETE SET NULL`: se a contagem for deletada, o ajuste permanece (mas perde o vinculo)
+
+### 1.5 View `v_saldo_estoque`
 
 Sem mudanca. Ja calcula `saldo_principal` e `saldo_apoio` separadamente.
 
@@ -61,7 +74,7 @@ Sem mudanca. Ja calcula `saldo_principal` e `saldo_apoio` separadamente.
 
 **Caracteristicas:**
 - Pagina publica, sem autenticacao necessaria
-- Layout customizado (sem sidebar, sem header do sistema)
+- Sem layout do sistema: usa `definePageMeta({ layout: false })` para renderizar sem sidebar/header
 - Mobile-first design
 - Acessada via link enviado por WhatsApp
 
@@ -116,6 +129,7 @@ Sem mudanca. Ja calcula `saldo_principal` e `saldo_apoio` separadamente.
 
 **`POST /api/contagem/[token]`**
 - Body: `{ setor_id, itens: [{ produto_id, quantidade_contada }] }`
+- Validacao server-side: verifica que `setor_id` pertence a esta contagem e que cada `produto_id` pertence ao setor
 - Upsert em `contagem_itens`
 - Atualiza progresso do setor em `contagem_setores`
 - Usa `service_role`
@@ -181,12 +195,12 @@ Ao clicar numa contagem finalizada:
 ```
 
 **Comportamento:**
-- Coluna "Sistema": `saldo_principal` se setor tipo `principal`, `saldo_apoio` se `apoio`
+- Coluna "Sistema": usa `saldo_no_momento` (snapshot salvo na finalizacao), garantindo que a comparacao nao mude com o tempo
 - Coluna "Dif": `contado - sistema`. Vermelho se negativo, verde se positivo
-- Botao "Ajustar" individual: cria registro em `ajustes` e marca `ajuste_registrado = true`
-- Botao "Registrar Todos": cria ajustes em lote via `createAjustesEmLote()`
+- Botao "Ajustar" individual: cria registro em `ajustes` (com `contagem_id`) e marca `ajuste_registrado = true`
+- Botao "Registrar Todos": cria ajustes em lote via `createAjustesEmLote()` (todos com `contagem_id`)
 - Itens ja ajustados mostram badge "Ajustado" em vez de botao
-- Contagem com todos os ajustes registrados mostra status "Ajustado" na lista
+- Status "Ajustado" e derivado no frontend (nao e um valor do banco): calculado quando todos os itens com divergencia tem `ajuste_registrado = true`
 
 ### Vista Detalhes (Contagem Em Andamento/Pendente)
 
@@ -227,6 +241,7 @@ EXCEPTION WHEN OTHERS THEN NULL;
 END $$;
 
 -- Recriar
+-- IMPORTANTE: o valor do Bearer token DEVE corresponder ao CRON_SECRET configurado no Vercel
 SELECT cron.schedule(
   'lembretes-contagem',
   '* * * * *',
@@ -238,6 +253,8 @@ SELECT cron.schedule(
   $$
 );
 ```
+
+**Nota**: O token `cmv360cron2026` e hardcoded no SQL porque `pg_cron` nao suporta variaveis de ambiente. Deve ser identico ao `CRON_SECRET` configurado no Vercel.
 
 ### Mudanca no Endpoint Cron
 
