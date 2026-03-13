@@ -469,7 +469,7 @@ const salvarLista = async () => {
           data: dataHoje,
           nome: nomeLista.value.trim(),
           observacao: observacao.value.trim() || undefined,
-          status: 'em_andamento',
+          status: 'rascunho',
           previsao_recebimento: previsaoRecebimento.value || undefined,
           valor_estimado: valorEstimado,
           origem: 'manual'
