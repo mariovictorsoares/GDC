@@ -13,7 +13,10 @@ import type {
   CmcSemanalGrupo,
   CmcSemanalSubgrupo,
   FaturamentoSemanal,
-  GestaoInventario
+  GestaoInventario,
+  MapaVisualApoioItem,
+  MapaVisualApoioSemana,
+  MapaVisualApoioDia
 } from '~/types'
 
 export const useRelatorios = () => {
@@ -1749,6 +1752,7 @@ export const useRelatorios = () => {
   // ==========================================
 
   const getPainelMesApoio = async (ano: number, mes: number): Promise<{ dias: DiaInfo[], itens: PainelMesApoio[] }> => {
+    // ... (existing code, keeping for compatibility if needed)
     if (!empresaId.value) return { dias: [], itens: [] }
 
     const ultimoDia = new Date(ano, mes, 0).getDate()
@@ -1811,8 +1815,6 @@ export const useRelatorios = () => {
         if (day >= 1 && day <= ultimoDia) entradas_por_dia[day - 1] += Number(e.quantidade)
       })
 
-      // Saídas do apoio (futuro — contagens)
-
       const total_entradas = entradas_por_dia.reduce((sum, v) => sum + v, 0)
       const total_saidas = saidas_por_dia.reduce((sum, v) => sum + v, 0)
 
@@ -1832,9 +1834,121 @@ export const useRelatorios = () => {
     return { dias, itens }
   }
 
+  /**
+   * Mapa Visual Apoio: EI, EN, EF, CMV por dia, agrupado em semanas
+   */
+  const getMapaVisualApoio = async (ano: number, mes: number): Promise<MapaVisualApoioItem[]> => {
+    if (!empresaId.value) return []
+
+    const ultimoDia = new Date(ano, mes, 0).getDate()
+    const dataInicio = `${ano}-${String(mes).padStart(2, '0')}-01`
+    const dataFim = `${ano}-${String(mes).padStart(2, '0')}-${ultimoDia}`
+
+    // Buscar produtos
+    const { data: produtos } = await comEmpresa(client
+      .from('produtos')
+      .select('id, nome, unidade:unidades(sigla)')
+      .eq('ativo', true)
+      .order('nome'))
+
+    // Entradas no apoio (transf. apoio)
+    const { data: entradasApoio } = await comEmpresa(client
+      .from('saidas')
+      .select('produto_id, quantidade, data')
+      .eq('tipo', 'transferencia')
+      .is('empresa_destino_id', null)
+      .gte('data', dataInicio)
+      .lte('data', dataFim))
+
+    // Ajustes/Saídas do apoio (se existirem) - usaremos como CMV
+    const { data: ajustesApoio } = await comEmpresa(client
+      .from('ajustes')
+      .select('produto_id, quantidade, data')
+      .gte('data', dataInicio)
+      .lte('data', dataFim))
+
+    // Calular EI do apoio (transferências anteriores ao mês)
+    const mesAnterior = mes === 1 ? 12 : mes - 1
+    const anoAnterior = mes === 1 ? ano - 1 : ano
+    const dataFimAnterior = `${anoAnterior}-${String(mesAnterior).padStart(2, '0')}-${new Date(anoAnterior, mesAnterior, 0).getDate()}`
+
+    const { data: entradasApoioAnt } = await comEmpresa(client
+      .from('saidas')
+      .select('produto_id, quantidade')
+      .eq('tipo', 'transferencia')
+      .is('empresa_destino_id', null)
+      .lte('data', dataFimAnterior))
+
+    const eiMap = new Map<string, number>()
+    entradasApoioAnt?.forEach((s: any) => {
+      eiMap.set(s.produto_id, (eiMap.get(s.produto_id) || 0) + Number(s.quantidade))
+    })
+
+    // Semanas do mês
+    const semanasDoMes = calcularSemanasDoMes(ano, mes)
+
+    return (produtos || []).map(p => {
+      let runningBalance = eiMap.get(p.id) || 0
+      
+      const semanas: MapaVisualApoioSemana[] = semanasDoMes.map(sem => {
+        const diasSemana: MapaVisualApoioDia[] = []
+        
+        // Iterar pelos dias da semana
+        const start = new Date(sem.inicio + 'T00:00:00')
+        const end = new Date(sem.fim + 'T00:00:00')
+        
+        for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+          const dISO = d.toISOString().split('T')[0]
+          // Só processar dias que pertencem ao mês selecionado
+          const dMes = d.getMonth() + 1
+          const dAno = d.getFullYear()
+          
+          if (dAno === ano && dMes === mes) {
+            const ei = runningBalance
+            const en = entradasApoio?.filter((e: any) => e.produto_id === p.id && e.data === dISO)
+              .reduce((sum: number, e: any) => sum + Number(e.quantidade), 0) || 0
+              
+            const ajustes = ajustesApoio?.filter((a: any) => a.produto_id === p.id && a.data === dISO)
+              .reduce((sum: number, a: any) => sum + Number(a.quantidade), 0) || 0
+            
+            // Se o ajuste for negativo, é uma "saída/consumo" (CMV)
+            const cmv = ajustes < 0 ? Math.abs(ajustes) : 0
+            
+            // EF = EI + EN + sobras - cmv
+            const sobras = ajustes > 0 ? ajustes : 0
+            const ef = ei + en + sobras - cmv
+            
+            diasSemana.push({
+              data: dISO,
+              ei,
+              en,
+              ef,
+              cmv
+            })
+            
+            runningBalance = ef
+          }
+        }
+        
+        return {
+          label: sem.label,
+          dias: diasSemana
+        }
+      }).filter(s => s.dias.length > 0)
+
+      return {
+        produto_id: p.id,
+        produto: p.nome,
+        unidade: (p.unidade as any)?.sigla || '',
+        semanas
+      }
+    })
+  }
+
   return {
     getPainelMes,
     getPainelMesApoio,
+    getMapaVisualApoio,
     getCurvaABC,
     getCurvaABCEstoque,
     getCurvaABCCMV,

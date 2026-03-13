@@ -92,7 +92,9 @@
       "Bash(find /c/Users/mario/Desktop/estoque-cd/server -name \"*.ts\" -exec grep -l \"export default\\\\|defineEventHandler\" {} ;)",
       "Bash(git add docs/superpowers/specs/2026-03-12-contagens-design.md)",
       "Bash(git add docs/superpowers/plans/2026-03-12-contagens.md)",
-      "Bash(git add docs/superpowers/specs/2026-03-12-controle-estoque-melhorias-design.md docs/superpowers/plans/2026-03-12-controle-estoque-melhorias.md supabase/migrations/022_custo_saida_ueps.sql supabase/migrations/023_lista_requisicoes.sql)"
+      "Bash(git add docs/superpowers/specs/2026-03-12-controle-estoque-melhorias-design.md docs/superpowers/plans/2026-03-12-controle-estoque-melhorias.md supabase/migrations/022_custo_saida_ueps.sql supabase/migrations/023_lista_requisicoes.sql)",
+      "Bash(ls -la /c/Users/mario/Desktop/estoque-cd/*.ts)",
+      "Bash(grep -l \"transferencias_pendentes\" /c/Users/mario/Desktop/estoque-cd/supabase/migrations/*.sql)"
     ]
   }
 }

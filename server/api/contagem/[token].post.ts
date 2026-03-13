@@ -120,11 +120,9 @@ export default defineEventHandler(async (event) => {
   const todosFinalizados = (todosSetores || []).every((s: any) => s.status === 'finalizado')
 
   if (todosFinalizados) {
-    // Auto-finalizar a contagem e salvar snapshot dos saldos
-    await supabase
-      .from('contagens')
-      .update({ status: 'finalizada', updated_at: new Date().toISOString() })
-      .eq('id', contagem.id)
+    // NÃO auto-finalizar — manter em_andamento para que o admin
+    // passe pela etapa de revisão (que cria os ajustes no histórico).
+    // Apenas fazer o snapshot dos saldos atuais.
 
     // Snapshot dos saldos atuais para cada item contado
     const { data: itensContagem } = await supabase

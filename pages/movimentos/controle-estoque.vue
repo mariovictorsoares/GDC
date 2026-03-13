@@ -247,6 +247,36 @@
               </div>
             </template>
           </UPopover>
+
+          <!-- Navegador de Semanas (só Apoio) -->
+          <div class="flex items-center bg-white ring-1 ring-[#EBEBED] rounded-md shadow-sm h-8" v-if="painelEstoque === 'apoio' && painelApoioMapaData.length > 0 && painelApoioMapaData[0].semanas.length > 0">
+            <UButton
+              color="gray"
+              variant="ghost"
+              icon="i-heroicons-chevron-left-20-solid"
+              size="sm"
+              class="h-full px-2"
+              :disabled="painelApoioSemanaIndex === 0"
+              @click="painelApoioSemanaIndex--"
+            />
+            <div class="flex items-center justify-center min-w-[70px] border-x border-[#EBEBED] h-full px-2">
+              <span class="text-sm font-normal text-gray-900 capitalize">
+                {{ painelApoioMapaData[0].semanas[painelApoioSemanaIndex]?.label }}
+              </span>
+            </div>
+            <UButton
+              color="gray"
+              variant="ghost"
+              icon="i-heroicons-chevron-right-20-solid"
+              size="sm"
+              class="h-full px-2"
+              :disabled="painelApoioSemanaIndex >= (painelApoioMapaData[0].semanas.length - 1)"
+              @click="painelApoioSemanaIndex++"
+            />
+          </div>
+          <div v-else-if="painelEstoque === 'apoio' && painelApoioMapaData.length === 0" class="text-xs text-operacao-400 font-medium italic px-2">
+            Carregando semanas...
+          </div>
         </div>
         <!-- View Switcher -->
         <div class="inline-flex items-center rounded-lg bg-operacao-100/80 p-0.5 ring-1 ring-operacao-200/60 flex-shrink-0">
@@ -350,59 +380,57 @@
 
       <template v-if="!painelApoioLoading && painelEstoque === 'apoio'">
         <div class="relative overflow-x-auto rounded-lg bg-white ring-1 ring-[#EBEBED] shadow-sm">
-          <table class="min-w-full divide-y divide-operacao-200">
+          <table class="min-w-full divide-y divide-operacao-200 border-collapse">
             <thead class="bg-operacao-50">
               <tr>
-                <th rowspan="2" class="px-2 py-3 text-left text-xs font-medium text-[#5a5a66] uppercase tracking-wider border-r cursor-pointer select-none w-[140px] max-w-[140px]" @click="togglePainelApoioSort('produto')">
+                <th rowspan="2" class="px-4 py-3 text-left text-xs font-bold text-operacao-900 uppercase tracking-wider border-r border-b w-[200px] sticky left-0 bg-operacao-50 z-10">
                   Produto
-                  <Icon v-if="painelApoioSortKey === 'produto'" :name="painelApoioSortDir === 'asc' ? 'heroicons:chevron-up-20-solid' : 'heroicons:chevron-down-20-solid'" class="inline w-3.5 h-3.5 text-operacao-400 ml-0.5" />
                 </th>
-                <th :colspan="painelApoioDias.length" class="px-3 py-2 text-center text-xs font-medium text-[#5a5a66] uppercase tracking-wider bg-controle-50">Entradas</th>
-                <th rowspan="2" class="px-2 py-2 text-center text-xs font-medium text-[#5a5a66] uppercase tracking-wider border-r bg-controle-50 cursor-pointer select-none" @click="togglePainelApoioSort('total_entradas')">
-                  Total
-                  <span class="inline-flex flex-col -space-y-1.5 align-middle ml-0.5">
-                    <Icon name="heroicons:chevron-up-20-solid" class="w-3 h-3" :class="painelApoioSortKey === 'total_entradas' && painelApoioSortDir === 'asc' ? 'text-operacao-700' : 'text-operacao-300'" />
-                    <Icon name="heroicons:chevron-down-20-solid" class="w-3 h-3" :class="painelApoioSortKey === 'total_entradas' && painelApoioSortDir === 'desc' ? 'text-operacao-700' : 'text-operacao-300'" />
-                  </span>
-                </th>
-                <th :colspan="painelApoioDias.length" class="px-3 py-2 text-center text-xs font-medium text-[#5a5a66] uppercase tracking-wider bg-red-50">Saídas</th>
-                <th rowspan="2" class="px-2 py-2 text-center text-xs font-medium text-[#5a5a66] uppercase tracking-wider bg-red-50 cursor-pointer select-none" @click="togglePainelApoioSort('total_saidas')">
-                  Total
-                  <span class="inline-flex flex-col -space-y-1.5 align-middle ml-0.5">
-                    <Icon name="heroicons:chevron-up-20-solid" class="w-3 h-3" :class="painelApoioSortKey === 'total_saidas' && painelApoioSortDir === 'asc' ? 'text-operacao-700' : 'text-operacao-300'" />
-                    <Icon name="heroicons:chevron-down-20-solid" class="w-3 h-3" :class="painelApoioSortKey === 'total_saidas' && painelApoioSortDir === 'desc' ? 'text-operacao-700' : 'text-operacao-300'" />
-                  </span>
-                </th>
+                <template v-if="painelApoioMapaData.length > 0 && painelApoioMapaData[0].semanas[painelApoioSemanaIndex]">
+                  <th v-for="dia in painelApoioMapaData[0].semanas[painelApoioSemanaIndex].dias" :key="dia.data" colspan="4" class="px-1 py-2 text-center text-[10px] font-bold text-operacao-700 border-r border-b bg-operacao-100/50 uppercase">
+                    {{ new Date(dia.data + 'T00:00:00').toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit' }) }}
+                  </th>
+                </template>
               </tr>
-              <tr>
-                <th v-for="dia in painelApoioDias" :key="'aent-' + dia.data" class="px-1 py-1 text-center text-xs font-medium text-[#5a5a66] bg-controle-50 w-10">{{ dia.label }}</th>
-                <th v-for="dia in painelApoioDias" :key="'asai-' + dia.data" class="px-1 py-1 text-center text-xs font-medium text-[#5a5a66] bg-red-50 w-10">{{ dia.label }}</th>
+              <tr class="bg-gray-50">
+                <template v-if="painelApoioMapaData.length > 0 && painelApoioMapaData[0].semanas[painelApoioSemanaIndex]">
+                  <template v-for="dia in painelApoioMapaData[0].semanas[painelApoioSemanaIndex].dias" :key="'cols-'+dia.data">
+                    <th class="px-0.5 py-1 text-center text-[9px] font-bold text-blue-600 border-r w-10 bg-blue-50/30" title="Estoque Inicial">EI</th>
+                    <th class="px-0.5 py-1 text-center text-[9px] font-bold text-green-600 border-r w-10 bg-green-50/30" title="Entradas">EN</th>
+                    <th class="px-0.5 py-1 text-center text-[9px] font-bold text-orange-600 border-r w-10 bg-orange-50/30" title="Estoque Final">EF</th>
+                    <th class="px-0.5 py-1 text-center text-[9px] font-bold text-red-600 border-r w-10 bg-red-50/30" title="CMV (Consumo)">CMV</th>
+                  </template>
+                </template>
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-operacao-200">
-              <tr v-if="painelApoioFiltered.length === 0">
-                <td :colspan="1 + (painelApoioDias.length + 1) * 2" class="px-3 py-8 text-center text-operacao-400">
-                  Nenhum dado encontrado para o período
-                </td>
+              <tr v-if="painelApoioMapaFiltered.length === 0">
+                <td :colspan="100" class="px-3 py-8 text-center text-operacao-400">Nenhum dado encontrado</td>
               </tr>
-              <tr v-for="item in painelApoioPaginatedItems" :key="item.produto_id" class="hover:bg-operacao-50">
-                <td class="px-2 py-2 text-xs font-medium text-operacao-800 border-r truncate w-[140px] max-w-[140px]" :title="item.produto">
+              <tr v-for="item in painelApoioMapaPaginatedItems" :key="item.produto_id" class="hover:bg-operacao-50">
+                <td class="px-4 py-2 text-xs font-medium text-operacao-800 border-r sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
                   {{ item.produto }} <span class="text-[10px] text-operacao-400 font-normal">({{ item.unidade }})</span>
                 </td>
-                <td v-for="(val, idx) in item.entradas_por_dia" :key="'aent-' + idx" class="px-1 py-2 text-xs text-center text-controle-600 bg-controle-50/50">{{ painelFormatQtd(val) }}</td>
-                <td class="px-1 py-2 text-xs text-center font-medium text-controle-700 bg-controle-100 border-r">{{ painelFormatQtd(item.total_entradas) }}</td>
-                <td v-for="(val, idx) in item.saidas_por_dia" :key="'asai-' + idx" class="px-1 py-2 text-xs text-center text-red-600 bg-red-50/50">{{ painelFormatQtd(val) }}</td>
-                <td class="px-1 py-2 text-xs text-center font-medium text-red-700 bg-red-100">{{ painelFormatQtd(item.total_saidas) }}</td>
+                <template v-if="item.semanas[painelApoioSemanaIndex]">
+                  <template v-for="dia in item.semanas[painelApoioSemanaIndex].dias" :key="dia.data">
+                    <td class="px-0.5 py-2 text-[10px] text-center border-r bg-blue-50/10 text-blue-700">{{ painelFormatQtd(dia.ei) }}</td>
+                    <td class="px-0.5 py-2 text-[10px] text-center border-r bg-green-50/10 text-green-700">{{ painelFormatQtd(dia.en) }}</td>
+                    <td class="px-0.5 py-2 text-[10px] text-center border-r bg-orange-50/10 text-orange-700">{{ painelFormatQtd(dia.ef) }}</td>
+                    <td class="px-0.5 py-2 text-[10px] text-center border-r bg-red-50/10 font-bold text-red-700">{{ painelFormatQtd(dia.cmv) }}</td>
+                  </template>
+                </template>
               </tr>
             </tbody>
           </table>
         </div>
+        
         <TablePagination
           v-model="painelPage"
           :page-size="painelPageSize"
-          :total-items="painelApoioFiltered.length"
+          :total-items="painelApoioMapaFiltered.length"
           @update:page-size="painelPageSize = $event"
         />
+
       </template>
     </template>
 
@@ -1396,8 +1424,8 @@
       </div>
     </USlideover>
 
-    <!-- Modal: Transferência para Apoio -->
-    <MovimentosTransferenciaApoioModal
+    <!-- Modal: Saída Pós-Entrada -->
+    <MovimentosSaidaPosEntradaModal
       v-model="transferenciaApoioOpen"
       :itens-entrada="itensParaApoio"
     />
@@ -1406,7 +1434,7 @@
 </template>
 
 <script setup lang="ts">
-import type { Entrada, Saida, Produto, TipoSaida, PainelMes, SemanaInfo, DiaInfo, PainelMesApoio, TransferenciaPendente } from '~/types'
+import type { Entrada, Saida, Produto, TipoSaida, PainelMes, SemanaInfo, DiaInfo, PainelMesApoio, TransferenciaPendente, MapaVisualApoioItem } from '~/types'
 import { DatePicker as VDatePicker } from 'v-calendar'
 
 // ======================== TOOLBAR UI ========================
@@ -1456,7 +1484,7 @@ const { formatCurrency, formatNumber } = useFormatters()
 const toast = useToast()
 
 // Painel de Controle composable
-const { getPainelMes, getPainelMesApoio } = useRelatorios()
+const { getPainelMes, getPainelMesApoio, getMapaVisualApoio } = useRelatorios()
 
 // ======================== STATE: PAGE ========================
 
@@ -1586,8 +1614,10 @@ const painelTiposSaidaOptions = [
 
 // ======================== STATE: APOIO DATA ========================
 const painelApoioData = ref<PainelMesApoio[]>([])
+const painelApoioMapaData = ref<MapaVisualApoioItem[]>([])
 const painelApoioDias = ref<DiaInfo[]>([])
 const painelApoioLoading = ref(false)
+const painelApoioSemanaIndex = ref(0)
 
 // ======================== STATE: ENTRADA MODAL ========================
 
@@ -2295,6 +2325,19 @@ const painelApoioPaginatedItems = computed(() => {
   return painelApoioSorted.value.slice(start, end)
 })
 
+const painelApoioMapaFiltered = computed(() => {
+  const term = (search.value || painelSearch.value || '').toLowerCase()
+  if (!term) return painelApoioMapaData.value
+  return painelApoioMapaData.value.filter(p => p.produto.toLowerCase().includes(term))
+})
+
+const painelApoioMapaPaginatedItems = computed(() => {
+  const start = (painelPage.value - 1) * painelPageSize.value
+  const end = start + painelPageSize.value
+  return painelApoioMapaFiltered.value.slice(start, end)
+})
+
+
 const painelResumo = computed(() => {
   const data = painelFiltered.value
   return {
@@ -2450,9 +2493,7 @@ const loadPainel = async () => {
 const loadPainelApoio = async () => {
   try {
     painelApoioLoading.value = true
-    const resultado = await getPainelMesApoio(painelSelectedAno.value, painelSelectedMes.value)
-    painelApoioDias.value = resultado.dias
-    painelApoioData.value = resultado.itens
+    painelApoioMapaData.value = await getMapaVisualApoio(painelSelectedAno.value, painelSelectedMes.value)
   } catch (error: any) {
     toast.add({ title: 'Erro', description: error.message || 'Erro ao carregar apoio', color: 'red' })
   } finally {
@@ -2463,6 +2504,7 @@ const loadPainelApoio = async () => {
 // ======================== WATCHERS ========================
 
 watch([painelSelectedMes, painelSelectedAno], () => {
+  painelApoioSemanaIndex.value = 0
   if (painelEstoque.value === 'principal') loadPainel()
   else loadPainelApoio()
 })

@@ -255,6 +255,26 @@ export interface PainelMesApoio {
   estoque_final: number
 }
 
+export interface MapaVisualApoioDia {
+  data: string
+  ei: number
+  en: number
+  ef: number
+  cmv: number
+}
+
+export interface MapaVisualApoioSemana {
+  label: string
+  dias: MapaVisualApoioDia[]
+}
+
+export interface MapaVisualApoioItem {
+  produto_id: string
+  produto: string
+  unidade: string
+  semanas: MapaVisualApoioSemana[]
+}
+
 export interface CurvaABC {
   produto_id: string
   produto: string

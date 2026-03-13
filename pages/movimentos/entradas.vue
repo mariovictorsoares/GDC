@@ -444,8 +444,8 @@
       @rejeitada="onTransfResolvida"
     />
 
-    <!-- Modal: Transferência para Apoio -->
-    <MovimentosTransferenciaApoioModal
+    <!-- Modal: Saída Pós-Entrada -->
+    <MovimentosSaidaPosEntradaModal
       v-model="transferenciaApoioOpen"
       :itens-entrada="itensParaApoio"
     />
