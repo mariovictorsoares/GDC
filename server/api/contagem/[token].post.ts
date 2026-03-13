@@ -2,6 +2,7 @@
  * POST /api/contagem/[token]
  * Salva itens contados da página pública (sem autenticação).
  * Valida que setor pertence à contagem e produtos pertencem ao setor.
+ * Quando todos os setores ficam 100%, auto-finaliza e cria resultado no histórico.
  * Usa service_role para bypassar RLS.
  */
 import { getSupabaseAdmin } from '~/server/utils/supabase-admin'
@@ -22,7 +23,7 @@ export default defineEventHandler(async (event) => {
   // 1. Buscar contagem pelo token
   const { data: contagem, error: errContagem } = await supabase
     .from('contagens')
-    .select('id, empresa_id, status')
+    .select('id, empresa_id, status, nome, data, recorrencia, resultados')
     .eq('token', token)
     .single()
 
@@ -114,43 +115,32 @@ export default defineEventHandler(async (event) => {
   // 7. Checar se todos os setores estão finalizados → auto-finalizar contagem
   const { data: todosSetores } = await supabase
     .from('contagem_setores')
-    .select('status')
+    .select('status, setor_id, setor:setores(tipo)')
     .eq('contagem_id', contagem.id)
 
   const todosFinalizados = (todosSetores || []).every((s: any) => s.status === 'finalizado')
 
   if (todosFinalizados) {
-    // NÃO auto-finalizar — manter em_andamento para que o admin
-    // passe pela etapa de revisão (que cria os ajustes no histórico).
-    // Apenas fazer o snapshot dos saldos atuais.
-
-    // Snapshot dos saldos atuais para cada item contado
+    // Buscar todos os itens contados com info do produto
     const { data: itensContagem } = await supabase
       .from('contagem_itens')
-      .select('produto_id, setor_id')
+      .select('produto_id, setor_id, quantidade_contada, produto:produtos(nome, unidade:unidades(sigla)), saldo_no_momento')
       .eq('contagem_id', contagem.id)
 
+    // Buscar saldos atuais
+    const produtoIds = [...new Set((itensContagem || []).map((i: any) => i.produto_id))]
+    const { data: saldoData } = await supabase
+      .from('v_saldo_estoque')
+      .select('produto_id, saldo_principal, saldo_apoio, custo_medio')
+      .eq('empresa_id', contagem.empresa_id)
+      .in('produto_id', produtoIds)
+
+    const saldoMap = new Map((saldoData || []).map((s: any) => [s.produto_id, s]))
+    const setorTipoMap = new Map((todosSetores || []).map((s: any) => [s.setor_id, (s.setor as any)?.tipo || 'principal']))
+
+    // Atualizar saldo_no_momento para cada item
     if (itensContagem && itensContagem.length > 0) {
-      // Buscar setores com tipo para saber qual saldo usar
-      const { data: setoresInfo } = await supabase
-        .from('contagem_setores')
-        .select('setor_id, setor:setores(tipo)')
-        .eq('contagem_id', contagem.id)
-
-      const setorTipoMap = new Map((setoresInfo || []).map((s: any) => [s.setor_id, s.setor?.tipo || 'principal']))
-
-      // Buscar saldos da view
-      const produtoIds = [...new Set(itensContagem.map(i => i.produto_id))]
-      const { data: saldoData } = await supabase
-        .from('v_saldo_estoque')
-        .select('produto_id, saldo_principal, saldo_apoio')
-        .eq('empresa_id', contagem.empresa_id)
-        .in('produto_id', produtoIds)
-
-      const saldoMap = new Map((saldoData || []).map((s: any) => [s.produto_id, s]))
-
-      // Atualizar saldo_no_momento para cada item
-      await Promise.all(itensContagem.map(item => {
+      await Promise.all(itensContagem.map((item: any) => {
         const saldo = saldoMap.get(item.produto_id)
         const tipo = setorTipoMap.get(item.setor_id) || 'principal'
         const saldoValor = tipo === 'apoio' ? (saldo?.saldo_apoio || 0) : (saldo?.saldo_principal || 0)
@@ -162,6 +152,134 @@ export default defineEventHandler(async (event) => {
           .eq('produto_id', item.produto_id)
           .eq('setor_id', item.setor_id)
       }))
+    }
+
+    // Construir itens do resultado (agrupar por produto_id, somando se houver em múltiplos setores)
+    const produtoMap = new Map<string, {
+      produto_id: string
+      nome: string
+      unidade_sigla: string
+      saldo_sistema: number
+      quantidade_contada: number
+      custo_medio: number
+    }>()
+
+    for (const item of (itensContagem || [])) {
+      const pid = item.produto_id
+      const saldo = saldoMap.get(pid)
+      const tipo = setorTipoMap.get(item.setor_id) || 'principal'
+      const saldoSistema = tipo === 'apoio' ? (saldo?.saldo_apoio || 0) : (saldo?.saldo_principal || 0)
+
+      if (!produtoMap.has(pid)) {
+        produtoMap.set(pid, {
+          produto_id: pid,
+          nome: (item as any).produto?.nome || '',
+          unidade_sigla: (item as any).produto?.unidade?.sigla || '',
+          saldo_sistema: saldoSistema,
+          quantidade_contada: Number(item.quantidade_contada || 0),
+          custo_medio: Number(saldo?.custo_medio || 0)
+        })
+      } else {
+        // Somar quantidades de múltiplos setores
+        const existing = produtoMap.get(pid)!
+        existing.quantidade_contada += Number(item.quantidade_contada || 0)
+      }
+    }
+
+    const itensResultado = Array.from(produtoMap.values()).map(item => {
+      const diferenca = item.quantidade_contada - item.saldo_sistema
+      return {
+        produto_id: item.produto_id,
+        nome: item.nome,
+        unidade_sigla: item.unidade_sigla,
+        saldo_sistema: item.saldo_sistema,
+        quantidade_contada: item.quantidade_contada,
+        diferenca,
+        custo_medio: item.custo_medio,
+        valor_divergencia: diferenca * item.custo_medio
+      }
+    }).sort((a, b) => a.nome.localeCompare(b.nome))
+
+    const totalContados = itensResultado.length
+    const totalSobras = itensResultado.filter(i => i.diferenca > 0).length
+    const totalFaltas = itensResultado.filter(i => i.diferenca < 0).length
+    const valorTotal = itensResultado.reduce((sum, i) => sum + i.valor_divergencia, 0)
+
+    // Montar resultado
+    const existentes = ((contagem as any).resultados || []) as any[]
+    const cicloAtual = existentes.length + 1
+
+    const resultado = {
+      ciclo: cicloAtual,
+      data: contagem.data || new Date().toISOString().split('T')[0],
+      finalizado_em: new Date().toISOString(),
+      motivo: contagem.nome || 'Contagem',
+      resumo: {
+        total_contados: totalContados,
+        total_nao_contados: 0,
+        total_sobras: totalSobras,
+        total_faltas: totalFaltas,
+        valor_total_divergencia: valorTotal
+      },
+      itens: itensResultado
+    }
+
+    existentes.push(resultado)
+
+    // Criar ajustes para itens com divergência
+    const ajustesPayload = itensResultado
+      .filter(i => i.diferenca !== 0)
+      .map(i => ({
+        empresa_id: contagem.empresa_id,
+        produto_id: i.produto_id,
+        data: contagem.data || new Date().toISOString().split('T')[0],
+        quantidade: i.diferenca,
+        motivo: contagem.nome || 'Contagem'
+      }))
+
+    if (ajustesPayload.length > 0) {
+      await supabase
+        .from('ajustes')
+        .insert(ajustesPayload)
+    }
+
+    // Atualizar contagem: salvar resultados, finalizar, e limpar itens
+    await supabase
+      .from('contagens')
+      .update({
+        resultados: existentes,
+        status: 'finalizada',
+        ultima_contagem: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', contagem.id)
+
+    // Limpar contagem_itens
+    await supabase
+      .from('contagem_itens')
+      .delete()
+      .eq('contagem_id', contagem.id)
+
+    // Resetar setores para próximo ciclo
+    await supabase
+      .from('contagem_setores')
+      .update({
+        status: 'aguardando',
+        progresso: 0,
+        finalizado_em: null
+      })
+      .eq('contagem_id', contagem.id)
+
+    // Se tem recorrência, preparar para próximo ciclo (status aguardando)
+    if (contagem.recorrencia && contagem.recorrencia !== 'nenhuma') {
+      await supabase
+        .from('contagens')
+        .update({
+          status: 'aguardando',
+          ultimo_lembrete_enviado: null,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', contagem.id)
     }
   }
 
