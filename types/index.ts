@@ -458,6 +458,7 @@ export interface Contagem {
   responsavel_telefone?: string
   ultima_contagem?: string
   progresso?: number
+  resultados?: ContagemResultado[]
   created_at?: string
   updated_at?: string
   // Relacionamentos
@@ -517,6 +518,33 @@ export interface ContagemHistorico {
   total_zerados: number
   valor_total_divergencia: number
   ajustes: Ajuste[]
+}
+
+// Snapshot de uma contagem finalizada (armazenado em contagens.resultados JSONB)
+export interface ContagemResultadoItem {
+  produto_id: string
+  nome: string
+  unidade_sigla: string
+  saldo_sistema: number
+  quantidade_contada: number
+  diferenca: number
+  custo_medio: number
+  valor_divergencia: number
+}
+
+export interface ContagemResultado {
+  ciclo: number
+  data: string
+  finalizado_em: string
+  motivo: string
+  resumo: {
+    total_contados: number
+    total_nao_contados: number
+    total_sobras: number
+    total_faltas: number
+    valor_total_divergencia: number
+  }
+  itens: ContagemResultadoItem[]
 }
 
 // Tipos para Pedidos de Compra

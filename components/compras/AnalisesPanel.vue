@@ -110,6 +110,7 @@
               :columns="columns"
               :rows="paginatedItems"
               :loading="loading"
+              v-model:sort="sortState"
               :ui="{ td: { base: '' }, th: { base: 'bg-operacao-100/70 dark:bg-operacao-800 border-b border-operacao-200/60 [&_button]:font-medium [&_button]:uppercase [&_button]:tracking-wider [&_button]:text-xs [&_button]:text-[#5a5a66] [&_button>span+span]:text-operacao-300 [&_button>span+span]:!w-3.5 [&_button>span+span]:!h-3.5', color: 'text-[#5a5a66] dark:text-operacao-400', font: 'font-medium', size: 'text-xs uppercase tracking-wider', padding: 'px-4 py-2' } }"
             >
               <template #empty-state>
@@ -120,7 +121,16 @@
               </template>
 
               <template #nome-data="{ row }">
-                <span class="font-medium">{{ row.nome }}</span>
+                <div class="flex items-center gap-2">
+                  <span class="font-medium">{{ row.nome }}</span>
+                  <span
+                    v-if="formatPedidoFlag(row.produto_id)"
+                    class="inline-flex items-center gap-1 text-[10px] font-medium text-guardian-700 bg-guardian-50 ring-1 ring-guardian-200 px-1.5 py-0.5 rounded-full whitespace-nowrap"
+                  >
+                    <UIcon name="i-heroicons-check-circle-solid" class="w-3 h-3 text-guardian-500" />
+                    {{ formatPedidoFlag(row.produto_id) }}
+                  </span>
+                </div>
               </template>
               <template #quantidade_estoque-data="{ row }">
                 <span class="font-medium">{{ formatNumber(row.quantidade_estoque) }} {{ row.unidade }}</span>
@@ -412,7 +422,7 @@ const emit = defineEmits<{
 }>()
 
 const { getEstoqueMinimo, getVariacaoCustoDiaria } = useRelatorios()
-const { createPedido } = useEstoque()
+const { createPedido, getPedidosSemanaAtual } = useEstoque()
 const { empresaId, empresaAtiva } = useEmpresa()
 const toast = useToast()
 
@@ -439,6 +449,7 @@ watch(() => props.modelValue, (isOpen) => {
 // PONTO DE REPOSIÇÃO
 // ==========================================
 const estoqueData = ref<EstoqueMinimo[]>([])
+const pedidosSemana = ref<Map<string, string>>(new Map())
 const search = ref('')
 
 const SEGURANCA_STORAGE_KEY = computed(() => `seguranca_map_${empresaId.value || 'default'}`)
@@ -488,6 +499,13 @@ const calcPrevisaoCompras = (row: EstoqueMinimo) => {
 const produtosEmReposicao = computed(() => {
   return estoqueData.value.filter(row => calcPrevisaoCompras(row) > 0)
 })
+
+const formatPedidoFlag = (produtoId: string): string | null => {
+  const data = pedidosSemana.value.get(produtoId)
+  if (!data) return null
+  const d = new Date(data + 'T00:00:00')
+  return `Pedido feito ${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`
+}
 
 // ==========================================
 // MODAL GERAR COMPRA
@@ -671,8 +689,17 @@ const columns = [
   { key: 'previsao_compras', label: 'Prev. Compras', sortable: true, class: '!text-right', rowClass: '!text-right' }
 ]
 
+const enrichedEstoque = computed(() => {
+  return estoqueData.value.map(row => ({
+    ...row,
+    media_semanal: row.media_semanas,
+    ponto_reposicao: calcPontoReposicao(row),
+    previsao_compras: calcPrevisaoCompras(row)
+  }))
+})
+
 const filteredEstoque = computed(() => {
-  let result = estoqueData.value
+  let result = enrichedEstoque.value
 
   if (search.value) {
     const term = search.value.toLowerCase()
@@ -685,6 +712,7 @@ const filteredEstoque = computed(() => {
   return result
 })
 
+const sortState = ref({ column: 'previsao_compras', direction: 'desc' as const })
 const { page, pageSize, paginatedItems } = usePagination(filteredEstoque)
 
 // ==========================================
@@ -766,6 +794,7 @@ const loadData = async () => {
     loading.value = true
     await Promise.all([
       getEstoqueMinimo().then(data => { estoqueData.value = data }),
+      getPedidosSemanaAtual().then(data => { pedidosSemana.value = data }),
       loadVariacaoCusto()
     ])
     dataLoaded.value = true

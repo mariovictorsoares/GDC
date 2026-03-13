@@ -272,6 +272,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'update:modelValue': [value: boolean]
+  'saved': []
 }>()
 
 const modalAberto = computed({
@@ -451,6 +452,7 @@ const processar = async () => {
 
     itensProcessados.value = selecionados
     etapa.value = 'resumo'
+    emit('saved')
   } catch (error: any) {
     toast.add({
       title: 'Erro',

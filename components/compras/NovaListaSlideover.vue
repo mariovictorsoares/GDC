@@ -91,7 +91,16 @@
               >
                 <div class="flex-1 min-w-0">
                   <p class="text-sm font-medium text-operacao-800 truncate">{{ product.nome }}</p>
-                  <p class="text-xs text-operacao-400 truncate">{{ product.subgrupo_nome }}</p>
+                  <div class="flex items-center gap-1.5">
+                    <p class="text-xs text-operacao-400 truncate">{{ product.subgrupo_nome }}</p>
+                    <span
+                      v-if="formatPedidoFlag(product.produto_id)"
+                      class="inline-flex items-center gap-0.5 text-[10px] font-medium text-guardian-700 bg-guardian-50 ring-1 ring-guardian-200 px-1 py-0 rounded-full whitespace-nowrap shrink-0"
+                    >
+                      <UIcon name="i-heroicons-check-circle-solid" class="w-2.5 h-2.5 text-guardian-500" />
+                      {{ formatPedidoFlag(product.produto_id) }}
+                    </span>
+                  </div>
                 </div>
                 <span
                   v-if="product.sugestao_compra > 0"
@@ -166,13 +175,6 @@
             </div>
           </div>
 
-          <!-- Footer with total -->
-          <div v-if="cart.size > 0" class="px-4 py-3 border-t border-operacao-200 bg-operacao-50/50">
-            <div class="flex items-center justify-between text-sm">
-              <span class="text-operacao-500">Valor estimado:</span>
-              <span class="font-semibold text-operacao-800">{{ formatCurrency(valorEstimadoTotal) }}</span>
-            </div>
-          </div>
         </div>
 
       </div>
@@ -290,7 +292,7 @@ const emit = defineEmits<{
 }>()
 
 // Composables
-const { getProdutos, getGrupos, createPedido, updatePedido, updatePedidoItens, getPedidos, getUltimosPrecos } = useEstoque()
+const { getProdutos, getGrupos, createPedido, updatePedido, updatePedidoItens, getPedidos, getUltimosPrecos, getPedidosSemanaAtual } = useEstoque()
 const { getEstoqueMinimo } = useRelatorios()
 const { empresaId, empresaAtiva } = useEmpresa()
 const { formatCurrency, formatNumber } = useFormatters()
@@ -303,6 +305,7 @@ const estoqueData = ref<EstoqueMinimo[]>([])
 const grupos = ref<Grupo[]>([])
 const precos = ref<Record<string, number>>({})
 const loading = ref(false)
+const pedidosSemana = ref<Map<string, string>>(new Map())
 const search = ref('')
 const grupoFilter = ref('')
 const saveModalOpen = ref(false)
@@ -389,6 +392,13 @@ const availableProducts = computed(() => {
 const produtosComSugestao = computed(() => {
   return availableProducts.value.filter(p => p.sugestao_compra > 0).length
 })
+
+const formatPedidoFlag = (produtoId: string): string | null => {
+  const data = pedidosSemana.value.get(produtoId)
+  if (!data) return null
+  const d = new Date(data + 'T00:00:00')
+  return `Pedido feito ${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`
+}
 
 // Methods
 const addToCart = (product: DisplayProduct) => {
@@ -546,6 +556,7 @@ const resetState = () => {
   estoqueData.value = []
   grupos.value = []
   precos.value = {}
+  pedidosSemana.value = new Map()
   search.value = ''
   grupoFilter.value = ''
   saveModalOpen.value = false
@@ -558,14 +569,16 @@ const resetState = () => {
 const loadData = async () => {
   loading.value = true
   try {
-    const [prodData, estData, grupoData] = await Promise.all([
+    const [prodData, estData, grupoData, pedSemana] = await Promise.all([
       getProdutos(),
       getEstoqueMinimo(),
-      getGrupos()
+      getGrupos(),
+      getPedidosSemanaAtual()
     ])
     produtos.value = prodData
     estoqueData.value = estData
     grupos.value = grupoData
+    pedidosSemana.value = pedSemana
 
     const ids = prodData.map(p => p.id)
     if (ids.length > 0) {

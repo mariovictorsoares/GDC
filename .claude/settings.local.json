@@ -100,7 +100,14 @@
       "Bash(where gh)",
       "WebFetch(domain:www.cmv360app.com.br)",
       "Bash(find supabase/migrations -name \"*.sql\" -exec grep -l \"pedidos\\\\|requisicoes\" {} ;)",
-      "WebFetch(domain:www.npmjs.com)"
+      "WebFetch(domain:www.npmjs.com)",
+      "Bash(xargs grep -l \"apoio\\\\|Apoio\")",
+      "Bash(xargs grep -l \"finalizar.*contagem\\\\|finalizarContagem\")",
+      "Bash(git add docs/superpowers/specs/2026-03-13-contagem-publica-melhorias-design.md)",
+      "Bash(git add docs/superpowers/plans/2026-03-13-contagem-publica-melhorias.md)",
+      "Bash(xargs grep -l \"SidebarItem\\\\|SidebarSection\")",
+      "Bash(npx vue-tsc --noEmit --pretty)",
+      "Bash(xargs grep -l \"TrialBanner\")"
     ]
   }
 }

@@ -52,14 +52,136 @@
         <USkeleton class="h-3 w-32 mx-auto" />
       </div>
 
-      <div v-else-if="historico.length === 0" class="px-6 py-8 text-center text-operacao-400">
+      <div v-else-if="resultados.length === 0 && historico.length === 0" class="px-6 py-8 text-center text-operacao-400">
         <p class="text-sm">Nenhuma contagem finalizada até o momento.</p>
       </div>
 
       <div v-else class="divide-y divide-operacao-100">
+        <!-- Resultados com detalhes (contagens novas com snapshot) -->
+        <div
+          v-for="(r, idx) in resultados"
+          :key="'r-' + idx"
+        >
+          <!-- Linha clicável -->
+          <button
+            class="w-full px-6 py-4 text-left hover:bg-operacao-50/50 transition-colors"
+            @click="toggleExpandido(idx)"
+          >
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <UIcon
+                  :name="expandido === idx ? 'i-heroicons-chevron-down' : 'i-heroicons-chevron-right'"
+                  class="w-4 h-4 text-operacao-400 flex-shrink-0"
+                />
+                <div>
+                  <p class="font-semibold text-operacao-800 text-sm">{{ r.motivo }}</p>
+                  <p class="text-xs text-operacao-400">{{ formatDateTime(r.finalizado_em) }}</p>
+                </div>
+              </div>
+              <div class="flex items-center gap-4 text-xs">
+                <span class="text-operacao-400 font-medium">{{ r.resumo.total_contados }} contado(s)</span>
+                <span v-if="r.resumo.total_sobras > 0" class="text-controle-600 font-medium">+{{ r.resumo.total_sobras }} sobra(s)</span>
+                <span v-if="r.resumo.total_faltas > 0" class="text-red-600 font-medium">-{{ r.resumo.total_faltas }} falta(s)</span>
+                <span class="font-bold" :class="r.resumo.valor_total_divergencia >= 0 ? 'text-controle-600' : 'text-red-600'">
+                  {{ r.resumo.valor_total_divergencia >= 0 ? '+' : '' }}{{ formatCurrency(r.resumo.valor_total_divergencia) }}
+                </span>
+              </div>
+            </div>
+          </button>
+
+          <!-- Detalhes expandidos -->
+          <div v-if="expandido === idx" class="px-6 pb-6 pt-2 bg-operacao-50/30">
+            <!-- Cards de resumo -->
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
+              <div class="rounded-lg bg-white ring-1 ring-[#EBEBED] shadow-sm px-3 py-2 text-center">
+                <p class="text-2xl font-bold text-guardian-600">{{ r.resumo.total_contados }}</p>
+                <p class="text-[11px] text-operacao-400">Contados</p>
+              </div>
+              <div class="rounded-lg bg-white ring-1 ring-[#EBEBED] shadow-sm px-3 py-2 text-center">
+                <p class="text-2xl font-bold text-operacao-400">{{ r.resumo.total_nao_contados }}</p>
+                <p class="text-[11px] text-operacao-400">Não contados</p>
+              </div>
+              <div class="rounded-lg bg-white ring-1 ring-[#EBEBED] shadow-sm px-3 py-2 text-center">
+                <p class="text-2xl font-bold text-controle-600">{{ r.resumo.total_sobras }}</p>
+                <p class="text-[11px] text-operacao-400">Sobras</p>
+              </div>
+              <div class="rounded-lg bg-white ring-1 ring-[#EBEBED] shadow-sm px-3 py-2 text-center">
+                <p class="text-2xl font-bold text-red-600">{{ r.resumo.total_faltas }}</p>
+                <p class="text-[11px] text-operacao-400">Faltas</p>
+              </div>
+              <div class="rounded-lg bg-white ring-1 ring-[#EBEBED] shadow-sm px-3 py-2 text-center">
+                <p
+                  class="text-xl font-bold"
+                  :class="r.resumo.valor_total_divergencia >= 0 ? 'text-controle-600' : 'text-red-600'"
+                >
+                  {{ r.resumo.valor_total_divergencia >= 0 ? '+' : '' }}{{ formatCurrency(r.resumo.valor_total_divergencia) }}
+                </p>
+                <p class="text-[11px] text-operacao-400">Impacto (R$)</p>
+              </div>
+            </div>
+
+            <!-- Tabela de itens -->
+            <div class="rounded-lg bg-white ring-1 ring-[#EBEBED] shadow-sm overflow-hidden">
+              <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                  <thead>
+                    <tr class="text-left text-[#5a5a66] border-b border-operacao-200">
+                      <th class="px-4 py-3 font-medium text-xs uppercase tracking-wider">Produto</th>
+                      <th class="px-2 py-3 font-medium text-xs uppercase tracking-wider text-right">Sistema</th>
+                      <th class="px-2 py-3 font-medium text-xs uppercase tracking-wider text-right">Contado</th>
+                      <th class="px-2 py-3 font-medium text-xs uppercase tracking-wider text-right">Diferença</th>
+                      <th class="px-4 py-3 font-medium text-xs uppercase tracking-wider text-right">Valor (R$)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr
+                      v-for="item in r.itens"
+                      :key="item.produto_id"
+                      class="border-b border-operacao-100 last:border-0"
+                      :class="item.diferenca > 0 ? 'bg-controle-50/40' : item.diferenca < 0 ? 'bg-red-50/40' : ''"
+                    >
+                      <td class="px-4 py-2.5">
+                        <p class="font-medium text-operacao-800">{{ item.nome }}</p>
+                        <p class="text-xs text-operacao-400">{{ item.unidade_sigla }}</p>
+                      </td>
+                      <td class="px-2 py-2.5 text-right font-mono text-operacao-500">
+                        {{ formatNumber(item.saldo_sistema) }}
+                      </td>
+                      <td class="px-2 py-2.5 text-right font-mono text-operacao-800 font-semibold">
+                        {{ formatNumber(item.quantidade_contada) }}
+                      </td>
+                      <td class="px-2 py-2.5 text-right">
+                        <span
+                          v-if="item.diferenca !== 0"
+                          class="font-bold font-mono"
+                          :class="item.diferenca > 0 ? 'text-controle-600' : 'text-red-600'"
+                        >
+                          {{ item.diferenca > 0 ? '+' : '' }}{{ formatNumber(item.diferenca) }} {{ item.unidade_sigla }}
+                        </span>
+                        <span v-else class="text-operacao-300 font-mono">0</span>
+                      </td>
+                      <td class="px-4 py-2.5 text-right">
+                        <span
+                          v-if="item.valor_divergencia !== 0"
+                          class="font-semibold font-mono"
+                          :class="item.valor_divergencia > 0 ? 'text-controle-600' : 'text-red-600'"
+                        >
+                          {{ item.valor_divergencia > 0 ? '+' : '' }}{{ formatCurrency(item.valor_divergencia) }}
+                        </span>
+                        <span v-else class="text-operacao-300 font-mono">-</span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Histórico legado (contagens antigas, sem snapshot) -->
         <div
           v-for="(h, idx) in historico"
-          :key="idx"
+          :key="'h-' + idx"
           class="px-6 py-4"
         >
           <div class="flex items-center justify-between">
@@ -82,10 +204,11 @@
 </template>
 
 <script setup lang="ts">
-import type { Contagem, ContagemHistorico } from '~/types'
+import type { Contagem, ContagemHistorico, ContagemResultado } from '~/types'
 
 const props = defineProps<{
   contagem: Contagem
+  resultados: ContagemResultado[]
   historico: ContagemHistorico[]
   loadingHistorico: boolean
 }>()
@@ -98,7 +221,14 @@ const emit = defineEmits<{
   'enviar-lembrete': []
 }>()
 
-const { formatCurrency } = useFormatters()
+const { formatCurrency, formatNumber } = useFormatters()
+
+// Estado de expansão
+const expandido = ref<number | null>(null)
+
+const toggleExpandido = (idx: number) => {
+  expandido.value = expandido.value === idx ? null : idx
+}
 
 // Dropdown actions
 const acoes = computed(() => {
@@ -128,5 +258,11 @@ const labelRecorrencia = (recorrencia?: string) => {
 const formatDate = (date?: string) => {
   if (!date) return '-'
   return new Date(date + 'T00:00:00').toLocaleDateString('pt-BR')
+}
+
+const formatDateTime = (datetime?: string) => {
+  if (!datetime) return '-'
+  const d = new Date(datetime)
+  return d.toLocaleDateString('pt-BR') + ' às ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
 }
 </script>

@@ -18,6 +18,7 @@
     <ContagemDetalhes
       v-if="etapa === 'detalhes' && contagemSelecionada"
       :contagem="contagemSelecionada"
+      :resultados="resultadosContagem"
       :historico="historicoContagem"
       :loading-historico="loadingHistorico"
       @voltar="etapa = 'principal'"
@@ -319,7 +320,7 @@
 </template>
 
 <script setup lang="ts">
-import type { Grupo, Subgrupo, Produto, Setor, Contagem, Ajuste, SaldoEstoque, ContagemHistorico, TipoContagem } from '~/types'
+import type { Grupo, Subgrupo, Produto, Setor, Contagem, Ajuste, SaldoEstoque, ContagemHistorico, ContagemResultado, TipoContagem } from '~/types'
 
 const toast = useToast()
 const {
@@ -329,6 +330,7 @@ const {
   getSetores, countSetorProdutos, getAllSetorProdutos,
   getContagens, createContagem, updateContagem, updateContagemStatus, prepararProximoCiclo, deleteContagem,
   deleteContagemItens, resetContagemSetores,
+  getContagemResultados,
   getResponsaveis, createResponsavel
 } = useEstoque()
 const { empresaId } = useEmpresa()
@@ -365,6 +367,7 @@ const setorAtual = ref<{ id: string; nome: string } | null>(null)
 // HISTÓRICO
 // ==========================================
 const historicoContagem = ref<ContagemHistorico[]>([])
+const resultadosContagem = ref<ContagemResultado[]>([])
 const loadingHistorico = ref(false)
 
 // ==========================================
@@ -508,16 +511,24 @@ const carregarHistorico = async () => {
   if (!contagemSelecionada.value) return
   try {
     loadingHistorico.value = true
+
+    // 1. Carregar resultados (snapshots das contagens novas)
+    const resultados = await getContagemResultados(contagemSelecionada.value.id)
+    resultadosContagem.value = [...resultados].sort((a, b) => b.finalizado_em.localeCompare(a.finalizado_em))
+
+    // 2. Histórico legado (contagens antigas, sem snapshot — baseado em ajustes)
     const [ajustes, todosSaldos] = await Promise.all([
       getAjustes({}),
       getSaldoEstoque()
     ])
     saldos.value = todosSaldos
 
-    // Agrupar ajustes que pertencem a esta contagem (pelo motivo contendo nome da contagem)
     const nomeContagem = contagemSelecionada.value.nome
+    // Pegar datas dos resultados para excluí-las do histórico legado
+    const datasResultados = new Set(resultados.map(r => r.data))
+
     const ajustesFiltrados = ajustes.filter((a: Ajuste) =>
-      a.motivo?.includes(nomeContagem)
+      a.motivo?.includes(nomeContagem) && !datasResultados.has(a.data)
     )
 
     const map = new Map<string, ContagemHistorico>()

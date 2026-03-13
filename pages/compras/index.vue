@@ -38,6 +38,16 @@
             </div>
           </template>
         </UPopover>
+        <!-- Limpar filtros -->
+        <UButton
+          v-if="hasActiveFilters"
+          icon="i-heroicons-x-mark"
+          color="gray"
+          variant="ghost"
+          size="xs"
+          class="text-operacao-400 hover:text-operacao-600"
+          @click="clearFilters"
+        />
       </div>
       <!-- Ações (direita) -->
       <div class="flex gap-2 flex-shrink-0">
@@ -90,9 +100,6 @@
           {{ row.previsao_recebimento ? formatDate(row.previsao_recebimento) : '-' }}
         </template>
 
-        <template #responsavel-data="{ row }">
-          {{ row.responsavel_nome || '-' }}
-        </template>
       </UTable>
       <TablePagination
         v-if="!loading && pedidos.length > 0"
@@ -329,8 +336,7 @@ const columns = [
   { key: 'nome', label: 'Nome', sortable: true },
   { key: 'data', label: 'Data', sortable: true },
   { key: 'itens', label: 'Itens' },
-  { key: 'previsao', label: 'Previsão' },
-  { key: 'responsavel', label: 'Responsável' }
+  { key: 'previsao', label: 'Previsão' }
 ]
 
 // ==========================================
@@ -382,6 +388,14 @@ const filteredPedidos = computed(() => {
 })
 
 const { page, pageSize, paginatedItems } = usePagination(filteredPedidos)
+
+const hasActiveFilters = computed(() => !!search.value || !!dateRange.value.start)
+
+const clearFilters = () => {
+  search.value = ''
+  dateRange.value = { start: null, end: null }
+  dateRangeClickCount.value = 0
+}
 
 const isEditable = computed(() =>
   !isReadonly.value && selectedPedido.value &&

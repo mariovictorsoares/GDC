@@ -193,7 +193,7 @@ const emit = defineEmits<{
 }>()
 
 const toast = useToast()
-const { getContagemItens, getSaldoEstoque, createAjustesEmLote, updateContagemStatus, deleteContagemItens } = useEstoque()
+const { getContagemItens, getSaldoEstoque, createAjustesEmLote, updateContagemStatus, deleteContagemItens, appendContagemResultado, getContagemResultados } = useEstoque()
 const { formatCurrency, formatNumber } = useFormatters()
 
 // State
@@ -298,6 +298,36 @@ const salvarContagem = async () => {
     if (ajustesPayload.length > 0) {
       await createAjustesEmLote(ajustesPayload)
     }
+
+    // Snapshot: salvar resultado completo no JSONB da contagem
+    const existentes = await getContagemResultados(props.contagemId)
+    const cicloAtual = existentes.length + 1
+
+    const resultado: import('~/types').ContagemResultado = {
+      ciclo: cicloAtual,
+      data: props.contagem?.data || new Date().toISOString().split('T')[0],
+      finalizado_em: new Date().toISOString(),
+      motivo: motivoContagem.value.trim(),
+      resumo: {
+        total_contados: itensContados.value,
+        total_nao_contados: itensNaoContados.value,
+        total_sobras: itensComSobra.value,
+        total_faltas: itensComFalta.value,
+        valor_total_divergencia: valorTotalDivergencia.value
+      },
+      itens: itensRevisao.value.map(item => ({
+        produto_id: item.produto_id,
+        nome: item.nome,
+        unidade_sigla: item.unidade_sigla,
+        saldo_sistema: item.saldo_sistema,
+        quantidade_contada: item.quantidade_contada,
+        diferenca: item.diferenca,
+        custo_medio: item.custo_medio,
+        valor_divergencia: item.valor_divergencia
+      }))
+    }
+
+    await appendContagemResultado(props.contagemId, resultado)
 
     // Update contagem status to finalizada
     await updateContagemStatus(props.contagemId, 'finalizada')

@@ -58,39 +58,41 @@
 
     <!-- Active counting -->
     <div v-else-if="dados" class="max-w-3xl mx-auto pb-36">
-      <!-- Setor tabs -->
+      <!-- Setor selector -->
       <div class="sticky top-[53px] sm:top-[57px] z-20 bg-operacao-50 pt-3 pb-2 px-4 sm:px-6">
-        <div class="flex gap-2 overflow-x-auto no-scrollbar">
-          <button
+        <select
+          :value="setorAtivo"
+          @change="setorAtivo = ($event.target as HTMLSelectElement).value"
+          class="w-full py-2.5 px-4 rounded-xl bg-white text-sm font-medium text-operacao-800 ring-1 ring-operacao-200 focus:ring-2 focus:ring-guardian-500 focus:outline-none transition-shadow appearance-none cursor-pointer"
+          style="background-image: url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E&quot;); background-position: right 0.75rem center; background-repeat: no-repeat; background-size: 1.25em 1.25em; padding-right: 2.5rem;"
+        >
+          <option
             v-for="s in dados.setores"
             :key="s.id"
-            class="flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-150"
-            :class="setorAtivo === s.id
-              ? 'bg-guardian-500 text-white shadow-sm'
-              : s.progresso >= 100
-                ? 'bg-controle-50 text-controle-700 ring-1 ring-controle-200'
-                : 'bg-white text-operacao-500 ring-1 ring-operacao-200 hover:ring-operacao-300'"
-            @click="setorAtivo = s.id"
-          >
-            <UIcon
-              v-if="s.progresso >= 100"
-              name="i-heroicons-check-circle-solid"
-              class="w-4 h-4"
-              :class="setorAtivo === s.id ? 'text-white' : 'text-controle-500'"
-            />
-            <span class="truncate max-w-[120px]">{{ s.nome }}</span>
-            <span
-              v-if="s.progresso > 0 && s.progresso < 100"
-              class="text-xs opacity-75"
-            >{{ s.progresso }}%</span>
-          </button>
+            :value="s.id"
+          >{{ s.status === 'finalizado' ? '\u2713 ' : '' }}{{ s.nome }}</option>
+        </select>
+      </div>
+
+      <!-- Finalized sector banner -->
+      <div v-if="setorFinalizado" class="px-4 sm:px-6 pb-3">
+        <div class="flex items-center gap-2 px-4 py-3 rounded-xl bg-controle-50 text-controle-700 text-sm font-medium">
+          <UIcon name="i-heroicons-check-circle-solid" class="w-5 h-5 text-controle-500 flex-shrink-0" />
+          Este setor já foi salvo
         </div>
       </div>
 
-      <!-- Search + count row -->
-      <div class="px-4 sm:px-6 pb-3">
+      <!-- Review mode banner -->
+      <div v-else-if="modoRevisao" class="px-4 sm:px-6 pb-3">
+        <div class="flex items-center justify-between">
+          <h3 class="text-sm font-bold text-operacao-800">Revisão — {{ setorAtual?.nome }}</h3>
+          <span class="text-xs text-operacao-400">{{ totalSetorAtual }} produtos</span>
+        </div>
+      </div>
+
+      <!-- Search + count (editing mode only) -->
+      <div v-else class="px-4 sm:px-6 pb-3">
         <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-          <!-- Search -->
           <div class="relative flex-1">
             <UIcon
               name="i-heroicons-magnifying-glass"
@@ -110,8 +112,6 @@
               <UIcon name="i-heroicons-x-mark" class="w-4 h-4" />
             </button>
           </div>
-
-          <!-- Products count -->
           <div class="flex items-center justify-between sm:justify-end sm:gap-4 text-xs text-operacao-400">
             <p class="font-medium">
               {{ produtosFiltrados.length }} {{ produtosFiltrados.length === 1 ? 'produto' : 'produtos' }}
@@ -123,23 +123,37 @@
         </div>
       </div>
 
-      <!-- Product cards -->
-      <div class="px-4 sm:px-6 grid grid-cols-1 sm:grid-cols-2 gap-2">
+      <!-- Product cards: read-only (finalized or review) -->
+      <div v-if="setorFinalizado || modoRevisao" class="px-4 sm:px-6 space-y-1.5">
         <div
-          v-for="produto in produtosFiltrados"
+          v-for="produto in setorAtual?.produtos || []"
           :key="produto.id"
-          class="flex items-center gap-3 bg-white rounded-xl px-4 py-3.5 ring-1 transition-all duration-150"
-          :class="quantidades[produto.id] != null && quantidades[produto.id] !== ''
-            ? 'ring-controle-200 bg-controle-50/30'
-            : 'ring-operacao-100'"
+          class="flex items-center justify-between bg-white rounded-xl px-4 py-3 ring-1 ring-operacao-100"
         >
-          <!-- Product info -->
           <div class="flex-1 min-w-0">
             <p class="text-sm font-semibold text-operacao-800 leading-tight">{{ produto.nome }}</p>
             <p class="text-[11px] text-operacao-400 mt-0.5">{{ produto.unidade }}</p>
           </div>
+          <span class="text-sm font-bold text-operacao-800 tabular-nums ml-3">
+            {{ quantidades[setorAtivo]?.[produto.id] ?? '—' }}
+          </span>
+        </div>
+      </div>
 
-          <!-- Quantity input -->
+      <!-- Product cards: editable (normal mode) -->
+      <div v-else class="px-4 sm:px-6 grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <div
+          v-for="produto in produtosFiltrados"
+          :key="produto.id"
+          class="flex items-center gap-3 bg-white rounded-xl px-4 py-3.5 ring-1 transition-all duration-150"
+          :class="quantidades[setorAtivo]?.[produto.id] != null && quantidades[setorAtivo]?.[produto.id] !== ''
+            ? 'ring-controle-200 bg-controle-50/30'
+            : 'ring-operacao-100'"
+        >
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-semibold text-operacao-800 leading-tight">{{ produto.nome }}</p>
+            <p class="text-[11px] text-operacao-400 mt-0.5">{{ produto.unidade }}</p>
+          </div>
           <div class="flex items-center gap-1.5 flex-shrink-0">
             <button
               class="w-8 h-8 rounded-lg bg-operacao-50 text-operacao-400 hover:bg-operacao-100 flex items-center justify-center transition-colors active:scale-95"
@@ -148,7 +162,7 @@
               <UIcon name="i-heroicons-minus" class="w-3.5 h-3.5" />
             </button>
             <input
-              :value="quantidades[produto.id] ?? ''"
+              :value="quantidades[setorAtivo]?.[produto.id] ?? ''"
               type="number"
               inputmode="decimal"
               min="0"
@@ -167,7 +181,6 @@
           </div>
         </div>
 
-        <!-- Empty -->
         <div v-if="produtosFiltrados.length === 0" class="col-span-full py-12 text-center">
           <UIcon name="i-heroicons-magnifying-glass" class="w-8 h-8 text-operacao-200 mx-auto mb-2" />
           <p class="text-sm text-operacao-400">Nenhum produto encontrado</p>
@@ -175,9 +188,9 @@
       </div>
     </div>
 
-    <!-- Fixed footer -->
+    <!-- Fixed footer (hidden for finalized sectors) -->
     <div
-      v-if="dados && !contagemCompleta && !erro"
+      v-if="dados && !contagemCompleta && !erro && !setorFinalizado"
       class="fixed bottom-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-sm border-t border-operacao-100 safe-area-bottom"
     >
       <div class="max-w-3xl mx-auto px-4 sm:px-6 py-3">
@@ -196,20 +209,42 @@
           >{{ progressoAtual }}%</span>
         </div>
 
+        <!-- Review mode: Confirmar / Voltar -->
+        <div v-if="modoRevisao" class="flex gap-3">
+          <button
+            class="flex-1 py-3 sm:py-2.5 px-6 rounded-xl text-sm font-bold text-operacao-600 bg-operacao-100 hover:bg-operacao-200 transition-all active:scale-[0.98]"
+            @click="modoRevisao = false"
+          >
+            Voltar para editar
+          </button>
+          <button
+            :disabled="salvando"
+            class="flex-1 py-3 sm:py-2.5 px-6 rounded-xl text-sm font-bold text-white bg-controle-500 hover:bg-controle-600 shadow-sm shadow-controle-500/20 transition-all disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.98]"
+            @click="confirmarSetor"
+          >
+            <span v-if="salvando" class="flex items-center justify-center gap-2">
+              <span class="animate-spin rounded-full h-4 w-4 border-2 border-white/30 border-t-white" />
+              Salvando...
+            </span>
+            <span v-else>Confirmar</span>
+          </button>
+        </div>
+
+        <!-- Normal mode: Revisar e Salvar (only when 100%) -->
         <button
-          :disabled="salvando || preenchidosSetorAtual === 0"
+          v-else
+          :disabled="!todosPreenchidos"
           class="w-full sm:w-auto sm:min-w-[200px] sm:float-right py-3 sm:py-2.5 px-6 rounded-xl text-sm font-bold text-white transition-all duration-150 disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.98]"
-          :class="progressoAtual >= 100
+          :class="todosPreenchidos
             ? 'bg-controle-500 hover:bg-controle-600 shadow-sm shadow-controle-500/20'
-            : 'bg-guardian-500 hover:bg-guardian-600 shadow-sm shadow-guardian-500/20'"
-          @click="salvarSetor"
+            : 'bg-guardian-500'"
+          @click="entrarRevisao"
         >
-          <span v-if="salvando" class="flex items-center justify-center gap-2">
-            <span class="animate-spin rounded-full h-4 w-4 border-2 border-white/30 border-t-white" />
-            Salvando...
+          <span v-if="todosPreenchidos">
+            Revisar e Salvar
           </span>
           <span v-else>
-            Salvar {{ setorAtual?.nome || 'Setor' }}
+            {{ preenchidosSetorAtual }} de {{ totalSetorAtual }} contados
           </span>
         </button>
       </div>
@@ -229,9 +264,10 @@ const erro = ref<string | null>(null)
 const dados = ref<any>(null)
 const setorAtivo = ref<string>('')
 const busca = ref('')
-const quantidades = ref<Record<string, number | null>>({})
+const quantidades = ref<Record<string, Record<string, number | null>>>({})
 const salvando = ref(false)
 const contagemCompleta = ref(false)
+const modoRevisao = ref(false)
 
 // Load data
 const carregarDados = async () => {
@@ -250,11 +286,12 @@ const carregarDados = async () => {
       // Select first incomplete setor, or first one
       const incompleto = res.setores.find((s: any) => (s.progresso || 0) < 100)
       setorAtivo.value = incompleto?.id || res.setores[0].id
-      // Load existing quantities
+      // Load existing quantities (keyed by setor → produto)
       for (const setor of res.setores) {
+        quantidades.value[setor.id] = {}
         for (const p of setor.produtos) {
           if (p.quantidade_contada !== null && p.quantidade_contada !== undefined) {
-            quantidades.value[p.id] = p.quantidade_contada
+            quantidades.value[setor.id][p.id] = p.quantidade_contada
           }
         }
       }
@@ -290,8 +327,9 @@ const totalSetorAtual = computed(() => setorAtual.value?.produtos?.length || 0)
 
 const preenchidosSetorAtual = computed(() => {
   if (!setorAtual.value) return 0
+  const setorQtds = quantidades.value[setorAtivo.value] || {}
   return setorAtual.value.produtos.filter(
-    (p: any) => quantidades.value[p.id] != null && quantidades.value[p.id] !== ''
+    (p: any) => setorQtds[p.id] != null && setorQtds[p.id] !== ''
   ).length
 })
 
@@ -304,26 +342,44 @@ const progressoAtual = computed(() => {
 const onQuantidadeInput = (produtoId: string, event: Event) => {
   const input = event.target as HTMLInputElement
   const val = input.value
+  if (!quantidades.value[setorAtivo.value]) quantidades.value[setorAtivo.value] = {}
   if (val === '' || val === null) {
-    quantidades.value[produtoId] = null
+    quantidades.value[setorAtivo.value][produtoId] = null
   } else {
-    quantidades.value[produtoId] = Number(val)
+    quantidades.value[setorAtivo.value][produtoId] = Number(val)
   }
 }
 
 const incrementar = (produtoId: string) => {
-  const current = quantidades.value[produtoId]
-  quantidades.value[produtoId] = (current ?? 0) + 1
+  if (!quantidades.value[setorAtivo.value]) quantidades.value[setorAtivo.value] = {}
+  const current = quantidades.value[setorAtivo.value][produtoId]
+  quantidades.value[setorAtivo.value][produtoId] = (current ?? 0) + 1
 }
 
 const decrementar = (produtoId: string) => {
-  const current = quantidades.value[produtoId]
+  if (!quantidades.value[setorAtivo.value]) quantidades.value[setorAtivo.value] = {}
+  const current = quantidades.value[setorAtivo.value][produtoId]
   if (current != null && current > 0) {
-    quantidades.value[produtoId] = current - 1
+    quantidades.value[setorAtivo.value][produtoId] = current - 1
   } else {
-    quantidades.value[produtoId] = 0
+    quantidades.value[setorAtivo.value][produtoId] = 0
   }
 }
+
+const setorFinalizado = computed(() => {
+  return setorAtual.value?.status === 'finalizado'
+})
+
+const todosPreenchidos = computed(() => {
+  return totalSetorAtual.value > 0 && preenchidosSetorAtual.value === totalSetorAtual.value
+})
+
+// Reset state when switching sectors
+watch(setorAtivo, () => {
+  modoRevisao.value = false
+  busca.value = ''
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+})
 
 const formatarData = (data?: string) => {
   if (!data) return ''
@@ -331,16 +387,23 @@ const formatarData = (data?: string) => {
   return d.toLocaleDateString('pt-BR')
 }
 
-// Save
-const salvarSetor = async () => {
+// Enter review mode
+const entrarRevisao = () => {
+  modoRevisao.value = true
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+// Confirm and save sector (called from review screen)
+const confirmarSetor = async () => {
   if (!setorAtual.value) return
   salvando.value = true
 
+  const setorQtds = quantidades.value[setorAtivo.value] || {}
   const itens = setorAtual.value.produtos
-    .filter((p: any) => quantidades.value[p.id] != null && quantidades.value[p.id] !== '')
+    .filter((p: any) => setorQtds[p.id] != null && setorQtds[p.id] !== '')
     .map((p: any) => ({
       produto_id: p.id,
-      quantidade_contada: quantidades.value[p.id]
+      quantidade_contada: setorQtds[p.id]
     }))
 
   try {
@@ -352,22 +415,28 @@ const salvarSetor = async () => {
       }
     })
 
+    if (res.saved === 0) {
+      toast.add({ title: 'Erro', description: 'Nenhum item foi salvo. Verifique as quantidades.', color: 'red' })
+      return
+    }
+
     if (res.contagemCompleta) {
       contagemCompleta.value = true
     } else {
       toast.add({ title: 'Setor salvo!', color: 'green', icon: 'i-heroicons-check-circle' })
-      // Update local progress
+      // Update local state
       if (setorAtual.value) {
         setorAtual.value.progresso = res.progresso
         setorAtual.value.status = res.setorFinalizado ? 'finalizado' : 'em_andamento'
       }
+      modoRevisao.value = false
       // Auto-switch to next incomplete setor
       if (res.setorFinalizado) {
-        const proximo = dados.value.setores.find((s: any) => s.id !== setorAtivo.value && (s.progresso || 0) < 100)
+        const proximo = dados.value.setores.find(
+          (s: any) => s.id !== setorAtivo.value && s.status !== 'finalizado'
+        )
         if (proximo) {
           setorAtivo.value = proximo.id
-          busca.value = ''
-          window.scrollTo({ top: 0, behavior: 'smooth' })
         }
       }
     }
@@ -384,11 +453,4 @@ const salvarSetor = async () => {
   padding-bottom: max(12px, env(safe-area-inset-bottom));
 }
 
-.no-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
 </style>

@@ -391,6 +391,12 @@
                     {{ new Date(dia.data + 'T00:00:00').toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit' }) }}
                   </th>
                 </template>
+                <th rowspan="2" class="px-2 py-2 text-center border-b bg-red-50/50 w-16 cursor-pointer select-none" @click="togglePainelApoioMapaSort('total')">
+                  <div class="flex items-center justify-center gap-0.5">
+                    <span class="text-[10px] font-bold text-red-700 uppercase">Total</span>
+                    <UIcon v-if="painelApoioMapaSortKey === 'total'" :name="painelApoioMapaSortDir === 'asc' ? 'i-heroicons-chevron-up-20-solid' : 'i-heroicons-chevron-down-20-solid'" class="w-3.5 h-3.5 text-operacao-300" />
+                  </div>
+                </th>
               </tr>
               <tr class="bg-gray-50">
                 <template v-if="painelApoioMapaData.length > 0 && painelApoioMapaData[0].semanas[painelApoioSemanaIndex]">
@@ -419,6 +425,7 @@
                     <td class="px-0.5 py-2 text-[10px] text-center border-r bg-red-50/10 font-bold text-red-700">{{ painelFormatQtd(dia.cmv) }}</td>
                   </template>
                 </template>
+                <td class="px-1 py-2 text-[10px] text-center font-bold text-red-800 bg-red-50/30">{{ painelFormatQtd(getApoioMapaTotal(item)) }}</td>
               </tr>
             </tbody>
           </table>
@@ -1428,6 +1435,7 @@
     <MovimentosSaidaPosEntradaModal
       v-model="transferenciaApoioOpen"
       :itens-entrada="itensParaApoio"
+      @saved="loadAll()"
     />
 
   </div>
@@ -1550,7 +1558,10 @@ const transferenciaApoioOpen = ref(false)
 const itensParaApoio = ref<Array<{ produto_id: string; quantidade: number; produto_nome: string; unidade_sigla: string }>>([])
 
 watch(transferenciaApoioOpen, (aberto) => {
-  if (!aberto) itensParaApoio.value = []
+  if (!aberto) {
+    itensParaApoio.value = []
+    loadAll()
+  }
 })
 const viewMode = ref<'historico' | 'detalhamento'>('historico')
 const viewModeOptions = [
@@ -2331,10 +2342,36 @@ const painelApoioMapaFiltered = computed(() => {
   return painelApoioMapaData.value.filter(p => p.produto.toLowerCase().includes(term))
 })
 
+const painelApoioMapaSortKey = ref<'produto' | 'total'>('total')
+const painelApoioMapaSortDir = ref<'asc' | 'desc'>('desc')
+const togglePainelApoioMapaSort = (key: typeof painelApoioMapaSortKey.value) => {
+  if (painelApoioMapaSortKey.value === key) {
+    painelApoioMapaSortDir.value = painelApoioMapaSortDir.value === 'asc' ? 'desc' : 'asc'
+  } else {
+    painelApoioMapaSortKey.value = key
+    painelApoioMapaSortDir.value = key === 'produto' ? 'asc' : 'desc'
+  }
+  painelPage.value = 1
+}
+const getApoioMapaTotal = (item: MapaVisualApoioItem) => {
+  const semana = item.semanas[painelApoioSemanaIndex.value]
+  if (!semana) return 0
+  return semana.dias.reduce((sum, dia) => sum + (dia.cmv || 0), 0)
+}
+const painelApoioMapaSorted = computed(() => {
+  const data = [...painelApoioMapaFiltered.value]
+  const key = painelApoioMapaSortKey.value
+  const dir = painelApoioMapaSortDir.value === 'asc' ? 1 : -1
+  return data.sort((a, b) => {
+    if (key === 'produto') return dir * a.produto.localeCompare(b.produto, 'pt-BR')
+    return dir * (getApoioMapaTotal(a) - getApoioMapaTotal(b))
+  })
+})
+
 const painelApoioMapaPaginatedItems = computed(() => {
   const start = (painelPage.value - 1) * painelPageSize.value
   const end = start + painelPageSize.value
-  return painelApoioMapaFiltered.value.slice(start, end)
+  return painelApoioMapaSorted.value.slice(start, end)
 })
 
 

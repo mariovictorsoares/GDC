@@ -138,12 +138,8 @@
           {{ row.unidade?.sigla || '-' }}
         </template>
 
-        <template #estoque_inicial-data="{ row }">
-          {{ formatNumber(row.estoque_inicial) }}
-        </template>
-
         <template #preco_inicial-data="{ row }">
-          {{ formatCurrency(row.preco_inicial) }}
+          {{ ultimaEntradaMap.has(row.id) ? formatCurrency(ultimaEntradaMap.get(row.id)) : '-' }}
         </template>
 
         <template #actions-data="{ row }">
@@ -913,11 +909,13 @@ const {
 } = useEstoque()
 const { empresaId } = useEmpresa()
 const toast = useToast()
+const client = useSupabaseClient()
 
 const produtos = ref<Produto[]>([])
 const grupos = ref<Grupo[]>([])
 const subgrupos = ref<Subgrupo[]>([])
 const unidades = ref<Unidade[]>([])
+const ultimaEntradaMap = ref(new Map<string, number>())
 const loading = ref(true)
 const saving = ref(false)
 const deleting = ref(false)
@@ -966,8 +964,7 @@ const columns = [
   { key: 'nome', label: 'Nome', sortable: true },
   { key: 'subgrupo', label: 'Grupo / Subgrupo', sortable: true },
   { key: 'unidade', label: 'Unid.', sortable: true },
-  { key: 'estoque_inicial', label: 'Est. Inicial' },
-  { key: 'preco_inicial', label: 'Preço Inicial' },
+  { key: 'preco_inicial', label: 'Última Entrada' },
   { key: 'actions', label: '', class: 'text-right', rowClass: 'text-right' }
 ]
 
@@ -1109,6 +1106,26 @@ const formatNumber = (value: number) => {
 
 const { formatCurrency } = useFormatters()
 
+const loadUltimasEntradas = async () => {
+  if (!empresaId.value) return
+  const { data } = await client
+    .from('entradas')
+    .select('produto_id, custo_unitario')
+    .eq('empresa_id', empresaId.value)
+    .order('data', { ascending: false })
+    .order('created_at', { ascending: false })
+
+  const mapa = new Map<string, number>()
+  if (data) {
+    for (const e of data) {
+      if (!mapa.has(e.produto_id)) {
+        mapa.set(e.produto_id, e.custo_unitario)
+      }
+    }
+  }
+  ultimaEntradaMap.value = mapa
+}
+
 const loadData = async () => {
   try {
     loading.value = true
@@ -1116,7 +1133,8 @@ const loadData = async () => {
       getProdutos(false),
       getGrupos(),
       getSubgrupos(),
-      getUnidades()
+      getUnidades(),
+      loadUltimasEntradas()
     ])
     produtos.value = prods
     grupos.value = grps

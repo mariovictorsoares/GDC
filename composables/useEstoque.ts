@@ -1049,6 +1049,44 @@ export const useEstoque = () => {
   }
 
   // ==========================================
+  // PEDIDOS DA SEMANA ATUAL (para flag "pedido feito")
+  // ==========================================
+
+  const getPedidosSemanaAtual = async (): Promise<Map<string, string>> => {
+    const hoje = new Date()
+    const diaSemana = hoje.getDay() // 0=Dom, 1=Seg, ...
+    const diffToMonday = diaSemana === 0 ? 6 : diaSemana - 1
+    const segunda = new Date(hoje)
+    segunda.setDate(hoje.getDate() - diffToMonday)
+    const domingo = new Date(segunda)
+    domingo.setDate(segunda.getDate() + 6)
+
+    const segundaStr = segunda.toISOString().split('T')[0]
+    const domingoStr = domingo.toISOString().split('T')[0]
+
+    const { data, error } = await client
+      .from('pedidos')
+      .select('data, itens:pedido_itens(produto_id)')
+      .eq('empresa_id', empresaId.value)
+      .gte('data', segundaStr)
+      .lte('data', domingoStr)
+
+    if (error) throw error
+
+    // Map<produto_id, data_pedido_mais_recente>
+    const map = new Map<string, string>()
+    for (const pedido of data || []) {
+      for (const item of (pedido as any).itens || []) {
+        const existing = map.get(item.produto_id)
+        if (!existing || pedido.data > existing) {
+          map.set(item.produto_id, pedido.data)
+        }
+      }
+    }
+    return map
+  }
+
+  // ==========================================
   // CONTAGENS
   // ==========================================
 
@@ -1294,6 +1332,38 @@ export const useEstoque = () => {
     ))
   }
 
+  const appendContagemResultado = async (contagemId: string, resultado: import('~/types').ContagemResultado) => {
+    // Buscar resultados existentes
+    const { data: contagem, error: errFetch } = await client
+      .from('contagens')
+      .select('resultados')
+      .eq('id', contagemId)
+      .single()
+
+    if (errFetch) throw errFetch
+
+    const existentes = (contagem?.resultados || []) as import('~/types').ContagemResultado[]
+    existentes.push(resultado)
+
+    const { error } = await client
+      .from('contagens')
+      .update({ resultados: existentes })
+      .eq('id', contagemId)
+
+    if (error) throw error
+  }
+
+  const getContagemResultados = async (contagemId: string): Promise<import('~/types').ContagemResultado[]> => {
+    const { data, error } = await client
+      .from('contagens')
+      .select('resultados')
+      .eq('id', contagemId)
+      .single()
+
+    if (error) throw error
+    return (data?.resultados || []) as import('~/types').ContagemResultado[]
+  }
+
   // ==========================================
   // SETORES
   // ==========================================
@@ -1472,6 +1542,7 @@ export const useEstoque = () => {
     updatePedidoItens,
     confirmarRecebimento,
     getUltimosPrecos,
+    getPedidosSemanaAtual,
     deletePedido,
     // Setores
     getSetores,
@@ -1498,6 +1569,8 @@ export const useEstoque = () => {
     resetContagemSetores,
     markContagemItensAjustados,
     snapshotSaldoContagem,
+    appendContagemResultado,
+    getContagemResultados,
     // Responsáveis
     getResponsaveis,
     createResponsavel
