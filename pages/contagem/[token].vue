@@ -58,8 +58,8 @@
 
     <!-- Active counting -->
     <div v-else-if="dados" class="max-w-3xl mx-auto pb-36">
-      <!-- Setor selector -->
-      <div class="sticky top-[53px] sm:top-[57px] z-20 bg-operacao-50 pt-3 pb-2 px-4 sm:px-6">
+      <!-- Setor selector + Search (sticky together) -->
+      <div class="sticky top-[53px] sm:top-[57px] z-20 bg-operacao-50 pt-3 pb-3 px-4 sm:px-6 space-y-2">
         <select
           :value="setorAtivo"
           @change="setorAtivo = ($event.target as HTMLSelectElement).value"
@@ -72,45 +72,43 @@
             :value="s.id"
           >{{ s.status === 'finalizado' ? '\u2713 ' : '' }}{{ s.nome }}</option>
         </select>
-      </div>
 
-      <!-- Finalized sector banner -->
-      <div v-if="setorFinalizado" class="px-4 sm:px-6 pb-3">
-        <div class="flex items-center gap-2 px-4 py-3 rounded-xl bg-controle-50 text-controle-700 text-sm font-medium">
+        <!-- Finalized sector banner -->
+        <div v-if="setorFinalizado" class="flex items-center gap-2 px-4 py-3 rounded-xl bg-controle-50 text-controle-700 text-sm font-medium">
           <UIcon name="i-heroicons-check-circle-solid" class="w-5 h-5 text-controle-500 flex-shrink-0" />
           Este setor já foi salvo
         </div>
-      </div>
 
-      <!-- Search + count (editing mode only, not shown when finalized) -->
-      <div v-if="!setorFinalizado" class="px-4 sm:px-6 pb-3 space-y-2">
-        <div class="relative">
-          <UIcon
-            name="i-heroicons-magnifying-glass"
-            class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-operacao-300 pointer-events-none"
-          />
-          <input
-            v-model="busca"
-            type="text"
-            placeholder="Buscar produto..."
-            class="w-full pl-9 pr-9 py-2.5 rounded-xl bg-white text-sm text-operacao-800 placeholder-operacao-300 ring-1 ring-operacao-200 focus:ring-2 focus:ring-guardian-500 focus:outline-none transition-shadow"
-          />
-          <button
-            v-if="busca"
-            class="absolute right-3 top-1/2 -translate-y-1/2 text-operacao-300 hover:text-operacao-500"
-            @click="busca = ''"
-          >
-            <UIcon name="i-heroicons-x-mark" class="w-4 h-4" />
-          </button>
-        </div>
-        <div class="flex items-center justify-between text-xs text-operacao-400">
-          <p class="font-medium">
-            {{ produtosFiltrados.length }} {{ produtosFiltrados.length === 1 ? 'produto' : 'produtos' }}
-          </p>
-          <p>
-            <span class="font-semibold text-guardian-600">{{ preenchidosSetorAtual }}</span> / {{ totalSetorAtual }} contados
-          </p>
-        </div>
+        <!-- Search + count (editing mode only) -->
+        <template v-if="!setorFinalizado">
+          <div class="relative">
+            <UIcon
+              name="i-heroicons-magnifying-glass"
+              class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-operacao-300 pointer-events-none"
+            />
+            <input
+              v-model="busca"
+              type="text"
+              placeholder="Buscar produto..."
+              class="w-full pl-9 pr-9 py-2.5 rounded-xl bg-white text-sm text-operacao-800 placeholder-operacao-300 ring-1 ring-operacao-200 focus:ring-2 focus:ring-guardian-500 focus:outline-none transition-shadow"
+            />
+            <button
+              v-if="busca"
+              class="absolute right-3 top-1/2 -translate-y-1/2 text-operacao-300 hover:text-operacao-500"
+              @click="busca = ''"
+            >
+              <UIcon name="i-heroicons-x-mark" class="w-4 h-4" />
+            </button>
+          </div>
+          <div class="flex items-center justify-between text-xs text-operacao-400">
+            <p class="font-medium">
+              {{ produtosFiltrados.length }} {{ produtosFiltrados.length === 1 ? 'produto' : 'produtos' }}
+            </p>
+            <p>
+              <span class="font-semibold text-guardian-600">{{ preenchidosSetorAtual }}</span> / {{ totalSetorAtual }} contados
+            </p>
+          </div>
+        </template>
       </div>
 
       <!-- Product cards: read-only (finalized sector) -->
@@ -438,7 +436,8 @@ watch(setorAtivo, () => {
 
 const formatarData = (data?: string) => {
   if (!data) return ''
-  const d = new Date(data + 'T00:00:00')
+  const d = data.includes('T') ? new Date(data) : new Date(data + 'T00:00:00')
+  if (isNaN(d.getTime())) return '-'
   return d.toLocaleDateString('pt-BR')
 }
 

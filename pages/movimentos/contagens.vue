@@ -73,7 +73,6 @@
       :grupos="grupos"
       :subgrupos="subgrupos"
       :setor-produtos-count="setorProdutosCount"
-      :contagens="contagensPersistidas"
       @atualizado="recarregarSetores"
     />
 
@@ -202,15 +201,40 @@
 
           <div class="border-t border-operacao-200" />
 
-          <!-- Setores -->
+          <!-- Tipo + Setores -->
           <div>
             <div class="flex items-center justify-between mb-1">
-              <h4 class="font-semibold text-operacao-800">Setores</h4>
+              <h4 class="font-semibold text-operacao-800">Tipo e Setores</h4>
               <span v-if="setupSetoresSelecionados.size > 0" class="text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
-                {{ setupSetoresSelecionados.size }}/{{ setores.length }}
+                {{ setupSetoresSelecionados.size }}/{{ setoresFiltradosSetup.length }}
               </span>
             </div>
-            <p class="text-sm text-operacao-400 mb-3">Marque os setores que farão parte desta contagem.</p>
+            <p class="text-sm text-operacao-400 mb-3">Escolha o tipo de contagem e os setores.</p>
+
+            <!-- Seletor de tipo -->
+            <div v-if="!editandoContagemId" class="grid grid-cols-3 gap-2 mb-4">
+              <button
+                v-for="opt in [
+                  { value: 'principal', label: 'Estoque Principal', icon: 'i-heroicons-building-storefront' },
+                  { value: 'apoio', label: 'Estoque de Apoio', icon: 'i-heroicons-archive-box' },
+                  { value: 'inventario', label: 'Inventário', icon: 'i-heroicons-clipboard-document-list' }
+                ]"
+                :key="opt.value"
+                class="flex flex-col items-center gap-1.5 px-3 py-3 rounded-lg text-sm font-medium border-2 transition-all text-center"
+                :class="setupTipoContagem === opt.value
+                  ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                  : 'border-operacao-200 bg-white text-operacao-400 hover:border-operacao-300 hover:bg-operacao-50'"
+                @click="setupTipoContagem = opt.value as TipoContagem"
+              >
+                <UIcon :name="opt.icon" class="w-5 h-5" />
+                <span>{{ opt.label }}</span>
+              </button>
+            </div>
+            <div v-else class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-operacao-100 text-operacao-600 text-sm font-medium mb-4">
+              <UIcon :name="setupTipoContagem === 'apoio' ? 'i-heroicons-archive-box' : setupTipoContagem === 'inventario' ? 'i-heroicons-clipboard-document-list' : 'i-heroicons-building-storefront'" class="w-4 h-4" />
+              {{ setupTipoContagem === 'apoio' ? 'Estoque de Apoio' : setupTipoContagem === 'inventario' ? 'Inventário' : 'Estoque Principal' }}
+              <span class="text-xs text-operacao-400">(não editável)</span>
+            </div>
 
             <UInput
               v-if="setores.length > 5"
@@ -244,7 +268,10 @@
                   <UIcon v-if="setupSetoresSelecionados.has(setor.id)" name="i-heroicons-check" class="w-3.5 h-3.5 text-white" />
                 </div>
                 <div class="flex-1 min-w-0" @click.prevent="toggleSetorSelecionado(setor.id)">
-                  <p class="text-sm font-medium text-operacao-800">{{ setor.nome }}</p>
+                  <p class="text-sm font-medium text-operacao-800">
+                    {{ setor.nome }}
+                    <span v-if="setupTipoContagem === 'inventario'" class="text-[10px] font-normal text-operacao-400 ml-1">{{ setor.tipo === 'apoio' ? 'Apoio' : 'Principal' }}</span>
+                  </p>
                 </div>
                 <span class="text-xs text-operacao-400 tabular-nums flex-shrink-0">
                   {{ (setorProdutosPorSetor[setor.id] || []).length }} {{ (setorProdutosPorSetor[setor.id] || []).length === 1 ? 'produto' : 'produtos' }}
@@ -263,7 +290,7 @@
           </div>
         </div>
 
-        <div class="px-6 py-4 border-t border-operacao-200 bg-operacao-50">
+        <div class="px-6 py-4 border-t border-operacao-200 bg-white">
           <div class="flex flex-col-reverse sm:flex-row justify-end gap-3">
             <UButton color="gray" variant="ghost" @click="slideoverSetupOpen = false">Cancelar</UButton>
             <UButton
@@ -397,6 +424,7 @@ const setupHorarioNotificacao = ref('07:00')
 const setupDiasSemana = ref<Set<string>>(new Set())
 const setupMensalPosicao = ref('primeira')
 const setupMensalDia = ref('segunda')
+const setupTipoContagem = ref<TipoContagem>('principal')
 
 // Responsáveis
 const responsaveis = ref<{ id?: string; nome: string; telefone: string }[]>([])
@@ -462,9 +490,16 @@ const setorProdutosPorSetor = computed(() => {
 })
 
 const setoresFiltradosSetup = computed(() => {
-  if (!setupBuscaSetor.value) return setores.value
-  const term = setupBuscaSetor.value.toLowerCase()
-  return setores.value.filter(s => s.nome.toLowerCase().includes(term))
+  let lista = setores.value
+  // Filtrar por tipo da contagem (exceto inventário que mostra todos)
+  if (setupTipoContagem.value !== 'inventario') {
+    lista = lista.filter(s => s.tipo === setupTipoContagem.value)
+  }
+  if (setupBuscaSetor.value) {
+    const term = setupBuscaSetor.value.toLowerCase()
+    lista = lista.filter(s => s.nome.toLowerCase().includes(term))
+  }
+  return lista
 })
 
 // ==========================================
@@ -538,7 +573,7 @@ const carregarHistorico = async () => {
         map.set(key, {
           data: ajuste.data,
           motivo: ajuste.motivo || 'Sem motivo',
-          tipo_contagem: 'estoque',
+          tipo_contagem: 'principal',
           grupo_nome: '',
           total_itens: 0,
           total_sobras: 0,
@@ -701,7 +736,10 @@ const enviarLembreteManual = async () => {
     loadingEnviarWhatsApp.value = true
     const setoresNomes = (c.contagem_setores || []).map((cs: any) => cs.setor?.nome).filter(Boolean)
     const recLabels: Record<string, string> = { diaria: 'Diária', semanal: 'Semanal', quinzenal: 'Quinzenal', mensal: 'Mensal' }
-    const setoresTexto = setoresNomes.length > 0 ? setoresNomes.map((s: string) => `  • ${s}`).join('\n') : '  • Todos os setores'
+    const setoresTexto = setoresNomes.length > 0 ? setoresNomes.map((s: string) => `  • ${s}`).join('\n') : '  • (setores não disponíveis)'
+    const link = c.token
+      ? `https://www.cmv360app.com.br/contagem/${c.token}`
+      : `https://www.cmv360app.com.br/movimentos/contagens`
     const mensagem = [
       `📋 *Lembrete de Contagem*`, ``,
       `Olá, *${c.responsavel_nome}*!`, `Está na hora de realizar a contagem:`, ``,
@@ -710,7 +748,7 @@ const enviarLembreteManual = async () => {
       `⏰ Horário: ${c.horario_notificacao || '07:00'}`, ``,
       `📍 *Setores:*`, setoresTexto, ``,
       `👉 *Acesse e inicie a contagem:*`,
-      `https://www.cmv360app.com.br/movimentos/contagens`
+      link
     ].join('\n')
     await $fetch('/api/whatsapp/enviar', { method: 'POST', body: { phone: c.responsavel_telefone, message: mensagem } })
     toast.add({ title: 'Enviado!', description: `Lembrete enviado para ${c.responsavel_nome} via WhatsApp`, color: 'green' })
@@ -745,6 +783,20 @@ watch(() => setupRecorrencia.value, () => {
   setupMensalDia.value = 'segunda'
 })
 
+// Quando tipo muda, auto-selecionar setores adequados
+watch(() => setupTipoContagem.value, () => {
+  if (!editandoContagemId.value) {
+    if (setupTipoContagem.value === 'inventario') {
+      // Inventário: pré-seleciona todos os setores
+      nextTick(() => {
+        setupSetoresSelecionados.value = new Set(setoresFiltradosSetup.value.map(s => s.id))
+      })
+    } else {
+      setupSetoresSelecionados.value = new Set()
+    }
+  }
+})
+
 const adicionarResponsavel = async () => {
   if (!novoResponsavelNome.value.trim() || !novoResponsavelTelefone.value.trim()) return
   try {
@@ -765,6 +817,7 @@ const abrirModalSetup = async () => {
   editandoContagemId.value = null
   setupData.value = new Date().toISOString().split('T')[0]
   setupNomeContagem.value = ''
+  setupTipoContagem.value = 'principal'
   setupRecorrencia.value = 'nenhuma'
   setupHorarioNotificacao.value = '07:00'
   setupDiasSemana.value = new Set()
@@ -785,6 +838,9 @@ const abrirEditarContagem = async () => {
   setupNomeContagem.value = c.nome || ''
   setupData.value = c.data || new Date().toISOString().split('T')[0]
   setupBuscaSetor.value = ''
+  // Mapear legacy 'estoque' → 'principal'
+  const tipoRaw = c.tipo as string
+  setupTipoContagem.value = tipoRaw === 'apoio' ? 'apoio' : tipoRaw === 'inventario' ? 'inventario' : 'principal'
 
   // Setar recorrência primeiro (dispara watcher que reseta campos dependentes)
   setupRecorrencia.value = c.recorrencia || 'nenhuma'
@@ -852,7 +908,7 @@ const salvarContagem = async () => {
       await createContagem(
         {
           nome: setupNomeContagem.value.trim(),
-          tipo: 'estoque' as TipoContagem,
+          tipo: setupTipoContagem.value,
           data: setupData.value,
           recorrencia: setupRecorrencia.value,
           horario_notificacao: setupHorarioNotificacao.value,

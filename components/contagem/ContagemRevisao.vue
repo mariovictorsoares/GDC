@@ -225,11 +225,19 @@ onMounted(async () => {
       saldoMap.set(s.produto_id, s)
     }
 
+    // Determinar qual saldo usar baseado no tipo da contagem
+    const contagemTipo = (props.contagem?.tipo as string) || 'principal'
+    const getSaldoParaTipo = (saldo: SaldoEstoque | undefined) => {
+      if (contagemTipo === 'apoio') return Number(saldo?.saldo_apoio || 0)
+      if (contagemTipo === 'inventario') return Number(saldo?.saldo_atual || 0)
+      return Number(saldo?.saldo_principal || 0) // 'principal' e legacy 'estoque'
+    }
+
     itensRevisao.value = savedItems
       .filter((item: ContagemItemDB) => item.quantidade_contada !== null && item.quantidade_contada !== undefined)
       .map((item: ContagemItemDB) => {
         const saldo = saldoMap.get(item.produto_id)
-        const saldoSistema = Number(saldo?.saldo_principal || 0)
+        const saldoSistema = getSaldoParaTipo(saldo)
         const qtdContada = Number(item.quantidade_contada)
         const diferenca = qtdContada - saldoSistema
         const custoMedio = Number(saldo?.custo_medio || 0)
@@ -275,7 +283,9 @@ const itensParaSalvar = computed(() => {
 // Methods
 const formatDate = (date?: string) => {
   if (!date) return '-'
-  return new Date(date + 'T00:00:00').toLocaleDateString('pt-BR')
+  const d = date.includes('T') ? new Date(date) : new Date(date + 'T00:00:00')
+  if (isNaN(d.getTime())) return '-'
+  return d.toLocaleDateString('pt-BR')
 }
 
 const salvarContagem = async () => {

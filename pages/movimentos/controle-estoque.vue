@@ -10,6 +10,11 @@
           Transferências
           <span class="ml-1.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold leading-none rounded-full bg-blue-500 text-white">{{ pendentesTransfCount }}</span>
         </UButton>
+        <UButton color="white" class="hover:!bg-amber-50 hover:!ring-amber-200" :ui="toolbarButtonUi" @click="showRequisicoes = true">
+          <UIcon name="i-heroicons-clipboard-document-list" class="w-4 h-4 mr-1.5 text-amber-500" />
+          Requisições
+          <span v-if="pendentesReqCount > 0" class="ml-1.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold leading-none rounded-full bg-amber-500 text-white">{{ pendentesReqCount }}</span>
+        </UButton>
         <UButton color="white" class="hover:!bg-emerald-50 hover:!ring-emerald-200" :ui="toolbarButtonUi" @click="openEntradaModal()">
           <UIcon name="i-heroicons-arrow-down-tray" class="w-4 h-4 mr-1.5 text-emerald-500" />
           Entrada
@@ -1046,6 +1051,21 @@
       @rejeitada="onTransfResolvida"
     />
 
+    <!-- ======================== REQUISIÇÕES ======================== -->
+    <MovimentosRequisicoesSlideOver
+      v-model="showRequisicoes"
+      :setores="setoresRequisicao"
+      :requisicoes="requisicoesPendentes"
+      @selecionar="openRequisicaoReview"
+    />
+
+    <MovimentosRequisicaoReviewModal
+      v-model="requisicaoReviewModalOpen"
+      :requisicao="requisicaoSelecionada"
+      @enviada="onRequisicaoResolvida"
+      @cancelada="onRequisicaoResolvida"
+    />
+
     <!-- ======================== SLIDEOVER: PAINEL DE CONTROLE (80%) ======================== -->
     <USlideover
       v-model="showDashboard"
@@ -1485,7 +1505,10 @@ const {
   getTransferenciasPendentes,
   countTransferenciasPendentes,
   confirmarTransferencia,
-  rejeitarTransferencia
+  rejeitarTransferencia,
+  getRequisicoes,
+  countRequisicoesPendentes,
+  getSetores
 } = useEstoque()
 const { empresaId, empresaAtiva, empresas } = useEmpresa()
 const { formatCurrency, formatNumber } = useFormatters()
@@ -1661,6 +1684,14 @@ const pendentesTransf = ref<TransferenciaPendente[]>([])
 const pendentesTransfCount = ref(0)
 const transfRecebimentoModalOpen = ref(false)
 const transfSelecionada = ref<TransferenciaPendente | null>(null)
+
+// Requisições
+const showRequisicoes = ref(false)
+const requisicoesPendentes = ref<import('~/types').Requisicao[]>([])
+const pendentesReqCount = ref(0)
+const setoresRequisicao = ref<import('~/types').Setor[]>([])
+const requisicaoReviewModalOpen = ref(false)
+const requisicaoSelecionada = ref<import('~/types').Requisicao | null>(null)
 
 // ======================== TABLE COLUMNS ========================
 
@@ -1911,7 +1942,7 @@ const loadProdutos = async () => {
 
 const loadAll = async () => {
   loading.value = true
-  await Promise.all([loadEntradas(), loadSaidas(), loadProdutos(), loadPendentesTransf()])
+  await Promise.all([loadEntradas(), loadSaidas(), loadProdutos(), loadPendentesTransf(), loadRequisicoes()])
   loading.value = false
 }
 
@@ -2249,6 +2280,50 @@ const onTransfResolvida = async () => {
 }
 
 
+
+// ======================== REQUISIÇÕES ========================
+
+const loadRequisicoes = async () => {
+  try {
+    pendentesReqCount.value = await countRequisicoesPendentes()
+    requisicoesPendentes.value = pendentesReqCount.value > 0 ? await getRequisicoes('pendente') : []
+    setoresRequisicao.value = await getSetores()
+  } catch (error) {
+  }
+}
+
+const openRequisicaoReview = (req: import('~/types').Requisicao) => {
+  showRequisicoes.value = false
+  requisicaoSelecionada.value = req
+  setTimeout(() => { requisicaoReviewModalOpen.value = true }, 300)
+}
+
+const onRequisicaoResolvida = async () => {
+  await Promise.all([loadRequisicoes(), loadSaidas()])
+  if (viewMode.value === 'detalhamento') {
+    if (painelEstoque.value === 'principal') loadPainel()
+    else loadPainelApoio()
+  }
+}
+
+// Polling: verifica novas requisições a cada 30s
+let reqPollingTimer: ReturnType<typeof setInterval> | null = null
+
+onMounted(() => {
+  reqPollingTimer = setInterval(async () => {
+    try {
+      const novoCount = await countRequisicoesPendentes()
+      if (novoCount !== pendentesReqCount.value) {
+        pendentesReqCount.value = novoCount
+        requisicoesPendentes.value = novoCount > 0 ? await getRequisicoes('pendente') : []
+      }
+    } catch {}
+  }, 30000)
+})
+
+onUnmounted(() => {
+  if (reqPollingTimer) clearInterval(reqPollingTimer)
+})
 
 // ======================== PAINEL DE CONTROLE: COMPUTED ========================
 

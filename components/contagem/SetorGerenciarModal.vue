@@ -20,7 +20,7 @@
             </div>
           </template>
           <template v-else>
-            <div class="p-2 bg-guardian-100 rounded-lg">
+            <div class="flex items-center justify-center w-10 h-10 bg-guardian-100 rounded-lg shrink-0">
               <UIcon name="i-heroicons-map-pin" class="w-5 h-5 text-guardian-600" />
             </div>
             <div>
@@ -66,7 +66,7 @@
             @click="selecionarSetor(setor)"
           >
             <div class="flex items-center gap-3">
-              <div class="p-2 bg-operacao-100 group-hover:bg-guardian-100 rounded-lg transition-colors">
+              <div class="flex items-center justify-center w-8 h-8 bg-operacao-100 group-hover:bg-guardian-100 rounded-lg transition-colors shrink-0">
                 <UIcon name="i-heroicons-map-pin" class="w-4 h-4 text-operacao-400 group-hover:text-guardian-600 transition-colors" />
               </div>
               <div>
@@ -75,10 +75,6 @@
                   {{ setor.tipo === 'apoio' ? 'Apoio' : 'Principal' }}
                 </UBadge>
                 <p class="text-xs text-operacao-400">{{ setorProdutosCount[setor.id] || 0 }} {{ (setorProdutosCount[setor.id] || 0) === 1 ? 'produto' : 'produtos' }}</p>
-                <!-- Utilizado em: -->
-                <p v-if="utilizadoEm(setor.id).length > 0" class="text-xs text-guardian-600 mt-0.5">
-                  Utilizado em: {{ utilizadoEm(setor.id).join(', ') }}
-                </p>
               </div>
             </div>
             <div class="flex items-center gap-2">
@@ -243,7 +239,7 @@
 </template>
 
 <script setup lang="ts">
-import type { Setor, SetorProduto, Produto, Grupo, Subgrupo, Contagem } from '~/types'
+import type { Setor, SetorProduto, Produto, Grupo, Subgrupo } from '~/types'
 
 const props = defineProps<{
   modelValue: boolean
@@ -252,7 +248,6 @@ const props = defineProps<{
   grupos: Grupo[]
   subgrupos: Subgrupo[]
   setorProdutosCount: Record<string, number>
-  contagens: Contagem[]
 }>()
 
 const emit = defineEmits<{
@@ -278,13 +273,6 @@ const buscaProdutoSetor = ref('')
 const adicionandoProdutos = ref(false)
 const filtroGrupoSetor = ref('')
 const filtroSubgrupoSetor = ref('')
-
-// Computed: "Utilizado em" per setor
-const utilizadoEm = (setorId: string): string[] => {
-  return props.contagens
-    .filter(c => (c.contagem_setores || []).some(cs => cs.setor_id === setorId))
-    .map(c => c.nome)
-}
 
 const subgruposFiltro = computed(() => {
   if (!filtroGrupoSetor.value) return []

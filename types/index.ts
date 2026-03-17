@@ -424,6 +424,7 @@ export interface Setor {
   descricao?: string
   tipo: 'principal' | 'apoio'
   empresa_id?: string
+  token_requisicao?: string
   created_at?: string
   produtos?: SetorProduto[]
 }
@@ -439,7 +440,7 @@ export interface SetorProduto {
 
 // Contagem (persistida no banco)
 export type StatusContagem = 'aguardando' | 'pendente' | 'atrasada' | 'em_andamento' | 'finalizada'
-export type TipoContagem = 'inventario' | 'estoque'
+export type TipoContagem = 'principal' | 'apoio' | 'inventario'
 
 export interface Contagem {
   id: string
@@ -642,4 +643,38 @@ export interface SubscriptionState {
   state: SubscriptionStateName
   diasRestantes: number | null
   mensagem: string
+}
+
+// =============================================
+// Requisições (solicitação setor → estoquista)
+// =============================================
+
+export type StatusRequisicao = 'pendente' | 'enviado' | 'cancelado'
+
+export interface Requisicao {
+  id: string
+  empresa_id: string
+  setor_id: string
+  status: StatusRequisicao
+  data: string
+  solicitante_nome?: string
+  observacao?: string
+  enviado_por?: string
+  data_envio?: string
+  created_at?: string
+  updated_at?: string
+  // Relacionamentos
+  setor?: Setor
+  itens?: RequisicaoItem[]
+}
+
+export interface RequisicaoItem {
+  id: string
+  requisicao_id: string
+  produto_id: string
+  quantidade_solicitada: number
+  quantidade_enviada?: number
+  created_at?: string
+  // Relacionamentos
+  produto?: Produto
 }

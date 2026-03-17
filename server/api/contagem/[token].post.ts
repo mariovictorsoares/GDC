@@ -23,7 +23,7 @@ export default defineEventHandler(async (event) => {
   // 1. Buscar contagem pelo token
   const { data: contagem, error: errContagem } = await supabase
     .from('contagens')
-    .select('id, empresa_id, status, nome, data, recorrencia, resultados')
+    .select('id, empresa_id, status, nome, tipo, data, recorrencia, resultados')
     .eq('token', token)
     .single()
 
@@ -131,19 +131,25 @@ export default defineEventHandler(async (event) => {
     const produtoIds = [...new Set((itensContagem || []).map((i: any) => i.produto_id))]
     const { data: saldoData } = await supabase
       .from('v_saldo_estoque')
-      .select('produto_id, saldo_principal, saldo_apoio, custo_medio')
+      .select('produto_id, saldo_principal, saldo_apoio, saldo_atual, custo_medio')
       .eq('empresa_id', contagem.empresa_id)
       .in('produto_id', produtoIds)
 
     const saldoMap = new Map((saldoData || []).map((s: any) => [s.produto_id, s]))
-    const setorTipoMap = new Map((todosSetores || []).map((s: any) => [s.setor_id, (s.setor as any)?.tipo || 'principal']))
+
+    // Determinar qual saldo usar baseado no tipo da contagem
+    const contagemTipo = (contagem as any).tipo || 'principal'
+    const getSaldoParaTipo = (saldo: any) => {
+      if (contagemTipo === 'apoio') return Number(saldo?.saldo_apoio || 0)
+      if (contagemTipo === 'inventario') return Number(saldo?.saldo_atual || 0)
+      return Number(saldo?.saldo_principal || 0) // 'principal' e legacy 'estoque'
+    }
 
     // Atualizar saldo_no_momento para cada item
     if (itensContagem && itensContagem.length > 0) {
       await Promise.all(itensContagem.map((item: any) => {
         const saldo = saldoMap.get(item.produto_id)
-        const tipo = setorTipoMap.get(item.setor_id) || 'principal'
-        const saldoValor = tipo === 'apoio' ? (saldo?.saldo_apoio || 0) : (saldo?.saldo_principal || 0)
+        const saldoValor = getSaldoParaTipo(saldo)
 
         return supabase
           .from('contagem_itens')
@@ -167,8 +173,7 @@ export default defineEventHandler(async (event) => {
     for (const item of (itensContagem || [])) {
       const pid = item.produto_id
       const saldo = saldoMap.get(pid)
-      const tipo = setorTipoMap.get(item.setor_id) || 'principal'
-      const saldoSistema = tipo === 'apoio' ? (saldo?.saldo_apoio || 0) : (saldo?.saldo_principal || 0)
+      const saldoSistema = getSaldoParaTipo(saldo)
 
       if (!produtoMap.has(pid)) {
         produtoMap.set(pid, {

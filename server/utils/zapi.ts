@@ -89,7 +89,7 @@ export function montarMensagemLembrete(dados: {
 }): string {
   const setoresTexto = dados.setores.length > 0
     ? dados.setores.map(s => `  • ${s}`).join('\n')
-    : '  • Todos os setores'
+    : '  • (setores não disponíveis)'
 
   const recorrenciaLabel: Record<string, string> = {
     diaria: 'Diária',

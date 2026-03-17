@@ -31,7 +31,9 @@ const { page, pageSize, paginatedItems: contagensPaginadas } = usePagination(fil
 // Helper functions
 const formatDate = (date: string | undefined) => {
   if (!date) return '-'
-  return new Date(date + 'T00:00:00').toLocaleDateString('pt-BR')
+  const d = date.includes('T') ? new Date(date) : new Date(date + 'T00:00:00')
+  if (isNaN(d.getTime())) return '-'
+  return d.toLocaleDateString('pt-BR')
 }
 
 const labelRecorrencia = (recorrencia?: string) => {

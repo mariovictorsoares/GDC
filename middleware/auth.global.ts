@@ -14,6 +14,11 @@ export default defineNuxtRouteMiddleware(async (to) => {
     return
   }
 
+  // Rotas de requisição pública (acessadas via QR code/token, sem login)
+  if (to.path.startsWith('/requisicao/')) {
+    return
+  }
+
   // Se não está logado, redireciona para login
   if (!user.value) {
     return navigateTo('/login')

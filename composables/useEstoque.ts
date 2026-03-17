@@ -906,6 +906,114 @@ export const useEstoque = () => {
   }
 
   // ==========================================
+  // REQUISIÇÕES (SETOR → ESTOQUISTA)
+  // ==========================================
+
+  const getRequisicoes = async (status?: import('~/types').StatusRequisicao) => {
+    if (!empresaId.value) return [] as import('~/types').Requisicao[]
+
+    let query = client
+      .from('requisicoes')
+      .select(`
+        *,
+        setor:setores(id, nome, tipo),
+        itens:requisicao_itens(
+          *,
+          produto:produtos(id, nome, unidade:unidades(sigla))
+        )
+      `)
+      .eq('empresa_id', empresaId.value)
+      .order('created_at', { ascending: false })
+
+    if (status) {
+      query = query.eq('status', status)
+    }
+
+    const { data, error } = await query
+    if (error) throw error
+    return data as import('~/types').Requisicao[]
+  }
+
+  const countRequisicoesPendentes = async (): Promise<number> => {
+    if (!empresaId.value) return 0
+
+    const { count, error } = await client
+      .from('requisicoes')
+      .select('*', { count: 'exact', head: true })
+      .eq('empresa_id', empresaId.value)
+      .eq('status', 'pendente')
+
+    if (error) throw error
+    return count || 0
+  }
+
+  const enviarRequisicao = async (
+    requisicaoId: string,
+    itensAprovados: Array<{ requisicao_item_id: string; produto_id: string; quantidade_enviada: number }>
+  ) => {
+    // 1. Buscar requisição (garantir que é pendente)
+    const { data: req, error: fetchErr } = await client
+      .from('requisicoes')
+      .select('id, setor_id, setor:setores(nome)')
+      .eq('id', requisicaoId)
+      .eq('status', 'pendente')
+      .single()
+
+    if (fetchErr || !req) throw new Error('Requisição não encontrada ou já processada')
+
+    const hoje = new Date().toISOString().split('T')[0]
+    const nomeSetor = (req as any).setor?.nome || 'Setor'
+
+    // 2. Para cada item com quantidade_enviada > 0, criar saída tipo transferência (principal → apoio)
+    for (const item of itensAprovados) {
+      if (item.quantidade_enviada <= 0) continue
+
+      // Atualizar quantidade_enviada no item
+      await client
+        .from('requisicao_itens')
+        .update({ quantidade_enviada: item.quantidade_enviada })
+        .eq('id', item.requisicao_item_id)
+
+      // Criar saída transferência (desconta do principal, credita no apoio)
+      await client
+        .from('saidas')
+        .insert({
+          produto_id: item.produto_id,
+          empresa_id: empresaId.value,
+          tipo: 'transferencia',
+          data: hoje,
+          quantidade: item.quantidade_enviada,
+          observacao: `Requisição: ${nomeSetor}`,
+          requisicao_id: requisicaoId
+        })
+    }
+
+    // 3. Atualizar status da requisição
+    const user = useSupabaseUser()
+    const { error: updateErr } = await client
+      .from('requisicoes')
+      .update({
+        status: 'enviado',
+        data_envio: new Date().toISOString(),
+        enviado_por: user.value?.id || null
+      })
+      .eq('id', requisicaoId)
+      .eq('status', 'pendente')
+
+    if (updateErr) throw updateErr
+  }
+
+  const cancelarRequisicao = async (requisicaoId: string) => {
+    const { error } = await client
+      .from('requisicoes')
+      .update({ status: 'cancelado' })
+      .eq('id', requisicaoId)
+      .eq('status', 'pendente')
+
+    if (error) throw error
+  }
+
+  // ==========================================
   // PEDIDOS DE COMPRA
   // ==========================================
 
@@ -1520,6 +1628,11 @@ export const useEstoque = () => {
     createTransferenciaLoja,
     confirmarTransferencia,
     rejeitarTransferencia,
+    // Requisições
+    getRequisicoes,
+    countRequisicoesPendentes,
+    enviarRequisicao,
+    cancelarRequisicao,
     // Ajustes
     getAjustes,
     createAjuste,

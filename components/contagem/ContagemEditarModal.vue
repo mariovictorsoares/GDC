@@ -186,6 +186,16 @@
 
         <div class="border-t border-operacao-200" />
 
+        <!-- Tipo de Contagem (read-only) -->
+        <div>
+          <h4 class="font-semibold text-operacao-800 mb-1">Tipo de Contagem</h4>
+          <div class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-operacao-100 text-operacao-600 text-sm font-medium">
+            <UIcon :name="contagemTipoNormalizado === 'apoio' ? 'i-heroicons-archive-box' : contagemTipoNormalizado === 'inventario' ? 'i-heroicons-clipboard-document-list' : 'i-heroicons-building-storefront'" class="w-4 h-4" />
+            {{ labelTipo }}
+            <span class="text-xs text-operacao-400">(não editável)</span>
+          </div>
+        </div>
+
         <!-- Setores -->
         <div>
           <div class="flex items-center justify-between mb-1">
@@ -381,10 +391,28 @@ const allResponsaveis = computed(() => {
   return props.responsaveis
 })
 
+const contagemTipoNormalizado = computed(() => {
+  const t = props.contagem?.tipo as string
+  return t === 'apoio' ? 'apoio' : t === 'inventario' ? 'inventario' : 'principal'
+})
+
+const labelTipo = computed(() => {
+  if (contagemTipoNormalizado.value === 'apoio') return 'Estoque de Apoio'
+  if (contagemTipoNormalizado.value === 'inventario') return 'Inventário'
+  return 'Estoque Principal'
+})
+
 const setoresFiltrados = computed(() => {
-  if (!buscaSetor.value) return props.setores
-  const term = buscaSetor.value.toLowerCase()
-  return props.setores.filter(s => s.nome.toLowerCase().includes(term))
+  let lista = props.setores
+  // Filtrar por tipo da contagem (exceto inventário que mostra todos)
+  if (contagemTipoNormalizado.value !== 'inventario') {
+    lista = lista.filter(s => s.tipo === contagemTipoNormalizado.value)
+  }
+  if (buscaSetor.value) {
+    const term = buscaSetor.value.toLowerCase()
+    lista = lista.filter(s => s.nome.toLowerCase().includes(term))
+  }
+  return lista
 })
 
 // ==========================================

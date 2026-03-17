@@ -1,5 +1,8 @@
 import type { Assinatura, Plano, SubscriptionState, SubscriptionStateName } from '~/types'
 
+// TODO: Remover quando ativar cobrança — muda trial expirado/bloqueado para trial ativo
+const BYPASS_TRIAL = true
+
 // Estado global compartilhado entre componentes
 const assinatura = ref<Assinatura | null>(null)
 const planos = ref<Plano[]>([])
@@ -34,6 +37,9 @@ function computeSubscriptionState(assin: Assinatura | null): SubscriptionState {
   }
 
   if (assin.status === 'expired') {
+    if (BYPASS_TRIAL) {
+      return { state: 'trial', diasRestantes: 999, mensagem: '' }
+    }
     return { state: 'blocked', diasRestantes: 0, mensagem: 'Assinatura expirada. Assine um plano para continuar.' }
   }
 
@@ -49,11 +55,19 @@ function computeSubscriptionState(assin: Assinatura | null): SubscriptionState {
 
   // Trial com aviso (1-3 dias)
   if (diasRestantes > 0) {
+    if (BYPASS_TRIAL) {
+      return { state: 'trial', diasRestantes, mensagem: '' }
+    }
     return {
       state: 'trial_warning',
       diasRestantes,
       mensagem: `Seu período de teste expira em ${diasRestantes} dia${diasRestantes > 1 ? 's' : ''}. Assine agora!`
     }
+  }
+
+  // Trial expirou — bypass: tratar como trial ativo sem mensagem
+  if (BYPASS_TRIAL) {
+    return { state: 'trial', diasRestantes: 999, mensagem: '' }
   }
 
   // Trial expirou — verificar período de carência (3 dias)
@@ -153,7 +167,7 @@ export const useAssinatura = () => {
     subscriptionState.value.state === 'blocked'
   )
   const showBanner = computed(() =>
-    ['trial', 'trial_warning', 'grace', 'past_due', 'cancelled'].includes(subscriptionState.value.state)
+    !BYPASS_TRIAL && ['trial', 'trial_warning', 'grace', 'past_due', 'cancelled'].includes(subscriptionState.value.state)
   )
   const loaded = computed(() => _loaded.value)
 

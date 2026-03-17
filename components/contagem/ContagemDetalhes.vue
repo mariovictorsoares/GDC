@@ -10,6 +10,10 @@
     <div class="flex items-center gap-3">
       <div class="flex flex-wrap gap-3">
         <div class="rounded-lg bg-white ring-1 ring-[#EBEBED] shadow-sm px-4 py-2.5">
+          <span class="text-[11px] font-medium text-operacao-400">Tipo</span>
+          <p class="text-sm font-bold text-operacao-800">{{ labelTipo(contagem.tipo) }}</p>
+        </div>
+        <div class="rounded-lg bg-white ring-1 ring-[#EBEBED] shadow-sm px-4 py-2.5">
           <span class="text-[11px] font-medium text-operacao-400">Recorrência</span>
           <p class="text-sm font-bold text-operacao-800">{{ labelRecorrencia(contagem.recorrencia) }}</p>
         </div>
@@ -70,8 +74,9 @@
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-2">
                 <UIcon
-                  :name="expandido === idx ? 'i-heroicons-chevron-down' : 'i-heroicons-chevron-right'"
-                  class="w-4 h-4 text-operacao-400 flex-shrink-0"
+                  name="i-heroicons-chevron-right"
+                  class="w-4 h-4 text-operacao-400 flex-shrink-0 transition-transform duration-200"
+                  :class="expandido === idx ? 'rotate-90' : ''"
                 />
                 <div>
                   <p class="font-semibold text-operacao-800 text-sm">{{ r.motivo }}</p>
@@ -90,7 +95,12 @@
           </button>
 
           <!-- Detalhes expandidos -->
-          <div v-if="expandido === idx" class="px-6 pb-6 pt-2 bg-operacao-50/30">
+          <div
+            class="grid transition-[grid-template-rows] duration-300 ease-in-out"
+            :class="expandido === idx ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'"
+          >
+          <div class="overflow-hidden">
+          <div class="px-6 pb-6 pt-2 bg-operacao-50/30">
             <!-- Cards de resumo -->
             <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
               <div class="rounded-lg bg-white ring-1 ring-[#EBEBED] shadow-sm px-3 py-2 text-center">
@@ -176,6 +186,8 @@
               </div>
             </div>
           </div>
+          </div>
+          </div>
         </div>
 
         <!-- Histórico legado (contagens antigas, sem snapshot) -->
@@ -245,6 +257,12 @@ const acoes = computed(() => {
 })
 
 // Helpers
+const labelTipo = (tipo?: string) => {
+  if (tipo === 'apoio') return 'Estoque de Apoio'
+  if (tipo === 'inventario') return 'Inventário'
+  return 'Estoque Principal' // handles 'principal', 'estoque', undefined
+}
+
 const labelRecorrencia = (recorrencia?: string) => {
   switch (recorrencia) {
     case 'diaria': return 'Diária'
@@ -257,7 +275,9 @@ const labelRecorrencia = (recorrencia?: string) => {
 
 const formatDate = (date?: string) => {
   if (!date) return '-'
-  return new Date(date + 'T00:00:00').toLocaleDateString('pt-BR')
+  const d = date.includes('T') ? new Date(date) : new Date(date + 'T00:00:00')
+  if (isNaN(d.getTime())) return '-'
+  return d.toLocaleDateString('pt-BR')
 }
 
 const formatDateTime = (datetime?: string) => {
