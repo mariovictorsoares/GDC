@@ -112,7 +112,12 @@ export default defineEventHandler(async (event) => {
   // Buscar contagens que devem notificar AGORA ou que falharam no minuto anterior
   const { data: contagens, error } = await supabase
     .from('contagens')
-    .select(`*, contagem_setores ( setor_id, setores ( nome ) )`)
+    .select(`
+      id, nome, token, recorrencia, horario_notificacao, dias_semana,
+      mensal_posicao, mensal_dia, responsavel_nome, responsavel_telefone,
+      responsaveis_data, status, ultima_contagem, data,
+      contagem_setores ( setor_id, setores ( nome ) )
+    `)
     .neq('recorrencia', 'nenhuma')
     .in('status', ['aguardando', 'pendente', 'atrasada'])
     .in('horario_notificacao', [horaAtualStr, horaAnteriorStr])

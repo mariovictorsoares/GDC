@@ -71,9 +71,15 @@
               </div>
               <div>
                 <span class="font-medium text-operacao-800">{{ setor.nome }}</span>
-                <UBadge :color="setor.tipo === 'apoio' ? 'orange' : 'blue'" variant="subtle" size="xs" class="ml-1.5">
+                <span
+                  class="ml-2 inline-flex items-center gap-1 px-1.5 rounded-full text-[9px] font-semibold uppercase tracking-wide align-middle relative -top-px"
+                  :class="setor.tipo === 'apoio'
+                    ? 'bg-amber-50 text-amber-600 ring-1 ring-amber-200/60'
+                    : 'bg-blue-50 text-blue-600 ring-1 ring-blue-200/60'"
+                >
+                  <span class="w-1.5 h-1.5 rounded-full" :class="setor.tipo === 'apoio' ? 'bg-amber-400' : 'bg-blue-400'" />
                   {{ setor.tipo === 'apoio' ? 'Apoio' : 'Principal' }}
-                </UBadge>
+                </span>
                 <p class="text-xs text-operacao-400">{{ setorProdutosCount[setor.id] || 0 }} {{ (setorProdutosCount[setor.id] || 0) === 1 ? 'produto' : 'produtos' }}</p>
               </div>
             </div>

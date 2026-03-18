@@ -7,8 +7,8 @@
       <!-- Toolbar -->
       <div class="flex items-center justify-between mb-8">
         <h1 class="text-2xl font-semibold text-[#5a5a66]">Contagens</h1>
-        <UButton color="white" variant="solid" @click="slideoverSetoresOpen = true">
-          <UIcon name="i-heroicons-map-pin" class="w-4 h-4 mr-1.5" />
+        <UButton color="white" :ui="{ color: { white: { solid: 'shadow-sm ring-1 ring-inset ring-[#EBEBED] text-gray-700 bg-white hover:bg-gray-50 focus-visible:ring-2 focus-visible:ring-guardian-500' } } }" @click="slideoverSetoresOpen = true">
+          <UIcon name="i-heroicons-map-pin" class="w-4 h-4 mr-1.5 text-operacao-400" />
           Gerenciar Setores
         </UButton>
       </div>
@@ -26,9 +26,9 @@
           <div class="w-[3px] flex-shrink-0" :class="c.accentClass" />
 
           <!-- Content -->
-          <div class="flex items-center gap-6 px-6 py-5 flex-1 min-w-0">
+          <div class="flex items-center gap-6 px-6 py-4 flex-1 min-w-0">
             <!-- Icon + title -->
-            <div class="flex items-center gap-3.5 min-w-0 w-52 flex-shrink-0">
+            <div class="flex items-center gap-3.5 min-w-0 w-48 flex-shrink-0">
               <div class="w-10 h-10 rounded-lg bg-operacao-100/70 flex items-center justify-center flex-shrink-0">
                 <UIcon :name="c.icon" class="w-5 h-5 text-[#5a5a66]" />
               </div>
@@ -38,27 +38,31 @@
               </div>
             </div>
 
-            <!-- Info columns -->
-            <div class="flex items-center gap-8 flex-1 min-w-0">
-              <div class="min-w-0 flex-1">
-                <p class="text-[10px] uppercase tracking-wider text-operacao-400 font-medium mb-1">Recorrência</p>
+            <!-- Info grid 2x2 -->
+            <div class="grid grid-cols-2 gap-x-8 gap-y-2.5 flex-1 min-w-0">
+              <div class="min-w-0">
+                <p class="text-[10px] uppercase tracking-wider text-operacao-400 font-medium mb-0.5">Recorrência</p>
                 <p class="text-sm font-medium truncate" :class="c.configurada ? 'text-[#5a5a66]' : 'text-operacao-300'">{{ c.recorrenciaLabel }}</p>
               </div>
-              <div class="min-w-0 flex-1">
-                <p class="text-[10px] uppercase tracking-wider text-operacao-400 font-medium mb-1">Responsáveis</p>
+              <div class="min-w-0">
+                <p class="text-[10px] uppercase tracking-wider text-operacao-400 font-medium mb-0.5">Responsáveis</p>
                 <p class="text-sm font-medium truncate" :class="c.configurada ? 'text-[#5a5a66]' : 'text-operacao-300'">{{ c.responsavelLabel }}</p>
               </div>
-              <div class="min-w-0 flex-1 hidden lg:block">
-                <p class="text-[10px] uppercase tracking-wider text-operacao-400 font-medium mb-1">Última contagem</p>
+              <div class="min-w-0">
+                <p class="text-[10px] uppercase tracking-wider text-operacao-400 font-medium mb-0.5">Última contagem</p>
                 <p class="text-sm font-medium truncate" :class="c.contagem?.ultima_contagem ? 'text-[#5a5a66]' : 'text-operacao-300'">{{ c.ultimaContagemLabel }}</p>
+              </div>
+              <div class="min-w-0">
+                <p class="text-[10px] uppercase tracking-wider text-operacao-400 font-medium mb-0.5">Próxima contagem</p>
+                <div class="flex items-center gap-1.5 min-w-0">
+                  <span v-if="c.proximaStatusDot" class="w-1.5 h-1.5 rounded-full flex-shrink-0" :class="c.proximaStatusDot" />
+                  <p class="text-sm font-medium truncate" :class="c.proximaTextClass">{{ c.proximaContagemLabel }}</p>
+                </div>
               </div>
             </div>
 
-            <!-- Status + action -->
-            <div class="flex items-center gap-3 flex-shrink-0">
-              <UBadge :color="c.statusColor" variant="subtle" size="sm">
-                {{ c.statusLabel }}
-              </UBadge>
+            <!-- Action -->
+            <div class="flex items-center flex-shrink-0">
               <UButton
                 :color="c.configurada ? 'gray' : 'primary'"
                 variant="soft"
@@ -66,7 +70,7 @@
                 @click.stop="c.contagem && abrirConfigurar(c.contagem)"
               >
                 <UIcon name="i-heroicons-cog-6-tooth" class="w-4 h-4 mr-1.5" />
-                {{ c.configurada ? 'Reconfigurar' : 'Configurar' }}
+                {{ c.configurada ? 'Editar' : 'Configurar' }}
               </UButton>
             </div>
           </div>
@@ -434,6 +438,75 @@ const opcoesMensalDia = [
 ]
 
 // ==========================================
+// HELPERS: PRÓXIMA CONTAGEM
+// ==========================================
+const diasSemanaMap: Record<string, number> = { dom: 0, seg: 1, ter: 2, qua: 3, qui: 4, sex: 5, sab: 6 }
+
+const formatProximaData = (date: Date): string => {
+  const now = new Date()
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const target = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+  const diffDays = Math.round((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+  const hora = date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+  if (diffDays === 0) return `Hoje, ${hora}`
+  if (diffDays === 1) return `Amanhã, ${hora}`
+  const diaSemana = date.toLocaleDateString('pt-BR', { weekday: 'short' })
+  if (diffDays < 7) return `${diaSemana}, ${hora}`
+  return date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }) + `, ${hora}`
+}
+
+const calcularProximaContagem = (contagem: Contagem | undefined): string => {
+  if (!contagem) return '—'
+  const rec = contagem.recorrencia
+  if (!rec || rec === 'nenhuma') return '—'
+
+  const now = new Date()
+  const [hh, mm] = (contagem.horario_notificacao || '07:00').split(':').map(Number)
+
+  if (rec === 'diaria') {
+    const next = new Date()
+    next.setHours(hh, mm, 0, 0)
+    if (now > next) next.setDate(next.getDate() + 1)
+    return formatProximaData(next)
+  }
+
+  if (rec === 'semanal' || rec === 'quinzenal') {
+    const dias = contagem.dias_semana || []
+    if (dias.length === 0) return '—'
+    let minDiff = Infinity
+    const todayDay = now.getDay()
+    for (const d of dias) {
+      const target = diasSemanaMap[d]
+      if (target === undefined) continue
+      let diff = target - todayDay
+      if (diff < 0) diff += 7
+      if (diff === 0) {
+        const t = new Date()
+        t.setHours(hh, mm, 0, 0)
+        if (now > t) diff = 7
+      }
+      if (diff < minDiff) minDiff = diff
+    }
+    if (minDiff === Infinity) return '—'
+    const next = new Date(now)
+    next.setDate(next.getDate() + minDiff)
+    next.setHours(hh, mm, 0, 0)
+    return formatProximaData(next)
+  }
+
+  if (rec === 'mensal') {
+    const posLabel = contagem.mensal_posicao === 'ultima' ? 'Últ.' : '1ª'
+    const diaLabels: Record<string, string> = {
+      domingo: 'dom.', segunda: 'seg.', terca: 'ter.', quarta: 'qua.',
+      quinta: 'qui.', sexta: 'sex.', sabado: 'sáb.', dia: 'dia do mês'
+    }
+    return `${posLabel} ${diaLabels[contagem.mensal_dia || ''] || contagem.mensal_dia || ''}`
+  }
+
+  return '—'
+}
+
+// ==========================================
 // COMPUTED
 // ==========================================
 const setorProdutosPorSetor = computed(() => {
@@ -469,6 +542,18 @@ const statusColors: Record<string, string> = {
   atrasada: 'red',
   em_andamento: 'blue',
   finalizada: 'green'
+}
+const statusDotClasses: Record<string, string> = {
+  pendente: 'bg-yellow-400',
+  atrasada: 'bg-red-500',
+  em_andamento: 'bg-blue-500',
+  finalizada: 'bg-emerald-500'
+}
+const statusProximaTextClasses: Record<string, string> = {
+  pendente: 'text-yellow-600',
+  atrasada: 'text-red-600',
+  em_andamento: 'text-blue-600',
+  finalizada: 'text-emerald-600'
 }
 
 const contagensFixas = computed(() => {
@@ -510,12 +595,22 @@ const contagensFixas = computed(() => {
       configurada,
       setoresCount,
       recorrenciaLabel: recLabels[rec || 'nenhuma'] || 'Não configurada',
-      responsavelLabel: contagem?.responsaveis_data && contagem.responsaveis_data.length > 0
-        ? contagem.responsaveis_data.map((r: any) => r.nome).join(', ')
-        : contagem?.responsavel_nome || 'Nenhum responsável',
+      responsavelLabel: (() => {
+        const resps = contagem?.responsaveis_data
+        if (resps && resps.length > 0) {
+          if (resps.length <= 2) return resps.map((r: any) => r.nome).join(', ')
+          return `${resps.slice(0, 2).map((r: any) => r.nome).join(', ')} (+${resps.length - 2})`
+        }
+        return contagem?.responsavel_nome || 'Nenhum responsável'
+      })(),
       statusLabel: statusLabels[contagem?.status || 'aguardando'] || 'Aguardando',
       statusColor: statusColors[contagem?.status || 'aguardando'] || 'gray',
-      ultimaContagemLabel
+      ultimaContagemLabel,
+      proximaContagemLabel: calcularProximaContagem(contagem),
+      proximaStatusDot: statusDotClasses[contagem?.status || ''] || '',
+      proximaTextClass: configurada
+        ? (statusProximaTextClasses[contagem?.status || ''] || 'text-[#5a5a66]')
+        : 'text-operacao-300'
     }
   })
 })
