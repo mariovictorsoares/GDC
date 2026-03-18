@@ -19,10 +19,7 @@
 
           <!-- Title + metadata -->
           <div class="flex-1 min-w-0">
-            <div class="flex items-center gap-2.5 mb-1">
-              <h1 class="text-xl font-bold text-operacao-900 truncate">{{ contagem.nome }}</h1>
-              <UBadge :color="statusColor" variant="subtle" size="xs">{{ statusLabel }}</UBadge>
-            </div>
+            <h1 class="text-xl font-bold text-operacao-900 truncate mb-1">{{ contagem.nome }}</h1>
 
             <!-- Inline metadata -->
             <div class="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm text-operacao-500">
@@ -37,6 +34,16 @@
               <span class="inline-flex items-center gap-1.5">
                 <UIcon name="i-heroicons-map-pin" class="w-3.5 h-3.5 text-operacao-400" />
                 {{ setoresList.length > 0 ? setoresList.join(', ') : 'Sem setores' }}
+              </span>
+              <span class="text-operacao-200">|</span>
+              <span class="inline-flex items-center gap-1.5">
+                <UIcon name="i-heroicons-clock" class="w-3.5 h-3.5 text-operacao-400" />
+                Última: {{ ultimaContagemLabel }}
+              </span>
+              <span class="inline-flex items-center gap-1.5">
+                <span v-if="proximaStatusDot" class="w-1.5 h-1.5 rounded-full flex-shrink-0" :class="proximaStatusDot" />
+                <UIcon v-else name="i-heroicons-calendar" class="w-3.5 h-3.5 text-operacao-400" />
+                <span :class="proximaTextClass">Próxima: {{ proximaContagemLabel }}</span>
               </span>
             </div>
           </div>
@@ -448,6 +455,100 @@ const accentBar = computed(() => {
     inventario: 'bg-blue-500'
   }
   return bars[props.contagem.tipo] || bars.principal
+})
+
+// ==========================================
+// ÚLTIMA E PRÓXIMA CONTAGEM
+// ==========================================
+const ultimaContagemLabel = computed(() => {
+  if (props.contagem.ultima_contagem) {
+    const d = new Date(props.contagem.ultima_contagem)
+    return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })
+  }
+  return 'Nenhuma'
+})
+
+const diasSemanaMap: Record<string, number> = { dom: 0, seg: 1, ter: 2, qua: 3, qui: 4, sex: 5, sab: 6 }
+
+const formatProximaData = (date: Date): string => {
+  const now = new Date()
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const target = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+  const diffDays = Math.round((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+  const hora = date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+  if (diffDays === 0) return `Hoje, ${hora}`
+  if (diffDays === 1) return `Amanhã, ${hora}`
+  const diaSemana = date.toLocaleDateString('pt-BR', { weekday: 'short' })
+  if (diffDays < 7) return `${diaSemana}, ${hora}`
+  return date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }) + `, ${hora}`
+}
+
+const proximaContagemLabel = computed(() => {
+  const c = props.contagem
+  const rec = c.recorrencia
+  if (!rec || rec === 'nenhuma') return '—'
+
+  const now = new Date()
+  const [hh, mm] = (c.horario_notificacao || '07:00').split(':').map(Number)
+
+  if (rec === 'diaria') {
+    const next = new Date()
+    next.setHours(hh, mm, 0, 0)
+    if (now > next) next.setDate(next.getDate() + 1)
+    return formatProximaData(next)
+  }
+
+  if (rec === 'semanal' || rec === 'quinzenal') {
+    const dias = c.dias_semana || []
+    if (dias.length === 0) return '—'
+    let minDiff = Infinity
+    const todayDay = now.getDay()
+    for (const d of dias) {
+      const target = diasSemanaMap[d]
+      if (target === undefined) continue
+      let diff = target - todayDay
+      if (diff < 0) diff += 7
+      if (diff === 0) {
+        const t = new Date()
+        t.setHours(hh, mm, 0, 0)
+        if (now > t) diff = 7
+      }
+      if (diff < minDiff) minDiff = diff
+    }
+    if (minDiff === Infinity) return '—'
+    const next = new Date(now)
+    next.setDate(next.getDate() + minDiff)
+    next.setHours(hh, mm, 0, 0)
+    return formatProximaData(next)
+  }
+
+  if (rec === 'mensal') {
+    const posLabel = c.mensal_posicao === 'ultima' ? 'Últ.' : '1ª'
+    const diaLabels: Record<string, string> = {
+      domingo: 'dom.', segunda: 'seg.', terca: 'ter.', quarta: 'qua.',
+      quinta: 'qui.', sexta: 'sex.', sabado: 'sáb.', dia: 'dia do mês'
+    }
+    return `${posLabel} ${diaLabels[c.mensal_dia || ''] || c.mensal_dia || ''}`
+  }
+
+  return '—'
+})
+
+const statusDotClasses: Record<string, string> = {
+  pendente: 'bg-yellow-400', atrasada: 'bg-red-500',
+  em_andamento: 'bg-blue-500', finalizada: 'bg-emerald-500'
+}
+const statusProximaTextClasses: Record<string, string> = {
+  pendente: 'text-yellow-600', atrasada: 'text-red-600',
+  em_andamento: 'text-blue-600', finalizada: 'text-emerald-600'
+}
+
+const proximaStatusDot = computed(() => statusDotClasses[props.contagem.status || ''] || '')
+const proximaTextClass = computed(() => {
+  const configured = props.contagem.recorrencia && props.contagem.recorrencia !== 'nenhuma'
+  return configured
+    ? (statusProximaTextClasses[props.contagem.status || ''] || 'text-operacao-500')
+    : 'text-operacao-400'
 })
 
 const acoes = computed(() => {

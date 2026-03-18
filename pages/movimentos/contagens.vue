@@ -234,31 +234,41 @@
               </UButton>
             </div>
             <div v-if="responsaveis.length > 0" class="flex flex-wrap gap-2">
-              <button
+              <div
                 v-for="resp in responsaveis"
                 :key="resp.nome + resp.telefone"
-                class="inline-flex items-center gap-2 pl-1 pr-3 py-1 rounded-full text-sm transition-all border"
-                :class="isResponsavelSelecionado(resp)
-                  ? 'border-emerald-500 bg-emerald-50 text-emerald-800 shadow-sm shadow-emerald-100'
-                  : 'border-operacao-200 bg-operacao-50 text-operacao-500 hover:border-operacao-300 hover:bg-operacao-100'"
-                @click="toggleResponsavel(resp)"
+                class="relative group/resp"
               >
-                <span
-                  class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold uppercase"
+                <button
+                  class="inline-flex items-center gap-2 pl-1 pr-3 py-1 rounded-full text-sm transition-all border"
                   :class="isResponsavelSelecionado(resp)
-                    ? 'bg-emerald-500 text-white'
-                    : 'bg-operacao-200 text-operacao-400'"
+                    ? 'border-emerald-500 bg-emerald-50 text-emerald-800 shadow-sm shadow-emerald-100'
+                    : 'border-operacao-200 bg-operacao-50 text-operacao-500 hover:border-operacao-300 hover:bg-operacao-100'"
+                  @click="toggleResponsavel(resp)"
                 >
-                  {{ resp.nome.charAt(0) }}
-                </span>
-                <span class="font-medium">{{ resp.nome }}</span>
-                <span class="text-xs opacity-60">{{ resp.telefone }}</span>
-                <UIcon
-                  v-if="isResponsavelSelecionado(resp)"
-                  name="i-heroicons-check-circle-solid"
-                  class="w-4 h-4 text-emerald-500"
-                />
-              </button>
+                  <span
+                    class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold uppercase"
+                    :class="isResponsavelSelecionado(resp)
+                      ? 'bg-emerald-500 text-white'
+                      : 'bg-operacao-200 text-operacao-400'"
+                  >
+                    {{ resp.nome.charAt(0) }}
+                  </span>
+                  <span class="font-medium">{{ resp.nome }}</span>
+                  <span class="text-xs opacity-60">{{ resp.telefone }}</span>
+                  <UIcon
+                    v-if="isResponsavelSelecionado(resp)"
+                    name="i-heroicons-check-circle-solid"
+                    class="w-4 h-4 text-emerald-500"
+                  />
+                </button>
+                <button
+                  class="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 group-hover/resp:opacity-100 transition-opacity duration-150 hover:bg-red-600 shadow-sm"
+                  @click.stop="removerResponsavel(resp)"
+                >
+                  <UIcon name="i-heroicons-x-mark" class="w-3 h-3" />
+                </button>
+              </div>
             </div>
           </div>
 
@@ -930,6 +940,11 @@ const adicionarResponsavel = async () => {
   } catch (error: any) {
     toast.add({ title: 'Erro', description: error.message || 'Erro ao salvar responsável', color: 'red' })
   }
+}
+
+const removerResponsavel = (resp: { id?: string; nome: string; telefone: string }) => {
+  responsaveis.value = responsaveis.value.filter(r => !(r.nome === resp.nome && r.telefone === resp.telefone))
+  setupResponsaveis.value = setupResponsaveis.value.filter(r => !(r.nome === resp.nome && r.telefone === resp.telefone))
 }
 
 const abrirConfigurar = async (contagem: Contagem) => {
