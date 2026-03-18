@@ -17,7 +17,7 @@ export default defineEventHandler(async (event) => {
   const { data: contagem, error: errContagem } = await supabase
     .from('contagens')
     .select(`
-      id, nome, data, status, empresa_id,
+      id, nome, data, status, empresa_id, responsavel_nome, responsaveis_data,
       contagem_setores (
         id, setor_id, status, progresso,
         setor:setores ( id, nome, tipo )

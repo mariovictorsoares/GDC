@@ -1434,7 +1434,7 @@ const executarDeletarEmpresa = async () => {
     showConfirmDeleteEmpresa.value = false
     empresaParaDeletar.value = null
     toast.add({ title: 'Empresa excluída', description: 'A empresa foi removida.', color: 'green' })
-    await getEmpresas()
+    await carregarEmpresaAtiva()
   } catch (error: any) {
     toast.add({ title: 'Erro', description: error.message || 'Erro ao excluir empresa', color: 'red' })
   } finally {

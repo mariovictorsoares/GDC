@@ -12,7 +12,10 @@
             </h1>
             <p class="text-[11px] sm:text-xs text-operacao-400">
               {{ formatarData(dados?.contagem?.data) }}
-              <span v-if="dados?.contagem?.responsavel_nome" class="ml-1">
+              <span v-if="dados?.contagem?.responsaveis_data?.length > 0" class="ml-1">
+                &middot; {{ dados.contagem.responsaveis_data.map((r: any) => r.nome).join(', ') }}
+              </span>
+              <span v-else-if="dados?.contagem?.responsavel_nome" class="ml-1">
                 &middot; {{ dados.contagem.responsavel_nome }}
               </span>
             </p>

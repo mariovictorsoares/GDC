@@ -1,16 +1,78 @@
 <template>
   <div class="space-y-6">
     <!-- ============================================ -->
-    <!-- ETAPA: PRINCIPAL (lista de contagens)        -->
+    <!-- ETAPA: PRINCIPAL (3 cards fixos)              -->
     <!-- ============================================ -->
-    <ContagemLista
-      v-if="etapa === 'principal'"
-      :contagens="contagensPersistidas"
-      :loading="loadingContagens"
-      @click-contagem="abrirDetalhes"
-      @nova-contagem="abrirModalSetup"
-      @gerenciar-setores="slideoverSetoresOpen = true"
-    />
+    <div v-if="etapa === 'principal'" class="flex flex-col h-full">
+      <!-- Toolbar -->
+      <div class="flex items-center justify-between mb-8">
+        <h1 class="text-2xl font-semibold text-[#5a5a66]">Contagens</h1>
+        <UButton color="white" variant="solid" @click="slideoverSetoresOpen = true">
+          <UIcon name="i-heroicons-map-pin" class="w-4 h-4 mr-1.5" />
+          Gerenciar Setores
+        </UButton>
+      </div>
+
+      <!-- Contagens -->
+      <div class="flex flex-col gap-4">
+        <div
+          v-for="c in contagensFixas"
+          :key="c.tipo"
+          class="flex rounded-xl bg-white ring-1 ring-[#EBEBED] shadow-sm hover:shadow-md overflow-hidden transition-shadow duration-200"
+          :class="c.configurada ? 'cursor-pointer' : ''"
+          @click="c.contagem && c.configurada && abrirDetalhes(c.contagem)"
+        >
+          <!-- Accent -->
+          <div class="w-[3px] flex-shrink-0" :class="c.accentClass" />
+
+          <!-- Content -->
+          <div class="flex items-center gap-6 px-6 py-5 flex-1 min-w-0">
+            <!-- Icon + title -->
+            <div class="flex items-center gap-3.5 min-w-0 w-52 flex-shrink-0">
+              <div class="w-10 h-10 rounded-lg bg-operacao-100/70 flex items-center justify-center flex-shrink-0">
+                <UIcon :name="c.icon" class="w-5 h-5 text-[#5a5a66]" />
+              </div>
+              <div class="min-w-0">
+                <h3 class="text-sm font-medium text-[#5a5a66] truncate">{{ c.label }}</h3>
+                <p class="text-xs text-operacao-400 mt-0.5">{{ c.setoresCount }} {{ c.setoresCount === 1 ? 'setor' : 'setores' }}</p>
+              </div>
+            </div>
+
+            <!-- Info columns -->
+            <div class="flex items-center gap-8 flex-1 min-w-0">
+              <div class="min-w-0 flex-1">
+                <p class="text-[10px] uppercase tracking-wider text-operacao-400 font-medium mb-1">Recorrência</p>
+                <p class="text-sm font-medium truncate" :class="c.configurada ? 'text-[#5a5a66]' : 'text-operacao-300'">{{ c.recorrenciaLabel }}</p>
+              </div>
+              <div class="min-w-0 flex-1">
+                <p class="text-[10px] uppercase tracking-wider text-operacao-400 font-medium mb-1">Responsáveis</p>
+                <p class="text-sm font-medium truncate" :class="c.configurada ? 'text-[#5a5a66]' : 'text-operacao-300'">{{ c.responsavelLabel }}</p>
+              </div>
+              <div class="min-w-0 flex-1 hidden lg:block">
+                <p class="text-[10px] uppercase tracking-wider text-operacao-400 font-medium mb-1">Última contagem</p>
+                <p class="text-sm font-medium truncate" :class="c.contagem?.ultima_contagem ? 'text-[#5a5a66]' : 'text-operacao-300'">{{ c.ultimaContagemLabel }}</p>
+              </div>
+            </div>
+
+            <!-- Status + action -->
+            <div class="flex items-center gap-3 flex-shrink-0">
+              <UBadge :color="c.statusColor" variant="subtle" size="sm">
+                {{ c.statusLabel }}
+              </UBadge>
+              <UButton
+                :color="c.configurada ? 'gray' : 'primary'"
+                variant="soft"
+                size="sm"
+                @click.stop="c.contagem && abrirConfigurar(c.contagem)"
+              >
+                <UIcon name="i-heroicons-cog-6-tooth" class="w-4 h-4 mr-1.5" />
+                {{ c.configurada ? 'Reconfigurar' : 'Configurar' }}
+              </UButton>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- ============================================ -->
     <!-- ETAPA: DETALHES DE UMA CONTAGEM              -->
@@ -23,8 +85,7 @@
       :loading-historico="loadingHistorico"
       @voltar="etapa = 'principal'"
       @ver-progresso="abrirProgressoModal"
-      @editar="abrirEditarContagem"
-      @excluir="modalExcluirContagemOpen = true"
+      @editar="abrirConfigurar(contagemSelecionada!)"
       @enviar-lembrete="enviarLembreteManual"
     />
 
@@ -76,7 +137,7 @@
       @atualizado="recarregarSetores"
     />
 
-    <!-- Slideover: Nova Contagem -->
+    <!-- Slideover: Configurar Contagem -->
     <USlideover
       v-model="slideoverSetupOpen"
       :ui="{
@@ -88,30 +149,28 @@
       <div class="flex flex-col h-full">
         <div class="flex items-center justify-between px-6 py-4 border-b border-operacao-200">
           <div class="flex items-center gap-3">
-            <div class="p-2 bg-guardian-100 rounded-lg">
-              <UIcon :name="editandoContagemId ? 'i-heroicons-pencil-square' : 'i-heroicons-clipboard-document-check'" class="w-5 h-5 text-guardian-600" />
+            <div class="w-9 h-9 bg-guardian-100 rounded-lg flex items-center justify-center">
+              <UIcon name="i-heroicons-cog-6-tooth" class="w-5 h-5 text-guardian-600" />
             </div>
             <div>
-              <h3 class="text-lg font-semibold text-operacao-800">{{ editandoContagemId ? 'Editar Contagem' : 'Nova Contagem' }}</h3>
-              <p class="text-xs text-operacao-400">{{ editandoContagemId ? 'Altere as configurações da contagem' : 'Configure e selecione os setores para contar' }}</p>
+              <h3 class="text-lg font-semibold text-operacao-800">Configurar Contagem</h3>
+              <p class="text-xs text-operacao-400">Defina a recorrência e o responsável</p>
             </div>
           </div>
           <UButton color="gray" variant="ghost" icon="i-heroicons-x-mark" @click="slideoverSetupOpen = false" />
         </div>
 
         <div class="flex-1 overflow-y-auto px-6 py-5 space-y-6">
-          <UFormGroup label="Nome da Contagem" required>
-            <UInput v-model="setupNomeContagem" placeholder="Ex: Contagem semanal de bebidas" />
-          </UFormGroup>
-
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <UFormGroup label="Data da Contagem" required>
-              <UInput v-model="setupData" type="date" />
-            </UFormGroup>
-            <UFormGroup label="Recorrência" required>
-              <USelect v-model="setupRecorrencia" :options="opcoesRecorrencia" option-attribute="label" value-attribute="value" />
-            </UFormGroup>
+          <!-- Tipo (read-only badge) -->
+          <div class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-operacao-100 text-operacao-600 text-sm font-medium">
+            <UIcon :name="configurandoTipoIcon" class="w-4 h-4" />
+            {{ configurandoTipoLabel }}
           </div>
+
+          <!-- Recorrência -->
+          <UFormGroup label="Recorrência" required>
+            <USelect v-model="setupRecorrencia" :options="opcoesRecorrencia" option-attribute="label" value-attribute="value" />
+          </UFormGroup>
 
           <!-- Campos dinâmicos de recorrência -->
           <template v-if="setupRecorrencia && setupRecorrencia !== 'nenhuma'">
@@ -157,10 +216,10 @@
             </p>
           </template>
 
-          <!-- Responsável -->
+          <!-- Responsáveis -->
           <div>
-            <h4 class="font-semibold text-operacao-800 mb-1">Responsável</h4>
-            <p class="text-sm text-operacao-400 mb-3">Quem vai realizar esta contagem?</p>
+            <h4 class="font-semibold text-operacao-800 mb-1">Responsáveis</h4>
+            <p class="text-sm text-operacao-400 mb-3">Quem vai realizar esta contagem? Selecione um ou mais.</p>
             <div class="flex items-end gap-2 mb-3">
               <div class="flex-1 grid grid-cols-2 gap-2">
                 <UInput v-model="novoResponsavelNome" placeholder="Nome" size="sm" icon="i-heroicons-user" @keydown.enter="adicionarResponsavel" />
@@ -175,14 +234,14 @@
                 v-for="resp in responsaveis"
                 :key="resp.nome + resp.telefone"
                 class="inline-flex items-center gap-2 pl-1 pr-3 py-1 rounded-full text-sm transition-all border"
-                :class="setupResponsavel?.nome === resp.nome && setupResponsavel?.telefone === resp.telefone
+                :class="isResponsavelSelecionado(resp)
                   ? 'border-emerald-500 bg-emerald-50 text-emerald-800 shadow-sm shadow-emerald-100'
                   : 'border-operacao-200 bg-operacao-50 text-operacao-500 hover:border-operacao-300 hover:bg-operacao-100'"
-                @click="setupResponsavel = (setupResponsavel?.nome === resp.nome && setupResponsavel?.telefone === resp.telefone) ? null : resp"
+                @click="toggleResponsavel(resp)"
               >
                 <span
                   class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold uppercase"
-                  :class="setupResponsavel?.nome === resp.nome && setupResponsavel?.telefone === resp.telefone
+                  :class="isResponsavelSelecionado(resp)
                     ? 'bg-emerald-500 text-white'
                     : 'bg-operacao-200 text-operacao-400'"
                 >
@@ -191,7 +250,7 @@
                 <span class="font-medium">{{ resp.nome }}</span>
                 <span class="text-xs opacity-60">{{ resp.telefone }}</span>
                 <UIcon
-                  v-if="setupResponsavel?.nome === resp.nome && setupResponsavel?.telefone === resp.telefone"
+                  v-if="isResponsavelSelecionado(resp)"
                   name="i-heroicons-check-circle-solid"
                   class="w-4 h-4 text-emerald-500"
                 />
@@ -201,48 +260,13 @@
 
           <div class="border-t border-operacao-200" />
 
-          <!-- Tipo -->
-          <div>
-            <h4 class="font-semibold text-operacao-800 mb-1">Tipo de Contagem</h4>
-            <p class="text-sm text-operacao-400 mb-3">Todos os setores do tipo selecionado serão contados automaticamente.</p>
-
-            <!-- Seletor de tipo -->
-            <div v-if="!editandoContagemId" class="grid grid-cols-3 gap-2 mb-3">
-              <button
-                v-for="opt in [
-                  { value: 'principal', label: 'Estoque Principal', icon: 'i-heroicons-building-storefront' },
-                  { value: 'apoio', label: 'Estoque de Apoio', icon: 'i-heroicons-archive-box' },
-                  { value: 'inventario', label: 'Inventário', icon: 'i-heroicons-clipboard-document-list' }
-                ]"
-                :key="opt.value"
-                class="flex flex-col items-center gap-1.5 px-3 py-3 rounded-lg text-sm font-medium border-2 transition-all text-center"
-                :class="setupTipoContagem === opt.value
-                  ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
-                  : 'border-operacao-200 bg-white text-operacao-400 hover:border-operacao-300 hover:bg-operacao-50'"
-                @click="setupTipoContagem = opt.value as TipoContagem"
-              >
-                <UIcon :name="opt.icon" class="w-5 h-5" />
-                <span>{{ opt.label }}</span>
-              </button>
-            </div>
-            <div v-else class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-operacao-100 text-operacao-600 text-sm font-medium mb-3">
-              <UIcon :name="setupTipoContagem === 'apoio' ? 'i-heroicons-archive-box' : setupTipoContagem === 'inventario' ? 'i-heroicons-clipboard-document-list' : 'i-heroicons-building-storefront'" class="w-4 h-4" />
-              {{ setupTipoContagem === 'apoio' ? 'Estoque de Apoio' : setupTipoContagem === 'inventario' ? 'Inventário' : 'Estoque Principal' }}
-              <span class="text-xs text-operacao-400">(não editável)</span>
-            </div>
-
-            <!-- Info: setores que serão contados -->
-            <div v-if="setoresDoTipoSelecionado.length > 0" class="flex items-center gap-2 px-3 py-2 rounded-lg bg-operacao-50 border border-operacao-200 text-sm text-operacao-500">
-              <UIcon name="i-heroicons-information-circle" class="w-4 h-4 flex-shrink-0 text-operacao-400" />
-              <span>
-                <span class="font-medium text-operacao-700">{{ setoresDoTipoSelecionado.length }} {{ setoresDoTipoSelecionado.length === 1 ? 'setor' : 'setores' }}</span>
-                serão contados: {{ setoresDoTipoSelecionado.map(s => s.nome).join(', ') }}
-              </span>
-            </div>
-            <div v-else class="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-50 border border-red-200 text-sm text-red-600">
-              <UIcon name="i-heroicons-exclamation-triangle" class="w-4 h-4 flex-shrink-0" />
-              <span>Nenhum setor encontrado para este tipo. Crie setores antes de criar uma contagem.</span>
-            </div>
+          <!-- Info: setores que serão contados -->
+          <div v-if="setoresDoTipoSelecionado.length > 0" class="flex items-center gap-2 px-3 py-2 rounded-lg bg-operacao-50 border border-operacao-200 text-sm text-operacao-500">
+            <UIcon name="i-heroicons-information-circle" class="w-4 h-4 flex-shrink-0 text-operacao-400" />
+            <span>
+              <span class="font-medium text-operacao-700">{{ setoresDoTipoSelecionado.length }} {{ setoresDoTipoSelecionado.length === 1 ? 'setor' : 'setores' }}</span>
+              serão contados: {{ setoresDoTipoSelecionado.map(s => s.nome).join(', ') }}
+            </span>
           </div>
         </div>
 
@@ -251,41 +275,24 @@
             <UButton color="gray" variant="ghost" @click="slideoverSetupOpen = false">Cancelar</UButton>
             <UButton
               color="primary"
-              :disabled="!setupNomeContagem.trim() || !setupRecorrencia || !setupResponsavel || setoresDoTipoSelecionado.length === 0"
+              :disabled="!setupRecorrencia || setupResponsaveis.length === 0"
               :loading="loadingSetup"
               @click="salvarContagem"
             >
               <UIcon name="i-heroicons-check" class="w-4 h-4 mr-1.5" />
-              {{ editandoContagemId ? 'Salvar' : 'Criar Contagem' }}
+              Salvar
             </UButton>
           </div>
         </div>
       </div>
     </USlideover>
 
-    <!-- Modal: Excluir contagem persistida -->
-    <UModal v-model="modalExcluirContagemOpen" :ui="{ overlay: { background: 'bg-operacao-900/50 backdrop-blur-sm' } }">
-      <UCard :ui="{ ring: 'ring-0', shadow: '', divide: 'divide-operacao-100' }">
-        <template #header>
-          <h3 class="text-lg font-semibold text-red-600">Excluir Contagem</h3>
-        </template>
-        <p>Tem certeza que deseja excluir a contagem <strong>{{ contagemSelecionada?.nome }}</strong>?</p>
-        <p class="text-sm text-red-500 mt-2">Esta ação não pode ser desfeita.</p>
-        <template #footer>
-          <div class="flex flex-col-reverse sm:flex-row justify-end gap-3">
-            <UButton color="gray" variant="ghost" class="w-full sm:w-auto" @click="modalExcluirContagemOpen = false">Cancelar</UButton>
-            <UButton color="red" class="w-full sm:w-auto" :loading="excluindo" @click="excluirContagemConfirmada">Excluir</UButton>
-          </div>
-        </template>
-      </UCard>
-    </UModal>
-
     <!-- Modal: Sucesso -->
     <UModal v-model="modalSucessoOpen" :ui="{ overlay: { background: 'bg-operacao-900/50 backdrop-blur-sm' } }">
       <UCard :ui="{ ring: 'ring-0', shadow: '', divide: 'divide-operacao-100' }">
         <template #header>
           <div class="flex items-center gap-3">
-            <div class="p-2 bg-controle-100 rounded-lg flex items-center justify-center">
+            <div class="w-10 h-10 bg-controle-100 rounded-lg flex items-center justify-center">
               <UIcon name="i-heroicons-check-circle" class="w-6 h-6 text-controle-600" />
             </div>
             <h3 class="text-lg font-semibold">Contagem salva!</h3>
@@ -303,7 +310,7 @@
 </template>
 
 <script setup lang="ts">
-import type { Grupo, Subgrupo, Produto, Setor, Contagem, Ajuste, SaldoEstoque, ContagemHistorico, ContagemResultado, TipoContagem } from '~/types'
+import type { Grupo, Subgrupo, Produto, Setor, Contagem, Ajuste, SaldoEstoque, ContagemHistorico, ContagemResultado } from '~/types'
 
 const toast = useToast()
 const {
@@ -311,7 +318,7 @@ const {
   getSaldoEstoque,
   getAjustes,
   getSetores, countSetorProdutos, getAllSetorProdutos,
-  getContagens, createContagem, updateContagem, updateContagemStatus, prepararProximoCiclo, deleteContagem,
+  getContagens, updateContagem, updateContagemStatus, prepararProximoCiclo, ensureDefaultContagens,
   deleteContagemItens, resetContagemSetores,
   getContagemResultados,
   getResponsaveis, createResponsavel
@@ -360,25 +367,20 @@ const slideoverSetoresOpen = ref(false)
 const slideoverSetupOpen = ref(false)
 const editandoContagemId = ref<string | null>(null)
 const progressoModalOpen = ref(false)
-const modalExcluirContagemOpen = ref(false)
 const modalSucessoOpen = ref(false)
-const excluindo = ref(false)
 const resumoSalvamento = ref('')
 const loadingEnviarWhatsApp = ref(false)
 
 // ==========================================
-// SETUP NOVA CONTAGEM
+// SETUP CONFIGURAR CONTAGEM
 // ==========================================
-const setupNomeContagem = ref('')
-const setupData = ref(new Date().toISOString().split('T')[0])
 const setupRecorrencia = ref('nenhuma')
-const setupResponsavel = ref<{ nome: string; telefone: string } | null>(null)
+const setupResponsaveis = ref<{ id?: string; nome: string; telefone: string }[]>([])
 const loadingSetup = ref(false)
 const setupHorarioNotificacao = ref('07:00')
 const setupDiasSemana = ref<Set<string>>(new Set())
 const setupMensalPosicao = ref('primeira')
 const setupMensalDia = ref('segunda')
-const setupTipoContagem = ref<TipoContagem>('principal')
 
 // Responsáveis
 const responsaveis = ref<{ id?: string; nome: string; telefone: string }[]>([])
@@ -444,8 +446,96 @@ const setorProdutosPorSetor = computed(() => {
 })
 
 const setoresDoTipoSelecionado = computed(() => {
-  if (setupTipoContagem.value === 'inventario') return setores.value
-  return setores.value.filter(s => s.tipo === setupTipoContagem.value)
+  const contagem = editandoContagemId.value
+    ? contagensPersistidas.value.find(c => c.id === editandoContagemId.value)
+    : null
+  const tipo = contagem?.tipo
+  if (!tipo) return []
+  if (tipo === 'inventario') return setores.value
+  return setores.value.filter(s => s.tipo === tipo)
+})
+
+// Labels e cores de status para os cards
+const statusLabels: Record<string, string> = {
+  aguardando: 'Aguardando',
+  pendente: 'Pendente',
+  atrasada: 'Atrasada',
+  em_andamento: 'Em andamento',
+  finalizada: 'Finalizada'
+}
+const statusColors: Record<string, string> = {
+  aguardando: 'gray',
+  pendente: 'yellow',
+  atrasada: 'red',
+  em_andamento: 'blue',
+  finalizada: 'green'
+}
+
+const contagensFixas = computed(() => {
+  const tipos = [
+    { tipo: 'principal', label: 'Estoque Principal',
+      icon: 'i-heroicons-building-storefront',
+      bgClass: 'bg-emerald-100', iconClass: 'text-emerald-600',
+      accentClass: 'bg-emerald-500' },
+    { tipo: 'apoio', label: 'Estoque de Apoio',
+      icon: 'i-heroicons-archive-box',
+      bgClass: 'bg-amber-100', iconClass: 'text-amber-600',
+      accentClass: 'bg-amber-500' },
+    { tipo: 'inventario', label: 'Inventário',
+      icon: 'i-heroicons-clipboard-document-list',
+      bgClass: 'bg-blue-100', iconClass: 'text-blue-600',
+      accentClass: 'bg-blue-500' }
+  ]
+
+  return tipos.map(t => {
+    const contagem = contagensPersistidas.value.find(c => c.tipo === t.tipo)
+    const setoresCount = contagem?.contagem_setores?.length || 0
+    const rec = contagem?.recorrencia
+    const configurada = !!(rec && rec !== 'nenhuma')
+    const recLabels: Record<string, string> = {
+      nenhuma: 'Não configurada', diaria: 'Diária',
+      semanal: 'Semanal', quinzenal: 'Quinzenal', mensal: 'Mensal'
+    }
+
+    // Última contagem
+    let ultimaContagemLabel = 'Nenhuma'
+    if (contagem?.ultima_contagem) {
+      const d = new Date(contagem.ultima_contagem)
+      ultimaContagemLabel = d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })
+    }
+
+    return {
+      ...t,
+      contagem,
+      configurada,
+      setoresCount,
+      recorrenciaLabel: recLabels[rec || 'nenhuma'] || 'Não configurada',
+      responsavelLabel: contagem?.responsaveis_data && contagem.responsaveis_data.length > 0
+        ? contagem.responsaveis_data.map((r: any) => r.nome).join(', ')
+        : contagem?.responsavel_nome || 'Nenhum responsável',
+      statusLabel: statusLabels[contagem?.status || 'aguardando'] || 'Aguardando',
+      statusColor: statusColors[contagem?.status || 'aguardando'] || 'gray',
+      ultimaContagemLabel
+    }
+  })
+})
+
+// Computeds para o slideover (tipo da contagem sendo configurada)
+const configurandoTipoLabel = computed(() => {
+  const contagem = contagensPersistidas.value.find(c => c.id === editandoContagemId.value)
+  if (!contagem) return ''
+  const labels: Record<string, string> = { principal: 'Estoque Principal', apoio: 'Estoque de Apoio', inventario: 'Inventário' }
+  return labels[contagem.tipo] || contagem.tipo
+})
+const configurandoTipoIcon = computed(() => {
+  const contagem = contagensPersistidas.value.find(c => c.id === editandoContagemId.value)
+  if (!contagem) return 'i-heroicons-clipboard-document-check'
+  const icons: Record<string, string> = {
+    principal: 'i-heroicons-building-storefront',
+    apoio: 'i-heroicons-archive-box',
+    inventario: 'i-heroicons-clipboard-document-list'
+  }
+  return icons[contagem.tipo] || 'i-heroicons-clipboard-document-check'
 })
 
 // ==========================================
@@ -651,53 +741,49 @@ const cancelarContagem = async () => {
 // AÇÕES DE CONTAGEM
 // ==========================================
 
-const excluirContagemConfirmada = async () => {
-  if (!contagemSelecionada.value) return
-  try {
-    excluindo.value = true
-    await deleteContagem(contagemSelecionada.value.id)
-    toast.add({ title: 'Sucesso', description: 'Contagem excluída', color: 'green' })
-    modalExcluirContagemOpen.value = false
-    contagemSelecionada.value = null
-    etapa.value = 'principal'
-    await carregarContagens()
-  } catch (error: any) {
-    toast.add({ title: 'Erro', description: error.message || 'Erro ao excluir contagem', color: 'red' })
-  } finally {
-    excluindo.value = false
-  }
-}
-
 // ==========================================
 // ENVIAR LEMBRETE WHATSAPP
 // ==========================================
 const enviarLembreteManual = async () => {
   if (!contagemSelecionada.value) return
   const c = contagemSelecionada.value
-  if (!c.responsavel_telefone || !c.responsavel_nome) {
+
+  // Montar lista de responsáveis
+  const resps: Array<{ nome: string; telefone: string }> = []
+  if (c.responsaveis_data && c.responsaveis_data.length > 0) {
+    for (const r of c.responsaveis_data) {
+      if (r.nome && r.telefone) resps.push({ nome: r.nome, telefone: r.telefone })
+    }
+  } else if (c.responsavel_nome && c.responsavel_telefone) {
+    resps.push({ nome: c.responsavel_nome, telefone: c.responsavel_telefone })
+  }
+
+  if (resps.length === 0) {
     toast.add({ title: 'Aviso', description: 'Esta contagem não possui responsável com telefone cadastrado.', color: 'yellow' })
     return
   }
+
   try {
     loadingEnviarWhatsApp.value = true
     const setoresNomes = (c.contagem_setores || []).map((cs: any) => cs.setor?.nome).filter(Boolean)
-    const recLabels: Record<string, string> = { diaria: 'Diária', semanal: 'Semanal', quinzenal: 'Quinzenal', mensal: 'Mensal' }
     const setoresTexto = setoresNomes.length > 0 ? setoresNomes.map((s: string) => `  • ${s}`).join('\n') : '  • (setores não disponíveis)'
     const link = c.token
       ? `https://www.cmv360app.com.br/contagem/${c.token}`
       : `https://www.cmv360app.com.br/movimentos/contagens`
-    const mensagem = [
-      `📋 *Lembrete de Contagem*`, ``,
-      `Olá, *${c.responsavel_nome}*!`, `Está na hora de realizar a contagem:`, ``,
-      `📌 *${c.nome}*`,
-      `🔄 Recorrência: ${recLabels[c.recorrencia || ''] || c.recorrencia || 'Nenhuma'}`,
-      `⏰ Horário: ${c.horario_notificacao || '07:00'}`, ``,
-      `📍 *Setores:*`, setoresTexto, ``,
-      `👉 *Acesse e inicie a contagem:*`,
-      link
-    ].join('\n')
-    await $fetch('/api/whatsapp/enviar', { method: 'POST', body: { phone: c.responsavel_telefone, message: mensagem } })
-    toast.add({ title: 'Enviado!', description: `Lembrete enviado para ${c.responsavel_nome} via WhatsApp`, color: 'green' })
+
+    const nomesEnviados: string[] = []
+    for (const resp of resps) {
+      const mensagem = [
+        `📋 *${c.nome}*`, ``,
+        `Olá, *${resp.nome}*!`,
+        `Hora de contar o estoque.`, ``,
+        `📍 *Setores:*`, setoresTexto, ``,
+        `👉 ${link}`
+      ].join('\n')
+      await $fetch('/api/whatsapp/enviar', { method: 'POST', body: { phone: resp.telefone, message: mensagem } })
+      nomesEnviados.push(resp.nome)
+    }
+    toast.add({ title: 'Enviado!', description: `Lembrete enviado para ${nomesEnviados.join(', ')} via WhatsApp`, color: 'green' })
   } catch (error: any) {
     toast.add({ title: 'Erro ao enviar', description: error?.data?.message || error.message || 'Erro ao enviar WhatsApp', color: 'red' })
   } finally {
@@ -722,6 +808,19 @@ watch(() => setupRecorrencia.value, () => {
   setupMensalDia.value = 'segunda'
 })
 
+const isResponsavelSelecionado = (resp: { nome: string; telefone: string }) => {
+  return setupResponsaveis.value.some(r => r.nome === resp.nome && r.telefone === resp.telefone)
+}
+
+const toggleResponsavel = (resp: { id?: string; nome: string; telefone: string }) => {
+  const idx = setupResponsaveis.value.findIndex(r => r.nome === resp.nome && r.telefone === resp.telefone)
+  if (idx >= 0) {
+    setupResponsaveis.value = setupResponsaveis.value.filter((_, i) => i !== idx)
+  } else {
+    setupResponsaveis.value = [...setupResponsaveis.value, resp]
+  }
+}
+
 const adicionarResponsavel = async () => {
   if (!novoResponsavelNome.value.trim() || !novoResponsavelTelefone.value.trim()) return
   try {
@@ -730,7 +829,7 @@ const adicionarResponsavel = async () => {
       telefone: novoResponsavelTelefone.value.trim()
     })
     responsaveis.value.push(novo)
-    setupResponsavel.value = novo
+    setupResponsaveis.value = [...setupResponsaveis.value, novo]
     novoResponsavelNome.value = ''
     novoResponsavelTelefone.value = ''
   } catch (error: any) {
@@ -738,108 +837,69 @@ const adicionarResponsavel = async () => {
   }
 }
 
-const abrirModalSetup = async () => {
-  editandoContagemId.value = null
-  setupData.value = new Date().toISOString().split('T')[0]
-  setupNomeContagem.value = ''
-  setupTipoContagem.value = 'principal'
-  setupRecorrencia.value = 'nenhuma'
-  setupHorarioNotificacao.value = '07:00'
-  setupDiasSemana.value = new Set()
-  setupMensalPosicao.value = 'primeira'
-  setupMensalDia.value = 'segunda'
-  setupResponsavel.value = null
-  slideoverSetupOpen.value = true
-  try { allSetorProdutosData.value = await getAllSetorProdutos() } catch {}
-}
-
-const abrirEditarContagem = async () => {
-  const c = contagemSelecionada.value
-  if (!c) return
-
-  editandoContagemId.value = c.id
-  setupNomeContagem.value = c.nome || ''
-  setupData.value = c.data || new Date().toISOString().split('T')[0]
-  // Mapear legacy 'estoque' → 'principal'
-  const tipoRaw = c.tipo as string
-  setupTipoContagem.value = tipoRaw === 'apoio' ? 'apoio' : tipoRaw === 'inventario' ? 'inventario' : 'principal'
+const abrirConfigurar = async (contagem: Contagem) => {
+  editandoContagemId.value = contagem.id
 
   // Setar recorrência primeiro (dispara watcher que reseta campos dependentes)
-  setupRecorrencia.value = c.recorrencia || 'nenhuma'
+  setupRecorrencia.value = contagem.recorrencia || 'nenhuma'
   await nextTick()
 
   // Agora popular campos dependentes (depois do watcher ter rodado)
-  setupHorarioNotificacao.value = c.horario_notificacao || '07:00'
-  setupDiasSemana.value = new Set(c.dias_semana || [])
-  setupMensalPosicao.value = c.mensal_posicao || 'primeira'
-  setupMensalDia.value = c.mensal_dia || 'segunda'
+  setupHorarioNotificacao.value = contagem.horario_notificacao || '07:00'
+  setupDiasSemana.value = new Set(contagem.dias_semana || [])
+  setupMensalPosicao.value = contagem.mensal_posicao || 'primeira'
+  setupMensalDia.value = contagem.mensal_dia || 'segunda'
 
-  // Responsável
-  if (c.responsavel_nome) {
+  // Responsáveis (carregar do array ou fallback para campo legado)
+  if (contagem.responsaveis_data && contagem.responsaveis_data.length > 0) {
+    setupResponsaveis.value = contagem.responsaveis_data.map(rd => {
+      const found = responsaveis.value.find(r => r.nome === rd.nome && r.telefone === rd.telefone)
+      return found || { id: rd.id, nome: rd.nome, telefone: rd.telefone }
+    })
+  } else if (contagem.responsavel_nome) {
     const found = responsaveis.value.find(
-      r => r.nome === c.responsavel_nome && r.telefone === c.responsavel_telefone
+      r => r.nome === contagem.responsavel_nome && r.telefone === contagem.responsavel_telefone
     )
-    setupResponsavel.value = found || { nome: c.responsavel_nome, telefone: c.responsavel_telefone || '' }
+    setupResponsaveis.value = [found || { nome: contagem.responsavel_nome, telefone: contagem.responsavel_telefone || '' }]
   } else {
-    setupResponsavel.value = null
+    setupResponsaveis.value = []
   }
 
   slideoverSetupOpen.value = true
-  try { allSetorProdutosData.value = await getAllSetorProdutos() } catch {}
 }
 
 const salvarContagem = async () => {
-  if (!setupNomeContagem.value.trim() || !setupRecorrencia.value || !setupResponsavel.value) return
+  if (!editandoContagemId.value || !setupRecorrencia.value || setupResponsaveis.value.length === 0) return
   try {
     loadingSetup.value = true
     const diasSemanaArr = Array.from(setupDiasSemana.value)
+    const primeiro = setupResponsaveis.value[0]
 
-    if (editandoContagemId.value) {
-      // Modo edição
-      await updateContagem(
-        editandoContagemId.value,
-        {
-          nome: setupNomeContagem.value.trim(),
-          recorrencia: setupRecorrencia.value,
-          horario_notificacao: setupHorarioNotificacao.value,
-          dias_semana: diasSemanaArr.length > 0 ? diasSemanaArr : undefined,
-          mensal_posicao: setupRecorrencia.value === 'mensal' ? setupMensalPosicao.value : undefined,
-          mensal_dia: setupRecorrencia.value === 'mensal' ? setupMensalDia.value : undefined,
-          responsavel_nome: setupResponsavel.value.nome,
-          responsavel_telefone: setupResponsavel.value.telefone,
-          responsavel_id: (setupResponsavel.value as any).id || undefined
-        }
-      )
-      slideoverSetupOpen.value = false
-      toast.add({ title: 'Sucesso', description: 'Contagem atualizada com sucesso', color: 'green' })
-      await carregarContagens()
-      // Atualizar contagem selecionada se estiver nos detalhes
-      if (contagemSelecionada.value?.id === editandoContagemId.value) {
-        const atualizada = contagensPersistidas.value.find(c => c.id === editandoContagemId.value)
-        if (atualizada) contagemSelecionada.value = atualizada
+    await updateContagem(
+      editandoContagemId.value,
+      {
+        recorrencia: setupRecorrencia.value,
+        horario_notificacao: setupHorarioNotificacao.value,
+        dias_semana: diasSemanaArr.length > 0 ? diasSemanaArr : undefined,
+        mensal_posicao: setupRecorrencia.value === 'mensal' ? setupMensalPosicao.value : undefined,
+        mensal_dia: setupRecorrencia.value === 'mensal' ? setupMensalDia.value : undefined,
+        // Legacy fields (primeiro responsável para retrocompatibilidade)
+        responsavel_nome: primeiro.nome,
+        responsavel_telefone: primeiro.telefone,
+        responsavel_id: (primeiro as any).id || undefined,
+        // Array completo
+        responsaveis_data: setupResponsaveis.value.map(r => ({ id: r.id, nome: r.nome, telefone: r.telefone }))
       }
-      editandoContagemId.value = null
-    } else {
-      // Modo criação
-      await createContagem(
-        {
-          nome: setupNomeContagem.value.trim(),
-          tipo: setupTipoContagem.value,
-          data: setupData.value,
-          recorrencia: setupRecorrencia.value,
-          horario_notificacao: setupHorarioNotificacao.value,
-          dias_semana: diasSemanaArr.length > 0 ? diasSemanaArr : undefined,
-          mensal_posicao: setupRecorrencia.value === 'mensal' ? setupMensalPosicao.value : undefined,
-          mensal_dia: setupRecorrencia.value === 'mensal' ? setupMensalDia.value : undefined,
-          responsavel_nome: setupResponsavel.value.nome,
-          responsavel_telefone: setupResponsavel.value.telefone,
-          responsavel_id: (setupResponsavel.value as any).id || undefined
-        }
-      )
-      slideoverSetupOpen.value = false
-      toast.add({ title: 'Sucesso', description: 'Contagem criada com sucesso', color: 'green' })
-      await carregarContagens()
+    )
+    slideoverSetupOpen.value = false
+    toast.add({ title: 'Sucesso', description: 'Contagem configurada com sucesso', color: 'green' })
+    await carregarContagens()
+    // Atualizar contagem selecionada se estiver nos detalhes
+    if (contagemSelecionada.value?.id === editandoContagemId.value) {
+      const atualizada = contagensPersistidas.value.find(c => c.id === editandoContagemId.value)
+      if (atualizada) contagemSelecionada.value = atualizada
     }
+    editandoContagemId.value = null
   } catch (error: any) {
     toast.add({ title: 'Erro', description: error.message || 'Erro ao salvar contagem', color: 'red' })
   } finally {
@@ -876,6 +936,7 @@ onTableChange('ajustes', () => carregarContagens())
 watch(empresaId, async () => {
   if (empresaId.value) {
     await carregarDadosBase()
+    await ensureDefaultContagens()
     await Promise.all([
       carregarContagens(),
       carregarResponsaveis()

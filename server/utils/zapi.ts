@@ -91,32 +91,20 @@ export function montarMensagemLembrete(dados: {
     ? dados.setores.map(s => `  • ${s}`).join('\n')
     : '  • (setores não disponíveis)'
 
-  const recorrenciaLabel: Record<string, string> = {
-    diaria: 'Diária',
-    semanal: 'Semanal',
-    quinzenal: 'Quinzenal',
-    mensal: 'Mensal'
-  }
-
   const appUrl = dados.baseUrl || 'https://www.cmv360app.com.br'
   const link = dados.token
     ? `${appUrl}/contagem/${dados.token}`
     : `${appUrl}/movimentos/contagens`
 
   return [
-    `📋 *Lembrete de Contagem*`,
+    `📋 *${dados.nomeContagem}*`,
     ``,
     `Olá, *${dados.responsavelNome}*!`,
-    `Está na hora de realizar a contagem:`,
-    ``,
-    `📌 *${dados.nomeContagem}*`,
-    `🔄 Recorrência: ${recorrenciaLabel[dados.recorrencia] || dados.recorrencia}`,
-    `⏰ Horário: ${dados.horario}`,
+    `Hora de contar o estoque.`,
     ``,
     `📍 *Setores:*`,
     setoresTexto,
     ``,
-    `👉 *Acesse e inicie a contagem:*`,
-    link
+    `👉 ${link}`
   ].join('\n')
 }

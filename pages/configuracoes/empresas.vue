@@ -431,7 +431,7 @@ const uploadLogo = async (empresaId: string): Promise<string | undefined> => {
   uploadingLogo.value = true
   try {
     const ext = logoFile.value.name.split('.').pop() || 'png'
-    const fileName = `${empresaId}/logo.${ext}`
+    const fileName = `${empresaId}/logo_${Date.now()}.${ext}`
 
     const { error: uploadError } = await client.storage
       .from('logos')
@@ -532,7 +532,7 @@ const salvarEmpresa = async () => {
     }
 
     showModal.value = false
-    await getEmpresas()
+    await carregarEmpresaAtiva()
   } catch (error: any) {
     toast.add({
       title: 'Erro',
@@ -573,7 +573,7 @@ const executarDeletar = async () => {
       description: 'A empresa foi removida com sucesso.',
       color: 'green'
     })
-    await getEmpresas()
+    await carregarEmpresaAtiva()
   } catch (error: any) {
     toast.add({
       title: 'Erro',

@@ -1335,6 +1335,7 @@ export const useEstoque = () => {
       responsavel_nome?: string
       responsavel_telefone?: string
       responsavel_id?: string
+      responsaveis_data?: Array<{ id?: string; nome: string; telefone: string }>
     }
   ) => {
     // Buscar status e tipo atual da contagem
@@ -1480,6 +1481,64 @@ export const useEstoque = () => {
         .eq('contagem_id', contagemId)
 
       if (error) throw error
+    }
+  }
+
+  const ensureDefaultContagens = async () => {
+    if (!empresaId.value) return
+
+    // Checar se as 3 contagens padrão já existem (exatamente 3 tipos)
+    const { data: existing } = await client
+      .from('contagens')
+      .select('id, tipo, recorrencia')
+      .eq('empresa_id', empresaId.value)
+
+    const tiposExistentes = new Set((existing || []).map((c: any) => c.tipo))
+    const temTodos = tiposExistentes.has('principal') && tiposExistentes.has('apoio') && tiposExistentes.has('inventario')
+
+    // Se já tem os 3 tipos, nada a fazer
+    if (temTodos) return
+
+    // Limpar contagens antigas (usuário autorizou) e recriar do zero
+    if (existing && existing.length > 0) {
+      const ids = existing.map((c: any) => c.id)
+      await client.from('contagem_itens').delete().in('contagem_id', ids)
+      await client.from('contagem_setores').delete().in('contagem_id', ids)
+      await client.from('contagens').delete().in('id', ids)
+    }
+
+    // Criar as 3 contagens padrão
+    const defaults = [
+      { tipo: 'principal', nome: 'Estoque Principal' },
+      { tipo: 'apoio', nome: 'Estoque de Apoio' },
+      { tipo: 'inventario', nome: 'Inventário' }
+    ]
+
+    for (const { tipo, nome } of defaults) {
+      const { data: nova } = await client
+        .from('contagens')
+        .insert({
+          empresa_id: empresaId.value,
+          nome,
+          tipo,
+          data: new Date().toISOString().split('T')[0],
+          recorrencia: 'nenhuma',
+          status: 'aguardando'
+        })
+        .select('id')
+        .single()
+
+      if (nova) {
+        // Best-effort: vincular setores disponíveis
+        const q = client.from('setores').select('id').eq('empresa_id', empresaId.value)
+        if (tipo !== 'inventario') q.eq('tipo', tipo)
+        const { data: setoresDisp } = await q
+        if (setoresDisp?.length) {
+          await client.from('contagem_setores').insert(
+            setoresDisp.map((s: any) => ({ contagem_id: (nova as any).id, setor_id: s.id }))
+          )
+        }
+      }
     }
   }
 
@@ -1737,7 +1796,7 @@ export const useEstoque = () => {
     updateContagem,
     updateContagemStatus,
     prepararProximoCiclo,
-    deleteContagem,
+    ensureDefaultContagens,
     // Contagem Itens
     getContagemItens,
     upsertContagemItens,

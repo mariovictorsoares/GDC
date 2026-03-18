@@ -112,12 +112,7 @@ export default defineEventHandler(async (event) => {
   // Buscar contagens que devem notificar AGORA ou que falharam no minuto anterior
   const { data: contagens, error } = await supabase
     .from('contagens')
-    .select(`
-      id, nome, token, recorrencia, horario_notificacao, dias_semana,
-      mensal_posicao, mensal_dia, responsavel_nome, responsavel_telefone,
-      status, ultima_contagem, data,
-      contagem_setores ( setor_id, setores ( nome ) )
-    `)
+    .select(`*, contagem_setores ( setor_id, setores ( nome ) )`)
     .neq('recorrencia', 'nenhuma')
     .in('status', ['aguardando', 'pendente', 'atrasada'])
     .in('horario_notificacao', [horaAtualStr, horaAnteriorStr])
@@ -141,8 +136,16 @@ export default defineEventHandler(async (event) => {
   const resultados: { contagem: string; sucesso: boolean; erro?: string; motivo?: string }[] = []
 
   for (const contagem of contagens) {
-    // Verificar se tem responsável com telefone
-    if (!contagem.responsavel_telefone || !contagem.responsavel_nome) continue
+    // Montar lista de responsáveis (array ou fallback para campo legado)
+    const responsaveisList: Array<{ nome: string; telefone: string }> = []
+    if (Array.isArray((contagem as any).responsaveis_data) && (contagem as any).responsaveis_data.length > 0) {
+      for (const r of (contagem as any).responsaveis_data) {
+        if (r.nome && r.telefone) responsaveisList.push({ nome: r.nome, telefone: r.telefone })
+      }
+    } else if (contagem.responsavel_nome && contagem.responsavel_telefone) {
+      responsaveisList.push({ nome: contagem.responsavel_nome, telefone: contagem.responsavel_telefone })
+    }
+    if (responsaveisList.length === 0) continue
 
     // Verificar dia da semana para recorrência semanal/quinzenal
     if (contagem.recorrencia === 'semanal' || contagem.recorrencia === 'quinzenal') {
@@ -183,40 +186,46 @@ export default defineEventHandler(async (event) => {
       .map((cs: any) => cs.setores?.nome)
       .filter(Boolean)
 
-    // Montar e enviar mensagem
+    // Enviar mensagem para todos os responsáveis
     const horario = contagem.horario_notificacao || '07:00'
-    const mensagem = montarMensagemLembrete({
-      nomeContagem: contagem.nome,
-      responsavelNome: contagem.responsavel_nome,
-      setores,
-      recorrencia: contagem.recorrencia,
-      horario,
-      token: contagem.token
-    })
+    let algumFalhou = false
 
-    const result = await sendWhatsAppText(
-      {
-        instanceId: config.zapiInstanceId,
-        token: config.zapiToken,
-        clientToken: config.zapiClientToken,
-        baseUrl: config.zapiBaseUrl
-      },
-      {
-        phone: contagem.responsavel_telefone,
-        message: mensagem
-      }
-    )
+    for (const resp of responsaveisList) {
+      const mensagem = montarMensagemLembrete({
+        nomeContagem: contagem.nome,
+        responsavelNome: resp.nome,
+        setores,
+        recorrencia: contagem.recorrencia,
+        horario,
+        token: contagem.token
+      })
 
-    if (!result.success) {
-      // Envio falhou — LIBERAR o claim para retry no próximo minuto
-      console.error(`[Cron] Falha ao enviar "${contagem.nome}", liberando claim para retry`)
+      const result = await sendWhatsAppText(
+        {
+          instanceId: config.zapiInstanceId,
+          token: config.zapiToken,
+          clientToken: config.zapiClientToken,
+          baseUrl: config.zapiBaseUrl
+        },
+        {
+          phone: resp.telefone,
+          message: mensagem
+        }
+      )
+
+      if (!result.success) algumFalhou = true
+    }
+
+    if (algumFalhou) {
+      // Algum envio falhou — LIBERAR o claim para retry no próximo minuto
+      console.error(`[Cron] Falha ao enviar "${contagem.nome}" para algum responsável, liberando claim para retry`)
       await supabase.rpc('release_lembrete', { p_contagem_id: contagem.id })
     }
 
     resultados.push({
       contagem: contagem.nome,
-      sucesso: result.success,
-      erro: result.error
+      sucesso: !algumFalhou,
+      erro: algumFalhou ? 'Falha em algum envio' : undefined
     })
 
     // Pequeno delay entre envios para não sobrecarregar Z-API

@@ -45,20 +45,22 @@
 
       <!-- Body -->
       <div class="space-y-6">
-        <!-- Responsavel info bar -->
+        <!-- Responsaveis info bar -->
         <div
-          v-if="contagem?.responsavel_nome"
+          v-if="responsaveisDisplay.length > 0"
           class="flex items-center gap-3 rounded-lg bg-operacao-50 dark:bg-operacao-700/30 px-4 py-3"
         >
           <UIcon name="i-heroicons-user-circle" class="w-5 h-5 text-operacao-400 flex-shrink-0" />
-          <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 text-sm">
-            <span class="text-operacao-800 dark:text-white font-medium">
-              Responsável: {{ contagem.responsavel_nome }}
-            </span>
-            <span v-if="contagem.responsavel_telefone" class="text-operacao-400 flex items-center gap-1">
-              <UIcon name="i-heroicons-phone" class="w-3.5 h-3.5" />
-              {{ contagem.responsavel_telefone }}
-            </span>
+          <div class="flex flex-col gap-1 text-sm">
+            <div v-for="(resp, idx) in responsaveisDisplay" :key="idx" class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
+              <span class="text-operacao-800 dark:text-white font-medium">
+                {{ responsaveisDisplay.length === 1 ? 'Responsável' : '' }} {{ resp.nome }}
+              </span>
+              <span v-if="resp.telefone" class="text-operacao-400 flex items-center gap-1">
+                <UIcon name="i-heroicons-phone" class="w-3.5 h-3.5" />
+                {{ resp.telefone }}
+              </span>
+            </div>
           </div>
         </div>
 
@@ -237,6 +239,17 @@ onMounted(() => {
   checkMobile()
   window.addEventListener('resize', checkMobile)
   onUnmounted(() => window.removeEventListener('resize', checkMobile))
+})
+
+// Responsáveis display (array ou fallback para campo legado)
+const responsaveisDisplay = computed(() => {
+  if (props.contagem?.responsaveis_data && props.contagem.responsaveis_data.length > 0) {
+    return props.contagem.responsaveis_data as Array<{ nome: string; telefone: string }>
+  }
+  if (props.contagem?.responsavel_nome) {
+    return [{ nome: props.contagem.responsavel_nome, telefone: props.contagem.responsavel_telefone || '' }]
+  }
+  return []
 })
 
 // All sectors finished (progresso >= 100)

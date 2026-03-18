@@ -18,8 +18,8 @@
           <p class="text-sm font-bold text-operacao-800">{{ labelRecorrencia(contagem.recorrencia) }}</p>
         </div>
         <div class="rounded-lg bg-white ring-1 ring-[#EBEBED] shadow-sm px-4 py-2.5">
-          <span class="text-[11px] font-medium text-operacao-400">Responsável</span>
-          <p class="text-sm font-bold text-operacao-800">{{ contagem.responsavel_nome || '-' }}</p>
+          <span class="text-[11px] font-medium text-operacao-400">{{ (contagem.responsaveis_data?.length || 0) > 1 ? 'Responsáveis' : 'Responsável' }}</span>
+          <p class="text-sm font-bold text-operacao-800">{{ responsaveisLabel }}</p>
         </div>
         <div class="rounded-lg bg-white ring-1 ring-[#EBEBED] shadow-sm px-4 py-2.5">
           <span class="text-[11px] font-medium text-operacao-400">Setores</span>
@@ -229,11 +229,18 @@ const emit = defineEmits<{
   'voltar': []
   'ver-progresso': []
   'editar': []
-  'excluir': []
   'enviar-lembrete': []
 }>()
 
 const { formatCurrency, formatNumber } = useFormatters()
+
+// Responsáveis label
+const responsaveisLabel = computed(() => {
+  if (props.contagem.responsaveis_data && props.contagem.responsaveis_data.length > 0) {
+    return props.contagem.responsaveis_data.map((r: any) => r.nome).join(', ')
+  }
+  return props.contagem.responsavel_nome || '-'
+})
 
 // Estado de expansão
 const expandido = ref<number | null>(null)
@@ -249,8 +256,7 @@ const acoes = computed(() => {
       { label: 'Editar', icon: 'i-heroicons-pencil-square', click: () => emit('editar') },
       ...(props.contagem.responsavel_telefone
         ? [{ label: 'Enviar Lembrete', icon: 'i-heroicons-chat-bubble-left-ellipsis', click: () => emit('enviar-lembrete') }]
-        : []),
-      { label: 'Excluir', icon: 'i-heroicons-trash', class: 'text-red-500', click: () => emit('excluir') }
+        : [])
     ]
   ]
   return items

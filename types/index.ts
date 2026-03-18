@@ -457,6 +457,7 @@ export interface Contagem {
   mensal_dia?: string
   responsavel_nome?: string
   responsavel_telefone?: string
+  responsaveis_data?: Array<{ id?: string; nome: string; telefone: string }>
   ultima_contagem?: string
   progresso?: number
   resultados?: ContagemResultado[]
