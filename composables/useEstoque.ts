@@ -1223,8 +1223,26 @@ export const useEstoque = () => {
     responsavel_nome?: string
     responsavel_telefone?: string
     responsavel_id?: string
-  }, setorIds: string[]) => {
-    // 1. Criar a contagem
+  }) => {
+    // 1. Auto-consultar setores pelo tipo
+    const setorQuery = client
+      .from('setores')
+      .select('id')
+      .eq('empresa_id', empresaId.value)
+
+    if (contagem.tipo !== 'inventario') {
+      setorQuery.eq('tipo', contagem.tipo)
+    }
+
+    const { data: setoresAuto } = await setorQuery
+    const setorIds = (setoresAuto || []).map((s: any) => s.id)
+
+    if (setorIds.length === 0) {
+      const tipoLabel = contagem.tipo === 'apoio' ? 'Estoque de Apoio' : contagem.tipo === 'inventario' ? 'Inventário' : 'Estoque Principal'
+      throw new Error(`Nenhum setor de ${tipoLabel} encontrado. Crie setores antes de criar uma contagem.`)
+    }
+
+    // 2. Criar a contagem
     const { data, error } = await client
       .from('contagens')
       .insert({ ...contagem, empresa_id: empresaId.value })
@@ -1234,15 +1252,13 @@ export const useEstoque = () => {
     if (error) throw error
     const nova = data as import('~/types').Contagem
 
-    // 2. Vincular setores
-    if (setorIds.length > 0) {
-      const rows = setorIds.map(sid => ({ contagem_id: nova.id, setor_id: sid }))
-      const { error: errSetores } = await client
-        .from('contagem_setores')
-        .insert(rows)
+    // 3. Vincular setores automaticamente
+    const rows = setorIds.map((sid: string) => ({ contagem_id: nova.id, setor_id: sid }))
+    const { error: errSetores } = await client
+      .from('contagem_setores')
+      .insert(rows)
 
-      if (errSetores) throw errSetores
-    }
+    if (errSetores) throw errSetores
 
     return nova
   }
@@ -1319,9 +1335,15 @@ export const useEstoque = () => {
       responsavel_nome?: string
       responsavel_telefone?: string
       responsavel_id?: string
-    },
-    setorIds?: string[]
+    }
   ) => {
+    // Buscar status e tipo atual da contagem
+    const { data: contagemAtual } = await client
+      .from('contagens')
+      .select('status, tipo')
+      .eq('id', id)
+      .single()
+
     const { error } = await client
       .from('contagens')
       .update({ ...contagem, updated_at: new Date().toISOString() })
@@ -1329,10 +1351,23 @@ export const useEstoque = () => {
 
     if (error) throw error
 
-    if (setorIds !== undefined) {
+    // Re-sincronizar setores apenas se a contagem não está em andamento
+    if (contagemAtual?.status !== 'em_andamento') {
+      const setorQuery = client
+        .from('setores')
+        .select('id')
+        .eq('empresa_id', empresaId.value)
+
+      if (contagemAtual?.tipo !== 'inventario') {
+        setorQuery.eq('tipo', contagemAtual?.tipo)
+      }
+
+      const { data: setoresAuto } = await setorQuery
+      const setorIds = (setoresAuto || []).map((s: any) => s.id)
+
       await client.from('contagem_setores').delete().eq('contagem_id', id)
       if (setorIds.length > 0) {
-        const rows = setorIds.map(sid => ({ contagem_id: id, setor_id: sid }))
+        const rows = setorIds.map((sid: string) => ({ contagem_id: id, setor_id: sid }))
         const { error: errSetores } = await client
           .from('contagem_setores')
           .insert(rows)
@@ -1411,12 +1446,41 @@ export const useEstoque = () => {
   }
 
   const resetContagemSetores = async (contagemId: string) => {
-    const { error } = await client
-      .from('contagem_setores')
-      .update({ status: 'pendente', progresso: 0, finalizado_em: null })
-      .eq('contagem_id', contagemId)
+    // Re-sincronizar setores (captura novos setores criados desde a última contagem)
+    const { data: contagemAtual } = await client
+      .from('contagens')
+      .select('tipo')
+      .eq('id', contagemId)
+      .single()
 
-    if (error) throw error
+    if (contagemAtual) {
+      const setorQuery = client
+        .from('setores')
+        .select('id')
+        .eq('empresa_id', empresaId.value)
+
+      if (contagemAtual.tipo !== 'inventario') {
+        setorQuery.eq('tipo', contagemAtual.tipo)
+      }
+
+      const { data: setoresAuto } = await setorQuery
+      const setorIds = (setoresAuto || []).map((s: any) => s.id)
+
+      await client.from('contagem_setores').delete().eq('contagem_id', contagemId)
+      if (setorIds.length > 0) {
+        await client.from('contagem_setores').insert(
+          setorIds.map((sid: string) => ({ contagem_id: contagemId, setor_id: sid }))
+        )
+      }
+    } else {
+      // Fallback: só resetar status se não conseguiu buscar o tipo
+      const { error } = await client
+        .from('contagem_setores')
+        .update({ status: 'pendente', progresso: 0, finalizado_em: null })
+        .eq('contagem_id', contagemId)
+
+      if (error) throw error
+    }
   }
 
   const markContagemItensAjustados = async (contagemId: string, produtoIds: string[]) => {

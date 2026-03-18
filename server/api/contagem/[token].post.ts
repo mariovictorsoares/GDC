@@ -265,15 +265,29 @@ export default defineEventHandler(async (event) => {
       .delete()
       .eq('contagem_id', contagem.id)
 
-    // Resetar setores para próximo ciclo
+    // Re-sincronizar setores para próximo ciclo (captura novos setores criados)
+    // IMPORTANTE: filtrar por empresa_id pois este handler usa service_role (bypassa RLS)
+    const setorQuery = supabase
+      .from('setores')
+      .select('id')
+      .eq('empresa_id', contagem.empresa_id)
+
+    if ((contagem as any).tipo !== 'inventario') {
+      setorQuery.eq('tipo', (contagem as any).tipo)
+    }
+
+    const { data: setoresAtuais } = await setorQuery
+
     await supabase
       .from('contagem_setores')
-      .update({
-        status: 'aguardando',
-        progresso: 0,
-        finalizado_em: null
-      })
+      .delete()
       .eq('contagem_id', contagem.id)
+
+    if (setoresAtuais && setoresAtuais.length > 0) {
+      await supabase.from('contagem_setores').insert(
+        setoresAtuais.map((s: any) => ({ contagem_id: contagem.id, setor_id: s.id }))
+      )
+    }
 
     // Se tem recorrência, preparar para próximo ciclo (status aguardando)
     if (contagem.recorrencia && contagem.recorrencia !== 'nenhuma') {

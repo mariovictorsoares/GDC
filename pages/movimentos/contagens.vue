@@ -201,18 +201,13 @@
 
           <div class="border-t border-operacao-200" />
 
-          <!-- Tipo + Setores -->
+          <!-- Tipo -->
           <div>
-            <div class="flex items-center justify-between mb-1">
-              <h4 class="font-semibold text-operacao-800">Tipo e Setores</h4>
-              <span v-if="setupSetoresSelecionados.size > 0" class="text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
-                {{ setupSetoresSelecionados.size }}/{{ setoresFiltradosSetup.length }}
-              </span>
-            </div>
-            <p class="text-sm text-operacao-400 mb-3">Escolha o tipo de contagem e os setores.</p>
+            <h4 class="font-semibold text-operacao-800 mb-1">Tipo de Contagem</h4>
+            <p class="text-sm text-operacao-400 mb-3">Todos os setores do tipo selecionado serão contados automaticamente.</p>
 
             <!-- Seletor de tipo -->
-            <div v-if="!editandoContagemId" class="grid grid-cols-3 gap-2 mb-4">
+            <div v-if="!editandoContagemId" class="grid grid-cols-3 gap-2 mb-3">
               <button
                 v-for="opt in [
                   { value: 'principal', label: 'Estoque Principal', icon: 'i-heroicons-building-storefront' },
@@ -230,62 +225,23 @@
                 <span>{{ opt.label }}</span>
               </button>
             </div>
-            <div v-else class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-operacao-100 text-operacao-600 text-sm font-medium mb-4">
+            <div v-else class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-operacao-100 text-operacao-600 text-sm font-medium mb-3">
               <UIcon :name="setupTipoContagem === 'apoio' ? 'i-heroicons-archive-box' : setupTipoContagem === 'inventario' ? 'i-heroicons-clipboard-document-list' : 'i-heroicons-building-storefront'" class="w-4 h-4" />
               {{ setupTipoContagem === 'apoio' ? 'Estoque de Apoio' : setupTipoContagem === 'inventario' ? 'Inventário' : 'Estoque Principal' }}
               <span class="text-xs text-operacao-400">(não editável)</span>
             </div>
 
-            <UInput
-              v-if="setores.length > 5"
-              v-model="setupBuscaSetor"
-              placeholder="Filtrar setores..."
-              icon="i-heroicons-magnifying-glass"
-              size="sm"
-              class="mb-3"
-            />
-
-            <div v-if="setoresFiltradosSetup.length === 0" class="text-center py-6 text-operacao-400">
-              <UIcon name="i-heroicons-map-pin" class="w-8 h-8 mb-2 mx-auto" />
-              <p class="text-sm font-medium">Nenhum setor encontrado</p>
-              <p class="text-xs mt-1">Crie setores na tela principal antes de criar uma contagem</p>
+            <!-- Info: setores que serão contados -->
+            <div v-if="setoresDoTipoSelecionado.length > 0" class="flex items-center gap-2 px-3 py-2 rounded-lg bg-operacao-50 border border-operacao-200 text-sm text-operacao-500">
+              <UIcon name="i-heroicons-information-circle" class="w-4 h-4 flex-shrink-0 text-operacao-400" />
+              <span>
+                <span class="font-medium text-operacao-700">{{ setoresDoTipoSelecionado.length }} {{ setoresDoTipoSelecionado.length === 1 ? 'setor' : 'setores' }}</span>
+                serão contados: {{ setoresDoTipoSelecionado.map(s => s.nome).join(', ') }}
+              </span>
             </div>
-
-            <div v-else class="rounded-lg border border-operacao-200 divide-y divide-operacao-100 overflow-hidden">
-              <label
-                v-for="setor in setoresFiltradosSetup"
-                :key="setor.id"
-                class="flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors"
-                :class="setupSetoresSelecionados.has(setor.id) ? 'bg-emerald-50/60' : 'hover:bg-operacao-50'"
-              >
-                <div
-                  class="w-5 h-5 rounded flex-shrink-0 flex items-center justify-center border-2 transition-all"
-                  :class="setupSetoresSelecionados.has(setor.id)
-                    ? 'bg-emerald-500 border-emerald-500'
-                    : 'border-operacao-300 bg-white'"
-                  @click.prevent="toggleSetorSelecionado(setor.id)"
-                >
-                  <UIcon v-if="setupSetoresSelecionados.has(setor.id)" name="i-heroicons-check" class="w-3.5 h-3.5 text-white" />
-                </div>
-                <div class="flex-1 min-w-0" @click.prevent="toggleSetorSelecionado(setor.id)">
-                  <p class="text-sm font-medium text-operacao-800">
-                    {{ setor.nome }}
-                    <span v-if="setupTipoContagem === 'inventario'" class="text-[10px] font-normal text-operacao-400 ml-1">{{ setor.tipo === 'apoio' ? 'Apoio' : 'Principal' }}</span>
-                  </p>
-                </div>
-                <span class="text-xs text-operacao-400 tabular-nums flex-shrink-0">
-                  {{ (setorProdutosPorSetor[setor.id] || []).length }} {{ (setorProdutosPorSetor[setor.id] || []).length === 1 ? 'produto' : 'produtos' }}
-                </span>
-              </label>
-            </div>
-
-            <div v-if="setoresFiltradosSetup.length > 1" class="mt-2 flex justify-end">
-              <button
-                class="text-xs text-operacao-400 hover:text-operacao-500 transition-colors underline underline-offset-2"
-                @click="setupSetoresSelecionados.size === setoresFiltradosSetup.length ? setupSetoresSelecionados = new Set() : setupSetoresSelecionados = new Set(setoresFiltradosSetup.map(s => s.id))"
-              >
-                {{ setupSetoresSelecionados.size === setoresFiltradosSetup.length ? 'Desmarcar todos' : 'Selecionar todos' }}
-              </button>
+            <div v-else class="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-50 border border-red-200 text-sm text-red-600">
+              <UIcon name="i-heroicons-exclamation-triangle" class="w-4 h-4 flex-shrink-0" />
+              <span>Nenhum setor encontrado para este tipo. Crie setores antes de criar uma contagem.</span>
             </div>
           </div>
         </div>
@@ -295,7 +251,7 @@
             <UButton color="gray" variant="ghost" @click="slideoverSetupOpen = false">Cancelar</UButton>
             <UButton
               color="primary"
-              :disabled="!setupNomeContagem.trim() || !setupRecorrencia || !setupResponsavel || setupSetoresSelecionados.size === 0"
+              :disabled="!setupNomeContagem.trim() || !setupRecorrencia || !setupResponsavel || setoresDoTipoSelecionado.length === 0"
               :loading="loadingSetup"
               @click="salvarContagem"
             >
@@ -418,8 +374,6 @@ const setupData = ref(new Date().toISOString().split('T')[0])
 const setupRecorrencia = ref('nenhuma')
 const setupResponsavel = ref<{ nome: string; telefone: string } | null>(null)
 const loadingSetup = ref(false)
-const setupSetoresSelecionados = ref<Set<string>>(new Set())
-const setupBuscaSetor = ref('')
 const setupHorarioNotificacao = ref('07:00')
 const setupDiasSemana = ref<Set<string>>(new Set())
 const setupMensalPosicao = ref('primeira')
@@ -489,17 +443,9 @@ const setorProdutosPorSetor = computed(() => {
   return map
 })
 
-const setoresFiltradosSetup = computed(() => {
-  let lista = setores.value
-  // Filtrar por tipo da contagem (exceto inventário que mostra todos)
-  if (setupTipoContagem.value !== 'inventario') {
-    lista = lista.filter(s => s.tipo === setupTipoContagem.value)
-  }
-  if (setupBuscaSetor.value) {
-    const term = setupBuscaSetor.value.toLowerCase()
-    lista = lista.filter(s => s.nome.toLowerCase().includes(term))
-  }
-  return lista
+const setoresDoTipoSelecionado = computed(() => {
+  if (setupTipoContagem.value === 'inventario') return setores.value
+  return setores.value.filter(s => s.tipo === setupTipoContagem.value)
 })
 
 // ==========================================
@@ -769,32 +715,11 @@ const toggleDiaSemana = (dia: string) => {
   setupDiasSemana.value = novo
 }
 
-const toggleSetorSelecionado = (setorId: string) => {
-  const newSet = new Set(setupSetoresSelecionados.value)
-  if (newSet.has(setorId)) newSet.delete(setorId)
-  else newSet.add(setorId)
-  setupSetoresSelecionados.value = newSet
-}
-
 watch(() => setupRecorrencia.value, () => {
   setupHorarioNotificacao.value = '07:00'
   setupDiasSemana.value = new Set()
   setupMensalPosicao.value = 'primeira'
   setupMensalDia.value = 'segunda'
-})
-
-// Quando tipo muda, auto-selecionar setores adequados
-watch(() => setupTipoContagem.value, () => {
-  if (!editandoContagemId.value) {
-    if (setupTipoContagem.value === 'inventario') {
-      // Inventário: pré-seleciona todos os setores
-      nextTick(() => {
-        setupSetoresSelecionados.value = new Set(setoresFiltradosSetup.value.map(s => s.id))
-      })
-    } else {
-      setupSetoresSelecionados.value = new Set()
-    }
-  }
 })
 
 const adicionarResponsavel = async () => {
@@ -824,8 +749,6 @@ const abrirModalSetup = async () => {
   setupMensalPosicao.value = 'primeira'
   setupMensalDia.value = 'segunda'
   setupResponsavel.value = null
-  setupSetoresSelecionados.value = new Set()
-  setupBuscaSetor.value = ''
   slideoverSetupOpen.value = true
   try { allSetorProdutosData.value = await getAllSetorProdutos() } catch {}
 }
@@ -837,7 +760,6 @@ const abrirEditarContagem = async () => {
   editandoContagemId.value = c.id
   setupNomeContagem.value = c.nome || ''
   setupData.value = c.data || new Date().toISOString().split('T')[0]
-  setupBuscaSetor.value = ''
   // Mapear legacy 'estoque' → 'principal'
   const tipoRaw = c.tipo as string
   setupTipoContagem.value = tipoRaw === 'apoio' ? 'apoio' : tipoRaw === 'inventario' ? 'inventario' : 'principal'
@@ -862,20 +784,15 @@ const abrirEditarContagem = async () => {
     setupResponsavel.value = null
   }
 
-  // Setores
-  const ids = (c.contagem_setores || []).map((cs: any) => cs.setor_id)
-  setupSetoresSelecionados.value = new Set(ids)
-
   slideoverSetupOpen.value = true
   try { allSetorProdutosData.value = await getAllSetorProdutos() } catch {}
 }
 
 const salvarContagem = async () => {
-  if (!setupNomeContagem.value.trim() || !setupRecorrencia.value || !setupResponsavel.value || setupSetoresSelecionados.value.size === 0) return
+  if (!setupNomeContagem.value.trim() || !setupRecorrencia.value || !setupResponsavel.value) return
   try {
     loadingSetup.value = true
     const diasSemanaArr = Array.from(setupDiasSemana.value)
-    const setorIds = Array.from(setupSetoresSelecionados.value)
 
     if (editandoContagemId.value) {
       // Modo edição
@@ -891,8 +808,7 @@ const salvarContagem = async () => {
           responsavel_nome: setupResponsavel.value.nome,
           responsavel_telefone: setupResponsavel.value.telefone,
           responsavel_id: (setupResponsavel.value as any).id || undefined
-        },
-        setorIds
+        }
       )
       slideoverSetupOpen.value = false
       toast.add({ title: 'Sucesso', description: 'Contagem atualizada com sucesso', color: 'green' })
@@ -918,8 +834,7 @@ const salvarContagem = async () => {
           responsavel_nome: setupResponsavel.value.nome,
           responsavel_telefone: setupResponsavel.value.telefone,
           responsavel_id: (setupResponsavel.value as any).id || undefined
-        },
-        setorIds
+        }
       )
       slideoverSetupOpen.value = false
       toast.add({ title: 'Sucesso', description: 'Contagem criada com sucesso', color: 'green' })

@@ -44,7 +44,7 @@
             <thead>
               <tr class="bg-operacao-50 border-b border-operacao-200">
                 <th class="text-left px-4 py-2.5 text-xs font-medium uppercase tracking-wider text-[#5a5a66]">Produto</th>
-                <th class="text-right px-4 py-2.5 text-xs font-medium uppercase tracking-wider text-[#5a5a66] w-24">Estoque</th>
+                <th class="text-right px-4 py-2.5 text-xs font-medium uppercase tracking-wider text-[#5a5a66] w-24">Estoque sistema</th>
                 <th class="text-right px-4 py-2.5 text-xs font-medium uppercase tracking-wider text-[#5a5a66] w-24">Solicitado</th>
                 <th class="text-right px-4 py-2.5 text-xs font-medium uppercase tracking-wider text-[#5a5a66] w-28">Enviar</th>
               </tr>

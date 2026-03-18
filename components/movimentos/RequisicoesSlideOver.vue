@@ -65,6 +65,17 @@
       <div class="flex-1 overflow-y-auto">
         <!-- Pendentes tab -->
         <div v-if="abaAtiva === 'pendentes'" class="px-6 py-4 space-y-3">
+          <div v-if="requisicoes.length > 0" class="flex justify-end">
+            <UButton
+              color="amber"
+              variant="soft"
+              size="xs"
+              icon="i-heroicons-printer"
+              @click="imprimirListaRequisicoes"
+            >
+              Imprimir lista
+            </UButton>
+          </div>
           <div
             v-for="req in requisicoes"
             :key="req.id"
@@ -276,7 +287,6 @@ const slideoverAberto = computed({
 })
 
 const toast = useToast()
-const config = useRuntimeConfig()
 const { getRequisicoes } = useEstoque()
 const abaAtiva = ref<'pendentes' | 'historico' | 'qrcodes'>('pendentes')
 
@@ -327,8 +337,53 @@ const formatQtd = (val?: number | null) => {
 const qrCodes = ref<Record<string, string>>({})
 
 const getRequisicaoUrl = (setor: Setor): string => {
-  const baseUrl = config.public.appUrl || window.location.origin
-  return `${baseUrl}/requisicao/${setor.token_requisicao}`
+  return `${window.location.origin}/requisicao/${setor.token_requisicao}`
+}
+
+const imprimirListaRequisicoes = () => {
+  if (props.requisicoes.length === 0) return
+
+  const cards = props.requisicoes.map(req => {
+    const rows = (req.itens || []).map(item => `
+      <tr>
+        <td style="padding:6px 12px;border-bottom:1px solid #f3f4f6;">${item.produto?.nome || '-'}</td>
+        <td style="padding:6px 12px;border-bottom:1px solid #f3f4f6;text-align:right;color:#374151;font-weight:500;">${formatQtd(item.quantidade_solicitada)} ${(item.produto as any)?.unidade?.sigla || ''}</td>
+      </tr>`).join('')
+    return `
+      <div style="page-break-inside:avoid;margin-bottom:20px;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;">
+        <div style="background:#fffbeb;padding:10px 16px;border-bottom:1px solid #e5e7eb;">
+          <div style="font-size:14px;font-weight:600;color:#1f2937;">${req.setor?.nome || 'Setor'}</div>
+          ${req.solicitante_nome ? `<div style="font-size:11px;color:#6b7280;margin-top:2px;">Solicitante: ${req.solicitante_nome}</div>` : ''}
+          <div style="font-size:11px;color:#9ca3af;margin-top:1px;">${formatDate(req.data)}</div>
+        </div>
+        <table style="width:100%;border-collapse:collapse;font-size:13px;">
+          <thead><tr style="background:#f9fafb;">
+            <th style="text-align:left;padding:6px 12px;font-size:10px;font-weight:600;text-transform:uppercase;color:#9ca3af;">Produto</th>
+            <th style="text-align:right;padding:6px 12px;font-size:10px;font-weight:600;text-transform:uppercase;color:#9ca3af;">Quantidade</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`
+  }).join('')
+
+  const html = `<!DOCTYPE html><html><head><title>Requisições Pendentes</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:780px;margin:0 auto;padding:24px;color:#1f2937;}
+      h1{font-size:18px;font-weight:700;color:#111827;margin:0 0 4px;}
+      .sub{font-size:12px;color:#9ca3af;margin:0 0 24px;}
+      @media print{body{padding:0;}h1{margin-top:0;}}
+    </style></head><body>
+    <h1>Requisições Pendentes</h1>
+    <p class="sub">Gerado em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</p>
+    ${cards}
+  </body></html>`
+
+  const win = window.open('', '_blank')
+  if (win) {
+    win.document.write(html)
+    win.document.close()
+    win.onload = () => { win.print() }
+  }
 }
 
 const gerarQRCodes = async () => {

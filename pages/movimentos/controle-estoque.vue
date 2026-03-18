@@ -2287,7 +2287,7 @@ const loadRequisicoes = async () => {
   try {
     pendentesReqCount.value = await countRequisicoesPendentes()
     requisicoesPendentes.value = pendentesReqCount.value > 0 ? await getRequisicoes('pendente') : []
-    setoresRequisicao.value = await getSetores()
+    setoresRequisicao.value = (await getSetores()).filter(s => s.tipo !== 'apoio')
   } catch (error) {
   }
 }

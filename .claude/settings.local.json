@@ -109,7 +109,9 @@
       "Bash(npx vue-tsc --noEmit --pretty)",
       "Bash(xargs grep -l \"TrialBanner\")",
       "Bash(xargs grep -l \"contagem\\\\|Contagem\")",
-      "Bash(xargs grep -l \"openEntradaModal\\\\|openSaidaModal\")"
+      "Bash(xargs grep -l \"openEntradaModal\\\\|openSaidaModal\")",
+      "Bash(wc -l /c/Users/mario/Desktop/estoque-cd/components/contagem/*.vue)",
+      "Bash(grep -l \"contagens\\\\|setores\" /c/Users/mario/Desktop/estoque-cd/supabase/migrations/*.sql)"
     ]
   }
 }
