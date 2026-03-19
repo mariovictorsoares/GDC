@@ -121,11 +121,19 @@ export default defineEventHandler(async (event) => {
   const todosFinalizados = (todosSetores || []).every((s: any) => s.status === 'finalizado')
 
   if (todosFinalizados) {
-    // Buscar todos os itens contados com info do produto e nome do setor
+    // Buscar todos os itens contados com info do produto
     const { data: itensContagem } = await supabase
       .from('contagem_itens')
-      .select('produto_id, setor_id, quantidade_contada, produto:produtos(nome, unidade:unidades(sigla)), setor:setores(nome), saldo_no_momento')
+      .select('produto_id, setor_id, quantidade_contada, produto:produtos(nome, unidade:unidades(sigla)), saldo_no_momento')
       .eq('contagem_id', contagem.id)
+
+    // Buscar nomes dos setores separadamente (evita ambiguidade de FK no join)
+    const setorIds = [...new Set((itensContagem || []).map((i: any) => i.setor_id))]
+    const { data: setoresData } = await supabase
+      .from('setores')
+      .select('id, nome')
+      .in('id', setorIds)
+    const setorNomeMap = new Map((setoresData || []).map((s: any) => [s.id, s.nome]))
 
     // Buscar saldos atuais
     const produtoIds = [...new Set((itensContagem || []).map((i: any) => i.produto_id))]
@@ -176,7 +184,7 @@ export default defineEventHandler(async (event) => {
       const saldo = saldoMap.get(pid)
       const saldoSistema = getSaldoParaTipo(saldo)
       const qtd = Number(item.quantidade_contada || 0)
-      const setorNome = (item as any).setor?.nome || ''
+      const setorNome = setorNomeMap.get(item.setor_id) || ''
 
       if (!produtoMap.has(pid)) {
         produtoMap.set(pid, {

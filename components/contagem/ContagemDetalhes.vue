@@ -351,6 +351,7 @@
               />
             </UCard>
           </div>
+          <div class="h-4" />
         </div>
       </div>
     </UModal>
@@ -400,9 +401,9 @@ const itensOrdenados = computed(() => {
 
 const cicloColumns = [
   { key: 'produto', label: 'Produto' },
-  { key: 'sistema', label: 'Sistema', class: 'text-right w-24', rowClass: 'text-right' },
-  { key: 'contado', label: 'Contado', class: 'text-right w-24', rowClass: 'text-right' },
-  { key: 'diferenca', label: 'Diferença', class: 'text-right w-28', rowClass: 'text-right' },
+  { key: 'sistema', label: 'Sistema', class: 'text-center w-24', rowClass: 'text-center' },
+  { key: 'contado', label: 'Contado', class: 'text-center w-24', rowClass: 'text-center' },
+  { key: 'diferenca', label: 'Diferença', class: 'text-center w-28', rowClass: 'text-center' },
   { key: 'valor', label: 'Valor', class: 'text-right w-28', rowClass: 'text-right' }
 ]
 
