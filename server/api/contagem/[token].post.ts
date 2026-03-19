@@ -250,7 +250,7 @@ export default defineEventHandler(async (event) => {
       .map(i => ({
         empresa_id: contagem.empresa_id,
         produto_id: i.produto_id,
-        data: contagem.data || new Date().toISOString().split('T')[0],
+        data: new Date().toISOString().split('T')[0],
         quantidade: i.diferenca,
         motivo: contagem.nome || 'Contagem',
         contagem_id: contagem.id,
