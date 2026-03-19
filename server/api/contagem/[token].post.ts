@@ -23,7 +23,7 @@ export default defineEventHandler(async (event) => {
   // 1. Buscar contagem pelo token
   const { data: contagem, error: errContagem } = await supabase
     .from('contagens')
-    .select('id, empresa_id, status, nome, tipo, data, recorrencia, resultados')
+    .select('id, empresa_id, status, nome, tipo, data, recorrencia')
     .eq('token', token)
     .single()
 
@@ -223,26 +223,54 @@ export default defineEventHandler(async (event) => {
     const totalFaltas = itensResultado.filter(i => i.diferenca < 0).length
     const valorTotal = itensResultado.reduce((sum, i) => sum + i.valor_divergencia, 0)
 
-    // Montar resultado
-    const existentes = ((contagem as any).resultados || []) as any[]
-    const cicloAtual = existentes.length + 1
+    // Calcular ciclo baseado em resultados existentes na tabela normalizada
+    const { count: existingCount } = await supabase
+      .from('contagem_resultados')
+      .select('*', { count: 'exact', head: true })
+      .eq('contagem_id', contagem.id)
 
-    const resultado = {
-      ciclo: cicloAtual,
-      data: contagem.data || new Date().toISOString().split('T')[0],
-      finalizado_em: new Date().toISOString(),
-      motivo: contagem.nome || 'Contagem',
-      resumo: {
+    const cicloAtual = (existingCount || 0) + 1
+    const agora = new Date().toISOString()
+
+    // Inserir resultado na tabela normalizada
+    const { data: insertedResultado, error: errResultado } = await supabase
+      .from('contagem_resultados')
+      .insert({
+        contagem_id: contagem.id,
+        empresa_id: contagem.empresa_id,
+        ciclo: cicloAtual,
+        data: new Date().toISOString().split('T')[0],
+        finalizado_em: agora,
+        motivo: contagem.nome || 'Contagem',
         total_contados: totalContados,
         total_nao_contados: 0,
         total_sobras: totalSobras,
         total_faltas: totalFaltas,
         valor_total_divergencia: valorTotal
-      },
-      itens: itensResultado
-    }
+      })
+      .select('id')
+      .single()
 
-    existentes.push(resultado)
+    if (errResultado) throw createError({ statusCode: 500, message: errResultado.message })
+
+    // Inserir itens do resultado
+    if (itensResultado.length > 0) {
+      await supabase
+        .from('contagem_resultado_itens')
+        .insert(itensResultado.map(item => ({
+          resultado_id: insertedResultado.id,
+          empresa_id: contagem.empresa_id,
+          produto_id: item.produto_id,
+          nome: item.nome,
+          unidade_sigla: item.unidade_sigla,
+          saldo_sistema: item.saldo_sistema,
+          quantidade_contada: item.quantidade_contada,
+          diferenca: item.diferenca,
+          custo_medio: item.custo_medio,
+          valor_divergencia: item.valor_divergencia,
+          setores_breakdown: item.setores_breakdown || []
+        })))
+    }
 
     // Criar ajustes para itens com divergência
     const ajustesPayload = itensResultado
@@ -263,14 +291,13 @@ export default defineEventHandler(async (event) => {
         .insert(ajustesPayload)
     }
 
-    // Atualizar contagem: salvar resultados, finalizar, e limpar itens
+    // Atualizar contagem: finalizar e limpar itens
     await supabase
       .from('contagens')
       .update({
-        resultados: existentes,
         status: 'finalizada',
-        ultima_contagem: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        ultima_contagem: agora,
+        updated_at: agora
       })
       .eq('id', contagem.id)
 

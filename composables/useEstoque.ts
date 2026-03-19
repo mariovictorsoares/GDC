@@ -1584,35 +1584,85 @@ export const useEstoque = () => {
   }
 
   const appendContagemResultado = async (contagemId: string, resultado: import('~/types').ContagemResultado) => {
-    // Buscar resultados existentes
-    const { data: contagem, error: errFetch } = await client
-      .from('contagens')
-      .select('resultados')
-      .eq('id', contagemId)
+    // Insert header row
+    const { data: inserted, error: errInsert } = await client
+      .from('contagem_resultados')
+      .insert({
+        contagem_id: contagemId,
+        empresa_id: empresaId.value,
+        ciclo: resultado.ciclo,
+        data: resultado.data,
+        finalizado_em: resultado.finalizado_em,
+        motivo: resultado.motivo,
+        total_contados: resultado.resumo.total_contados,
+        total_nao_contados: resultado.resumo.total_nao_contados,
+        total_sobras: resultado.resumo.total_sobras,
+        total_faltas: resultado.resumo.total_faltas,
+        valor_total_divergencia: resultado.resumo.valor_total_divergencia
+      })
+      .select('id')
       .single()
 
-    if (errFetch) throw errFetch
+    if (errInsert) throw errInsert
 
-    const existentes = (contagem?.resultados || []) as import('~/types').ContagemResultado[]
-    existentes.push(resultado)
+    // Insert item rows
+    if (resultado.itens.length > 0) {
+      const { error: errItens } = await client
+        .from('contagem_resultado_itens')
+        .insert(resultado.itens.map(item => ({
+          resultado_id: inserted.id,
+          empresa_id: empresaId.value,
+          produto_id: item.produto_id,
+          nome: item.nome,
+          unidade_sigla: item.unidade_sigla,
+          saldo_sistema: item.saldo_sistema,
+          quantidade_contada: item.quantidade_contada,
+          diferenca: item.diferenca,
+          custo_medio: item.custo_medio,
+          valor_divergencia: item.valor_divergencia,
+          setores_breakdown: item.setores_breakdown || []
+        })))
 
-    const { error } = await client
-      .from('contagens')
-      .update({ resultados: existentes })
-      .eq('id', contagemId)
-
-    if (error) throw error
+      if (errItens) throw errItens
+    }
   }
 
   const getContagemResultados = async (contagemId: string): Promise<import('~/types').ContagemResultado[]> => {
-    const { data, error } = await client
-      .from('contagens')
-      .select('resultados')
-      .eq('id', contagemId)
-      .single()
+    const { data: rows, error } = await client
+      .from('contagem_resultados')
+      .select('*, itens:contagem_resultado_itens(*)')
+      .eq('contagem_id', contagemId)
+      .order('finalizado_em', { ascending: false })
 
     if (error) throw error
-    return (data?.resultados || []) as import('~/types').ContagemResultado[]
+    if (!rows) return []
+
+    return rows.map((row: any) => ({
+      id: row.id,
+      contagem_id: row.contagem_id,
+      ciclo: row.ciclo,
+      data: row.data,
+      finalizado_em: row.finalizado_em,
+      motivo: row.motivo,
+      resumo: {
+        total_contados: row.total_contados,
+        total_nao_contados: row.total_nao_contados,
+        total_sobras: row.total_sobras,
+        total_faltas: row.total_faltas,
+        valor_total_divergencia: Number(row.valor_total_divergencia)
+      },
+      itens: (row.itens || []).map((item: any) => ({
+        produto_id: item.produto_id,
+        nome: item.nome,
+        unidade_sigla: item.unidade_sigla,
+        saldo_sistema: Number(item.saldo_sistema),
+        quantidade_contada: Number(item.quantidade_contada),
+        diferenca: Number(item.diferenca),
+        custo_medio: Number(item.custo_medio),
+        valor_divergencia: Number(item.valor_divergencia),
+        setores_breakdown: item.setores_breakdown
+      }))
+    }))
   }
 
   // ==========================================

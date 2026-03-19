@@ -543,6 +543,8 @@ export interface ContagemResultadoItem {
 }
 
 export interface ContagemResultado {
+  id?: string
+  contagem_id?: string
   ciclo: number
   data: string
   finalizado_em: string
