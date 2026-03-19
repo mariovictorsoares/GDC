@@ -172,6 +172,7 @@ export interface Ajuste {
   id: string
   produto_id: string
   contagem_id?: string
+  tipo?: 'principal' | 'apoio'
   data: string
   semana: string
   quantidade: number

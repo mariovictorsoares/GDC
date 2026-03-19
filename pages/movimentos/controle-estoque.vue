@@ -154,11 +154,15 @@
         </template>
 
         <template #quantidade-data="{ row }">
-          {{ formatNumber(row.quantidade) }} {{ row.produto?.unidade?.sigla || '' }}
+          <span v-if="row._tipoMov === 'ajuste'" class="font-semibold" :class="row.quantidade > 0 ? 'text-controle-600' : 'text-red-500'">
+            {{ row.quantidade > 0 ? '+' : '' }}{{ formatNumber(row.quantidade) }} {{ row.produto?.unidade?.sigla || '' }}
+          </span>
+          <span v-else>{{ formatNumber(row.quantidade) }} {{ row.produto?.unidade?.sigla || '' }}</span>
         </template>
 
         <template #valor-data="{ row }">
-          <span class="font-medium" :class="row._tipoMov === 'entrada' ? 'text-controle-600' : 'text-red-600'">
+          <span v-if="row._tipoMov === 'ajuste'" class="text-operacao-300">—</span>
+          <span v-else class="font-medium" :class="row._tipoMov === 'entrada' ? 'text-controle-600' : 'text-red-600'">
             {{ formatCurrency(row.valor) }}
           </span>
         </template>
@@ -985,6 +989,71 @@
       </UCard>
     </UModal>
 
+    <!-- ======================== MODAL: DETALHE DO AJUSTE ======================== -->
+    <UModal
+      v-model="ajusteDetalheOpen"
+      :ui="{
+        overlay: { background: 'bg-operacao-900/50 backdrop-blur-sm' },
+        background: 'bg-white dark:bg-operacao-800',
+        ring: 'ring-1 ring-operacao-200 dark:ring-operacao-700',
+        shadow: 'shadow-2xl'
+      }"
+    >
+      <UCard v-if="ajusteDetalhe" :ui="{ background: 'bg-transparent', ring: 'ring-0', shadow: '', divide: 'divide-operacao-100 dark:divide-operacao-700' }">
+        <template #header>
+          <div class="flex items-center gap-3">
+            <div class="p-2 rounded-lg bg-amber-100">
+              <UIcon name="i-heroicons-adjustments-horizontal" class="w-5 h-5 text-amber-600" />
+            </div>
+            <div>
+              <h3 class="text-lg font-semibold text-operacao-800">Ajuste de Contagem</h3>
+              <p class="text-sm text-operacao-400">Gerado automaticamente pela contagem</p>
+            </div>
+          </div>
+        </template>
+
+        <div class="space-y-4">
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <p class="text-xs font-medium text-operacao-400 uppercase tracking-wider mb-1">Produto</p>
+              <p class="text-sm font-semibold text-operacao-800">{{ ajusteDetalhe.produto?.nome || '-' }}</p>
+              <p class="text-xs text-operacao-400">{{ ajusteDetalhe.produto?.unidade?.sigla || '' }}</p>
+            </div>
+            <div>
+              <p class="text-xs font-medium text-operacao-400 uppercase tracking-wider mb-1">Data</p>
+              <p class="text-sm text-operacao-700">{{ formatDate(ajusteDetalhe.data) }}</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <p class="text-xs font-medium text-operacao-400 uppercase tracking-wider mb-1">Quantidade</p>
+              <p class="text-lg font-bold" :class="ajusteDetalhe.quantidade > 0 ? 'text-controle-600' : 'text-red-500'">
+                {{ ajusteDetalhe.quantidade > 0 ? '+' : '' }}{{ formatNumber(ajusteDetalhe.quantidade) }}
+              </p>
+            </div>
+            <div>
+              <p class="text-xs font-medium text-operacao-400 uppercase tracking-wider mb-1">Tipo</p>
+              <UBadge :color="ajusteDetalhe.tipo === 'apoio' ? 'blue' : 'green'" variant="soft" size="sm">
+                {{ ajusteDetalhe.tipo === 'apoio' ? 'Estoque de Apoio' : 'Estoque Principal' }}
+              </UBadge>
+            </div>
+          </div>
+
+          <div v-if="ajusteDetalhe.motivo">
+            <p class="text-xs font-medium text-operacao-400 uppercase tracking-wider mb-1">Origem</p>
+            <p class="text-sm text-operacao-700">{{ ajusteDetalhe.motivo }}</p>
+          </div>
+        </div>
+
+        <template #footer>
+          <div class="flex justify-end">
+            <UButton color="gray" variant="ghost" @click="ajusteDetalheOpen = false">Fechar</UButton>
+          </div>
+        </template>
+      </UCard>
+    </UModal>
+
     <!-- ======================== SLIDEOVER: TRANSFERÊNCIAS PENDENTES ======================== -->
     <USlideover
       v-model="showPendentesTransf"
@@ -1462,7 +1531,7 @@
 </template>
 
 <script setup lang="ts">
-import type { Entrada, Saida, Produto, TipoSaida, PainelMes, SemanaInfo, DiaInfo, PainelMesApoio, TransferenciaPendente, MapaVisualApoioItem } from '~/types'
+import type { Entrada, Saida, Ajuste, Produto, TipoSaida, PainelMes, SemanaInfo, DiaInfo, PainelMesApoio, TransferenciaPendente, MapaVisualApoioItem } from '~/types'
 import { DatePicker as VDatePicker } from 'v-calendar'
 
 // ======================== TOOLBAR UI ========================
@@ -1508,7 +1577,8 @@ const {
   rejeitarTransferencia,
   getRequisicoes,
   countRequisicoesPendentes,
-  getSetores
+  getSetores,
+  getAjustes
 } = useEstoque()
 const { empresaId, empresaAtiva, empresas } = useEmpresa()
 const { formatCurrency, formatNumber } = useFormatters()
@@ -1521,6 +1591,7 @@ const { getPainelMes, getPainelMesApoio, getMapaVisualApoio } = useRelatorios()
 
 const entradas = ref<Entrada[]>([])
 const saidas = ref<Saida[]>([])
+const ajustes = ref<Ajuste[]>([])
 const produtos = ref<Produto[]>([])
 const loading = ref(true)
 const saving = ref(false)
@@ -1708,7 +1779,8 @@ const tipoFilterOptions = [
   { label: 'Todos', value: '' },
   { label: 'Entrada', value: 'entrada' },
   { label: 'Transferência', value: 'transferencia' },
-  { label: 'Definitiva', value: 'definitiva' }
+  { label: 'Definitiva', value: 'definitiva' },
+  { label: 'Ajuste', value: 'ajuste' }
 ]
 
 const tipoFilterLabel = computed(() => {
@@ -1739,7 +1811,8 @@ const movimentos = computed(() => {
     semana: (e as any).semana,
     tipo: null as TipoSaida | null,
     _entradaOriginal: e,
-    _saidaOriginal: null as Saida | null
+    _saidaOriginal: null as Saida | null,
+    _ajusteOriginal: null as Ajuste | null
   }))
 
   const saidasMapped = saidas.value.map(s => ({
@@ -1756,15 +1829,34 @@ const movimentos = computed(() => {
     tipo: s.tipo,
     empresa_destino: s.empresa_destino || null,
     _entradaOriginal: null as Entrada | null,
-    _saidaOriginal: s
+    _saidaOriginal: s,
+    _ajusteOriginal: null as Ajuste | null
   }))
 
-  return [...entradasMapped, ...saidasMapped].sort((a, b) => {
+  const ajustesMapped = ajustes.value.map(a => ({
+    id: a.id,
+    _tipoMov: 'ajuste' as const,
+    data: a.data,
+    produto: a.produto,
+    produto_id: a.produto_id,
+    quantidade: a.quantidade,
+    valor: null as number | null,
+    custo_unitario: null as number | null,
+    numero_nf: null as string | null,
+    semana: a.semana,
+    tipo: null as TipoSaida | null,
+    empresa_destino: null,
+    _entradaOriginal: null as Entrada | null,
+    _saidaOriginal: null as Saida | null,
+    _ajusteOriginal: a
+  }))
+
+  return [...entradasMapped, ...saidasMapped, ...ajustesMapped].sort((a, b) => {
     const dateDiff = new Date(b.data).getTime() - new Date(a.data).getTime()
     if (dateDiff !== 0) return dateDiff
     // Mesma data: mais recente (created_at) primeiro
-    const ca = a._entradaOriginal?.created_at || a._saidaOriginal?.created_at || ''
-    const cb = b._entradaOriginal?.created_at || b._saidaOriginal?.created_at || ''
+    const ca = a._entradaOriginal?.created_at || a._saidaOriginal?.created_at || a._ajusteOriginal?.created_at || ''
+    const cb = b._entradaOriginal?.created_at || b._saidaOriginal?.created_at || b._ajusteOriginal?.created_at || ''
     return cb.localeCompare(ca)
   })
 })
@@ -1783,6 +1875,8 @@ const filteredMovimentos = computed(() => {
   if (filtroTipo.value) {
     if (filtroTipo.value === 'entrada') {
       result = result.filter(m => m._tipoMov === 'entrada')
+    } else if (filtroTipo.value === 'ajuste') {
+      result = result.filter(m => m._tipoMov === 'ajuste')
     } else {
       result = result.filter(m => m._tipoMov === 'saida' && m.tipo === filtroTipo.value)
     }
@@ -1853,12 +1947,18 @@ const getProdutoUnidade = (produtoId: string) => {
 
 const getTipoBadgeColor = (row: any) => {
   if (row._tipoMov === 'entrada') return 'green' as const
+  if (row._tipoMov === 'ajuste') return 'amber' as const
   if (row.tipo === 'transferencia') return 'blue' as const
   return 'red' as const
 }
 
 const getTipoLabel = (row: any): string => {
   if (row._tipoMov === 'entrada') return 'Entrada'
+  if (row._tipoMov === 'ajuste') {
+    const aj = row._ajusteOriginal as Ajuste | null
+    if (aj?.tipo === 'apoio') return 'Ajuste (Apoio)'
+    return 'Ajuste'
+  }
   if (row.tipo === 'transferencia') {
     if (row.empresa_destino) return `→ ${row.empresa_destino.nome}`
     return 'Transferência'
@@ -1933,6 +2033,17 @@ const loadSaidas = async () => {
   }
 }
 
+const loadAjustes = async () => {
+  try {
+    ajustes.value = await getAjustes({
+      dataInicio: filtroDataInicio.value || undefined,
+      dataFim: filtroDataFim.value || undefined
+    })
+  } catch (error: any) {
+    toast.add({ title: 'Erro', description: error.message || 'Erro ao carregar ajustes', color: 'red' })
+  }
+}
+
 const loadProdutos = async () => {
   try {
     produtos.value = await getProdutos()
@@ -1942,7 +2053,7 @@ const loadProdutos = async () => {
 
 const loadAll = async () => {
   loading.value = true
-  await Promise.all([loadEntradas(), loadSaidas(), loadProdutos(), loadPendentesTransf(), loadRequisicoes()])
+  await Promise.all([loadEntradas(), loadSaidas(), loadAjustes(), loadProdutos(), loadPendentesTransf(), loadRequisicoes()])
   loading.value = false
 }
 
@@ -2214,9 +2325,20 @@ const executeSaveSaida = async () => {
 
 // ======================== DELETE ========================
 
+// ======================== AJUSTE DETAIL MODAL ========================
+const ajusteDetalheOpen = ref(false)
+const ajusteDetalhe = ref<Ajuste | null>(null)
+
+const openAjusteDetalhe = (ajuste: Ajuste) => {
+  ajusteDetalhe.value = ajuste
+  ajusteDetalheOpen.value = true
+}
+
 const editRow = (row: any) => {
   if (row._tipoMov === 'entrada') {
     openEntradaModal(row._entradaOriginal)
+  } else if (row._tipoMov === 'ajuste') {
+    openAjusteDetalhe(row._ajusteOriginal)
   } else {
     openSaidaModal(row._saidaOriginal)
   }
@@ -2643,6 +2765,7 @@ watch(painelEstoque, (val) => {
 watch([filtroDataInicio, filtroDataFim], () => {
   loadEntradas()
   loadSaidas()
+  loadAjustes()
 })
 
 watch(
