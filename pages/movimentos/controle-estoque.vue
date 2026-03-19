@@ -127,9 +127,8 @@
           thead: '',
           th: { base: 'bg-operacao-100/70 dark:bg-operacao-800 border-b border-operacao-200/60 [&_button]:font-medium [&_button]:uppercase [&_button]:tracking-wider [&_button]:text-xs [&_button]:text-[#5a5a66] [&_button>span+span]:text-operacao-300 [&_button>span+span]:!w-3.5 [&_button>span+span]:!h-3.5', color: 'text-[#5a5a66] dark:text-operacao-400', font: 'font-medium', size: 'text-xs uppercase tracking-wider', padding: 'px-4 py-2' },
           td: { color: 'text-operacao-600 dark:text-operacao-200', size: 'text-sm', padding: 'px-4 py-2.5' },
-          tr: { base: 'cursor-pointer hover:bg-operacao-50/50 transition-colors' }
+          tr: { base: 'hover:bg-operacao-50/50 transition-colors' }
         }"
-        @select="editRow"
       >
         <template #empty-state>
           <div class="flex flex-col items-center justify-center py-6 text-operacao-400">
@@ -986,71 +985,6 @@
           <div class="flex flex-col-reverse sm:flex-row justify-end gap-3">
             <UButton color="gray" variant="ghost" class="w-full sm:w-auto" @click="deleteModalOpen = false">Cancelar</UButton>
             <UButton color="red" class="w-full sm:w-auto" :loading="deleting" @click="executeDelete">Excluir</UButton>
-          </div>
-        </template>
-      </UCard>
-    </UModal>
-
-    <!-- ======================== MODAL: DETALHE DO AJUSTE ======================== -->
-    <UModal
-      v-model="ajusteDetalheOpen"
-      :ui="{
-        overlay: { background: 'bg-operacao-900/50 backdrop-blur-sm' },
-        background: 'bg-white dark:bg-operacao-800',
-        ring: 'ring-1 ring-operacao-200 dark:ring-operacao-700',
-        shadow: 'shadow-2xl'
-      }"
-    >
-      <UCard v-if="ajusteDetalhe" :ui="{ background: 'bg-transparent', ring: 'ring-0', shadow: '', divide: 'divide-operacao-100 dark:divide-operacao-700' }">
-        <template #header>
-          <div class="flex items-center gap-3">
-            <div class="p-2 rounded-lg bg-amber-100">
-              <UIcon name="i-heroicons-adjustments-horizontal" class="w-5 h-5 text-amber-600" />
-            </div>
-            <div>
-              <h3 class="text-lg font-semibold text-operacao-800">Ajuste de Contagem</h3>
-              <p class="text-sm text-operacao-400">Gerado automaticamente pela contagem</p>
-            </div>
-          </div>
-        </template>
-
-        <div class="space-y-4">
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <p class="text-xs font-medium text-operacao-400 uppercase tracking-wider mb-1">Produto</p>
-              <p class="text-sm font-semibold text-operacao-800">{{ ajusteDetalhe.produto?.nome || '-' }}</p>
-              <p class="text-xs text-operacao-400">{{ ajusteDetalhe.produto?.unidade?.sigla || '' }}</p>
-            </div>
-            <div>
-              <p class="text-xs font-medium text-operacao-400 uppercase tracking-wider mb-1">Data</p>
-              <p class="text-sm text-operacao-700">{{ formatDate(ajusteDetalhe.data) }}</p>
-            </div>
-          </div>
-
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <p class="text-xs font-medium text-operacao-400 uppercase tracking-wider mb-1">Quantidade</p>
-              <p class="text-lg font-bold" :class="ajusteDetalhe.quantidade > 0 ? 'text-controle-600' : 'text-red-500'">
-                {{ ajusteDetalhe.quantidade > 0 ? '+' : '' }}{{ formatNumber(ajusteDetalhe.quantidade) }}
-              </p>
-            </div>
-            <div>
-              <p class="text-xs font-medium text-operacao-400 uppercase tracking-wider mb-1">Tipo</p>
-              <UBadge :color="ajusteDetalhe.tipo === 'apoio' ? 'blue' : 'green'" variant="soft" size="sm">
-                {{ ajusteDetalhe.tipo === 'apoio' ? 'Estoque de Apoio' : 'Estoque Principal' }}
-              </UBadge>
-            </div>
-          </div>
-
-          <div v-if="ajusteDetalhe.motivo">
-            <p class="text-xs font-medium text-operacao-400 uppercase tracking-wider mb-1">Origem</p>
-            <p class="text-sm text-operacao-700">{{ ajusteDetalhe.motivo }}</p>
-          </div>
-        </div>
-
-        <template #footer>
-          <div class="flex justify-end">
-            <UButton color="gray" variant="ghost" @click="ajusteDetalheOpen = false">Fechar</UButton>
           </div>
         </template>
       </UCard>
@@ -2327,24 +2261,6 @@ const executeSaveSaida = async () => {
 
 // ======================== DELETE ========================
 
-// ======================== AJUSTE DETAIL MODAL ========================
-const ajusteDetalheOpen = ref(false)
-const ajusteDetalhe = ref<Ajuste | null>(null)
-
-const openAjusteDetalhe = (ajuste: Ajuste) => {
-  ajusteDetalhe.value = ajuste
-  ajusteDetalheOpen.value = true
-}
-
-const editRow = (row: any) => {
-  if (row._tipoMov === 'entrada') {
-    openEntradaModal(row._entradaOriginal)
-  } else if (row._tipoMov === 'ajuste') {
-    openAjusteDetalhe(row._ajusteOriginal)
-  } else {
-    openSaidaModal(row._saidaOriginal)
-  }
-}
 
 const confirmDeleteRow = (row: any) => {
   deletingType.value = row._tipoMov
