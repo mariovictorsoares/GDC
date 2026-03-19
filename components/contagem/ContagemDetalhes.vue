@@ -294,20 +294,27 @@
                   <UTooltip
                     v-if="row.setores_breakdown && row.setores_breakdown.length >= 1"
                     :popper="{ placement: 'top', strategy: 'fixed' }"
-                    :ui="{ container: 'z-[100]' }"
+                    :ui="{ container: 'z-[100]', background: 'bg-gray-900', color: 'text-white', base: '!h-auto px-3 py-2.5 rounded-lg shadow-lg' }"
                   >
                     <span class="font-mono font-semibold text-operacao-800 tabular-nums border-b border-dashed border-operacao-300 cursor-help">
                       {{ formatNumber(row.quantidade_contada) }}
                     </span>
                     <template #text>
-                      <div class="space-y-1 py-0.5">
-                        <div
-                          v-for="sb in row.setores_breakdown"
-                          :key="sb.setor_id"
-                          class="flex items-center justify-between gap-4 text-xs"
-                        >
-                          <span class="text-white/70">{{ sb.setor_nome }}</span>
-                          <span class="font-semibold text-white font-mono tabular-nums">{{ formatNumber(sb.quantidade) }}</span>
+                      <div>
+                        <p class="text-[10px] uppercase tracking-wider text-gray-400 font-medium mb-1.5">Contagem por setor</p>
+                        <div class="space-y-1">
+                          <div
+                            v-for="sb in row.setores_breakdown"
+                            :key="sb.setor_id"
+                            class="flex items-center justify-between gap-6 text-xs"
+                          >
+                            <span class="text-gray-300">{{ sb.setor_nome }}</span>
+                            <span class="font-semibold text-white font-mono tabular-nums">{{ formatNumber(sb.quantidade) }} <span class="text-gray-500 font-normal text-[10px]">{{ row.unidade_sigla }}</span></span>
+                          </div>
+                        </div>
+                        <div class="border-t border-gray-700 mt-1.5 pt-1.5 flex items-center justify-between text-xs">
+                          <span class="text-gray-400 font-medium">Total</span>
+                          <span class="font-bold text-white font-mono tabular-nums">{{ formatNumber(row.quantidade_contada) }} <span class="text-gray-500 font-normal text-[10px]">{{ row.unidade_sigla }}</span></span>
                         </div>
                       </div>
                     </template>
@@ -389,9 +396,32 @@ const abrirSlideover = (r: ContagemResultado) => {
   slideoverOpen.value = true
 }
 
+// Mapa setor_id → nome, extraído dos dados da contagem
+const setorNomeMap = computed(() => {
+  const map = new Map<string, string>()
+  for (const cs of (props.contagem.contagem_setores || [])) {
+    if (cs.setor_id && cs.setor?.nome) {
+      map.set(cs.setor_id, cs.setor.nome)
+    }
+  }
+  return map
+})
+
 const itensOrdenados = computed(() => {
   if (!resultadoSelecionado.value) return []
-  return [...resultadoSelecionado.value.itens].sort((a, b) => {
+  return [...resultadoSelecionado.value.itens].map(item => {
+    // Enriquecer setores_breakdown com nomes caso estejam vazios
+    if (item.setores_breakdown) {
+      return {
+        ...item,
+        setores_breakdown: item.setores_breakdown.map(sb => ({
+          ...sb,
+          setor_nome: sb.setor_nome || setorNomeMap.value.get(sb.setor_id) || 'Setor'
+        }))
+      }
+    }
+    return item
+  }).sort((a, b) => {
     const absDiffA = Math.abs(a.diferenca)
     const absDiffB = Math.abs(b.diferenca)
     if (absDiffA !== absDiffB) return absDiffB - absDiffA

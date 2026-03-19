@@ -121,7 +121,11 @@
       "Bash(grep -n \"saldo_no_momento\" C:/Users/mario/Desktop/estoque-cd/server/api/contagem/*.ts)",
       "Bash(grep -A 30 \"CREATE TABLE.*contagem_itens\" C:/Users/mario/Desktop/estoque-cd/supabase/migrations/*.sql)",
       "Bash(grep -n \"saldo_no_momento\" C:/Users/mario/Desktop/estoque-cd/supabase/migrations/*.sql)",
-      "Bash(grep -B5 -A10 \"from\\(''v_saldo_estoque''\\)\" C:/Users/mario/Desktop/estoque-cd/server/api/contagem/[token].post.ts)"
+      "Bash(grep -B5 -A10 \"from\\(''v_saldo_estoque''\\)\" C:/Users/mario/Desktop/estoque-cd/server/api/contagem/[token].post.ts)",
+      "Bash(grep -l \"ajustes\" /c/Users/mario/Desktop/estoque-cd/supabase/migrations/*.sql)",
+      "Bash(grep -n -B 5 -A 30 \"calcular_custo_medio\\\\|CREATE FUNCTION\\\\|CREATE OR REPLACE FUNCTION\" /c/Users/mario/Desktop/estoque-cd/supabase/migrations/*.sql)",
+      "Bash(grep -n \"ALTER TABLE ajustes\\\\|ADD COLUMN.*tipo\\\\|ALTER TABLE.*ajustes.*ADD\" /c/Users/mario/Desktop/estoque-cd/supabase/migrations/*.sql)",
+      "Bash(grep -n \"tipo.*principal\\\\|tipo.*apoio\\\\|tipo.*inventario\" /c/Users/mario/Desktop/estoque-cd/supabase/migrations/*.sql)"
     ]
   }
 }
