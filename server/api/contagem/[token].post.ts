@@ -121,18 +121,18 @@ export default defineEventHandler(async (event) => {
   const todosFinalizados = (todosSetores || []).every((s: any) => s.status === 'finalizado')
 
   if (todosFinalizados) {
-    // Buscar todos os itens contados com info do produto
+    // Buscar todos os itens contados com info do produto e nome do setor
     const { data: itensContagem } = await supabase
       .from('contagem_itens')
-      .select('produto_id, setor_id, quantidade_contada, produto:produtos(nome, unidade:unidades(sigla)), saldo_no_momento')
+      .select('produto_id, setor_id, quantidade_contada, produto:produtos(nome, unidade:unidades(sigla)), setor:setores(nome), saldo_no_momento')
       .eq('contagem_id', contagem.id)
 
     // Buscar saldos atuais
     const produtoIds = [...new Set((itensContagem || []).map((i: any) => i.produto_id))]
+    // Nota: v_saldo_estoque nao possui coluna empresa_id, mas produto_id ja pertence a empresa correta
     const { data: saldoData } = await supabase
       .from('v_saldo_estoque')
       .select('produto_id, saldo_principal, saldo_apoio, saldo_atual, custo_medio')
-      .eq('empresa_id', contagem.empresa_id)
       .in('produto_id', produtoIds)
 
     const saldoMap = new Map((saldoData || []).map((s: any) => [s.produto_id, s]))
@@ -160,7 +160,7 @@ export default defineEventHandler(async (event) => {
       }))
     }
 
-    // Construir itens do resultado (agrupar por produto_id, somando se houver em múltiplos setores)
+    // Construir itens do resultado (agrupar por produto_id, somando se houver em múltiplos setores, preservando breakdown)
     const produtoMap = new Map<string, {
       produto_id: string
       nome: string
@@ -168,12 +168,15 @@ export default defineEventHandler(async (event) => {
       saldo_sistema: number
       quantidade_contada: number
       custo_medio: number
+      setores_breakdown: Array<{ setor_id: string; setor_nome: string; quantidade: number }>
     }>()
 
     for (const item of (itensContagem || [])) {
       const pid = item.produto_id
       const saldo = saldoMap.get(pid)
       const saldoSistema = getSaldoParaTipo(saldo)
+      const qtd = Number(item.quantidade_contada || 0)
+      const setorNome = (item as any).setor?.nome || ''
 
       if (!produtoMap.has(pid)) {
         produtoMap.set(pid, {
@@ -181,13 +184,14 @@ export default defineEventHandler(async (event) => {
           nome: (item as any).produto?.nome || '',
           unidade_sigla: (item as any).produto?.unidade?.sigla || '',
           saldo_sistema: saldoSistema,
-          quantidade_contada: Number(item.quantidade_contada || 0),
-          custo_medio: Number(saldo?.custo_medio || 0)
+          quantidade_contada: qtd,
+          custo_medio: Number(saldo?.custo_medio || 0),
+          setores_breakdown: [{ setor_id: item.setor_id, setor_nome: setorNome, quantidade: qtd }]
         })
       } else {
-        // Somar quantidades de múltiplos setores
         const existing = produtoMap.get(pid)!
-        existing.quantidade_contada += Number(item.quantidade_contada || 0)
+        existing.quantidade_contada += qtd
+        existing.setores_breakdown.push({ setor_id: item.setor_id, setor_nome: setorNome, quantidade: qtd })
       }
     }
 
@@ -201,7 +205,8 @@ export default defineEventHandler(async (event) => {
         quantidade_contada: item.quantidade_contada,
         diferenca,
         custo_medio: item.custo_medio,
-        valor_divergencia: diferenca * item.custo_medio
+        valor_divergencia: diferenca * item.custo_medio,
+        setores_breakdown: item.setores_breakdown
       }
     }).sort((a, b) => a.nome.localeCompare(b.nome))
 

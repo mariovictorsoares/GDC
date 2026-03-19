@@ -91,6 +91,7 @@
       @ver-progresso="abrirProgressoModal"
       @editar="abrirConfigurar(contagemSelecionada!)"
       @enviar-lembrete="enviarLembreteManual"
+      @atualizar="carregarContagens(); carregarHistorico()"
     />
 
     <!-- ============================================ -->
@@ -669,6 +670,11 @@ const carregarContagens = async () => {
   try {
     loadingContagens.value = true
     contagensPersistidas.value = await getContagens()
+    // Sincronizar contagemSelecionada com os dados atualizados
+    if (contagemSelecionada.value) {
+      const atualizada = contagensPersistidas.value.find(c => c.id === contagemSelecionada.value!.id)
+      if (atualizada) contagemSelecionada.value = atualizada
+    }
   } catch (error: any) {
     toast.add({ title: 'Erro', description: error.message || 'Erro ao carregar contagens', color: 'red' })
   } finally {
@@ -870,8 +876,6 @@ const enviarLembreteManual = async () => {
 
   try {
     loadingEnviarWhatsApp.value = true
-    const setoresNomes = (c.contagem_setores || []).map((cs: any) => cs.setor?.nome).filter(Boolean)
-    const setoresTexto = setoresNomes.length > 0 ? setoresNomes.map((s: string) => `  • ${s}`).join('\n') : '  • (setores não disponíveis)'
     const link = c.token
       ? `https://www.cmv360app.com.br/contagem/${c.token}`
       : `https://www.cmv360app.com.br/movimentos/contagens`
@@ -882,7 +886,6 @@ const enviarLembreteManual = async () => {
         `📋 *${c.nome}*`, ``,
         `Olá, *${resp.nome}*!`,
         `Hora de contar o estoque.`, ``,
-        `📍 *Setores:*`, setoresTexto, ``,
         `👉 ${link}`
       ].join('\n')
       await $fetch('/api/whatsapp/enviar', { method: 'POST', body: { phone: resp.telefone, message: mensagem } })
@@ -1035,7 +1038,13 @@ const recarregarSetores = async () => {
 // REALTIME
 // ==========================================
 const { onTableChange } = useRealtime()
-onTableChange(['contagens', 'contagem_setores', 'contagem_itens'], () => carregarContagens())
+onTableChange(['contagens', 'contagem_setores', 'contagem_itens'], () => {
+  carregarContagens()
+  // Se o usuario esta vendo detalhes, atualizar historico tambem
+  if (etapa.value === 'detalhes' && contagemSelecionada.value) {
+    carregarHistorico()
+  }
+})
 onTableChange(['produtos', 'grupos', 'subgrupos', 'setores', 'setor_produtos'], () => carregarDadosBase())
 onTableChange('responsaveis', () => carregarResponsaveis())
 onTableChange('ajustes', () => carregarContagens())

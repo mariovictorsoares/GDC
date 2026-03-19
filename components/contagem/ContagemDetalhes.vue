@@ -49,16 +49,21 @@
           </div>
 
           <!-- Actions -->
-          <UDropdown
-            :items="acoes"
-            :popper="{ placement: 'bottom-end' }"
-            class="flex-shrink-0"
-          >
-            <UButton color="white" variant="solid" size="sm" class="ring-1 ring-inset ring-[#EBEBED]">
-              <UIcon name="i-heroicons-ellipsis-vertical" class="w-4 h-4" />
-              Ações
+          <div class="flex items-center gap-2 flex-shrink-0">
+            <UButton color="white" variant="solid" size="sm" class="ring-1 ring-inset ring-[#EBEBED]" :loading="loadingHistorico" @click="$emit('atualizar')">
+              <UIcon name="i-heroicons-arrow-path" class="w-4 h-4" />
+              Atualizar
             </UButton>
-          </UDropdown>
+            <UDropdown
+              :items="acoes"
+              :popper="{ placement: 'bottom-end' }"
+            >
+              <UButton color="white" variant="solid" size="sm" class="ring-1 ring-inset ring-[#EBEBED]">
+                <UIcon name="i-heroicons-ellipsis-vertical" class="w-4 h-4" />
+                Ações
+              </UButton>
+            </UDropdown>
+          </div>
         </div>
       </div>
     </div>
@@ -73,19 +78,11 @@
         <USkeleton class="h-5 w-40" />
         <USkeleton class="h-4 w-24" />
       </div>
-      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-        <div v-for="i in 3" :key="i" class="rounded-xl bg-white ring-1 ring-[#EBEBED] p-4">
-          <div class="flex items-center gap-2 mb-3">
-            <USkeleton class="h-3 w-16" />
-            <USkeleton class="h-4 w-12 rounded-full" />
-          </div>
-          <USkeleton class="h-4 w-36 mb-1" />
-          <USkeleton class="h-3 w-28 mb-4" />
-          <div class="grid grid-cols-4 gap-2">
-            <USkeleton v-for="j in 4" :key="j" class="h-14 rounded-lg" />
-          </div>
-        </div>
-      </div>
+      <UCard :ui="{ base: 'overflow-hidden', body: { padding: '' }, ring: 'ring-1 ring-[#EBEBED]', shadow: 'shadow-sm' }">
+        <UTable :columns="historicoColumns" :rows="[]" :loading="true" :ui="historicoTableUi">
+          <template #empty-state><div /></template>
+        </UTable>
+      </UCard>
     </div>
 
     <!-- Empty state -->
@@ -114,265 +111,249 @@
         </span>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-        <!-- Resultado cards -->
-        <button
-          v-for="(r, idx) in resultados"
-          :key="'r-' + idx"
-          class="group relative text-left rounded-xl bg-white ring-1 ring-[#EBEBED] shadow-sm overflow-hidden transition-all duration-200 hover:shadow-lg hover:ring-operacao-300 hover:-translate-y-0.5 active:translate-y-0 active:shadow-md"
-          @click="abrirSlideover(r)"
+      <UCard :ui="{ base: 'overflow-hidden', body: { padding: '' }, ring: 'ring-1 ring-[#EBEBED]', shadow: 'shadow-sm' }">
+        <UTable
+          :columns="historicoColumns"
+          :rows="paginatedHistorico"
+          :ui="historicoTableUi"
+          @select="onHistoricoRowClick"
         >
-          <!-- Accent bar -->
-          <div class="h-1 w-full" :class="saudeBarCor(r)" />
-
-          <div class="p-4">
-            <!-- Top row -->
-            <div class="flex items-center justify-between mb-3">
-              <div class="flex items-center gap-2">
-                <span class="text-[11px] font-bold text-operacao-400 uppercase tracking-wider">
-                  #{{ r.ciclo || (resultados.length - idx) }}
-                </span>
-                <span class="w-1 h-1 rounded-full bg-operacao-200" />
-                <span class="text-[11px] text-operacao-400">{{ formatDateShort(r.finalizado_em) }}</span>
-              </div>
-              <span
-                class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold uppercase"
-                :class="saudeBadge(r)"
-              >
-                <span class="w-1.5 h-1.5 rounded-full" :class="saudeDot(r)" />
-                {{ saudeLabel(r) }}
-              </span>
+          <template #empty-state>
+            <div class="flex flex-col items-center justify-center py-6 text-operacao-400">
+              <UIcon name="i-heroicons-clipboard-document-check" class="w-8 h-8 mb-2" />
+              <p class="text-sm">Nenhuma contagem encontrada</p>
             </div>
+          </template>
 
-            <!-- Motivo -->
-            <p class="text-sm font-semibold text-operacao-800 truncate mb-0.5">
-              {{ r.motivo || 'Contagem finalizada' }}
-            </p>
-            <p class="text-xs text-operacao-400 mb-3">{{ formatDateTime(r.finalizado_em) }}</p>
+          <template #ciclo-data="{ row }">
+            <span v-if="row._tipo === 'resultado'" class="font-semibold text-operacao-500">#{{ row.ciclo }}</span>
+            <span v-else class="text-operacao-300">—</span>
+          </template>
 
-            <!-- Stats row -->
-            <div class="flex items-stretch gap-1.5">
-              <div class="flex-1 rounded-lg bg-operacao-50 py-2 text-center">
-                <p class="text-base font-bold text-operacao-700 leading-none mb-0.5">{{ r.resumo.total_contados }}</p>
-                <p class="text-[9px] font-semibold uppercase tracking-wider text-operacao-400">Contados</p>
-              </div>
-              <div class="flex-1 rounded-lg py-2 text-center" :class="r.resumo.total_sobras > 0 ? 'bg-controle-50' : 'bg-operacao-50'">
-                <p class="text-base font-bold leading-none mb-0.5" :class="r.resumo.total_sobras > 0 ? 'text-controle-600' : 'text-operacao-300'">{{ r.resumo.total_sobras }}</p>
-                <p class="text-[9px] font-semibold uppercase tracking-wider text-operacao-400">Sobras</p>
-              </div>
-              <div class="flex-1 rounded-lg py-2 text-center" :class="r.resumo.total_faltas > 0 ? 'bg-red-50' : 'bg-operacao-50'">
-                <p class="text-base font-bold leading-none mb-0.5" :class="r.resumo.total_faltas > 0 ? 'text-red-500' : 'text-operacao-300'">{{ r.resumo.total_faltas }}</p>
-                <p class="text-[9px] font-semibold uppercase tracking-wider text-operacao-400">Faltas</p>
-              </div>
-              <div class="flex-1 rounded-lg py-2 text-center" :class="impactoBg(r.resumo.valor_total_divergencia)">
-                <p class="text-sm font-bold leading-none mb-0.5 truncate px-1" :class="impactoColor(r.resumo.valor_total_divergencia)">
-                  {{ formatCurrencyCompact(r.resumo.valor_total_divergencia) }}
-                </p>
-                <p class="text-[9px] font-semibold uppercase tracking-wider text-operacao-400">R$</p>
-              </div>
-            </div>
-          </div>
+          <template #data-data="{ row }">
+            {{ row.dataFormatada }}
+          </template>
 
-          <!-- Hover indicator -->
-          <div class="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
-            <UIcon name="i-heroicons-arrow-right" class="w-4 h-4 text-operacao-300" />
-          </div>
-        </button>
+          <template #tipo-data="{ row }">
+            <span class="text-operacao-800">{{ row.motivo }}</span>
+          </template>
 
-        <!-- Legado cards -->
-        <div
-          v-for="(h, idx) in historico"
-          :key="'h-' + idx"
-          class="relative rounded-xl bg-white ring-1 ring-[#EBEBED] shadow-sm overflow-hidden"
-        >
-          <div class="h-1 w-full bg-operacao-200" />
-          <div class="p-4">
-            <div class="flex items-center gap-2 mb-3">
-              <span class="text-[11px] font-bold text-operacao-300 uppercase tracking-wider">Legado</span>
-              <span class="w-1 h-1 rounded-full bg-operacao-200" />
-              <span class="text-[11px] text-operacao-400">{{ formatDate(h.data) }}</span>
-            </div>
-            <p class="text-sm font-semibold text-operacao-800 truncate mb-3">{{ h.motivo }}</p>
-            <div class="flex items-stretch gap-1.5">
-              <div class="flex-1 rounded-lg py-2 text-center" :class="h.total_sobras > 0 ? 'bg-controle-50' : 'bg-operacao-50'">
-                <p class="text-base font-bold leading-none mb-0.5" :class="h.total_sobras > 0 ? 'text-controle-600' : 'text-operacao-300'">{{ h.total_sobras }}</p>
-                <p class="text-[9px] font-semibold uppercase tracking-wider text-operacao-400">Sobras</p>
-              </div>
-              <div class="flex-1 rounded-lg py-2 text-center" :class="h.total_faltas > 0 ? 'bg-red-50' : 'bg-operacao-50'">
-                <p class="text-base font-bold leading-none mb-0.5" :class="h.total_faltas > 0 ? 'text-red-500' : 'text-operacao-300'">{{ h.total_faltas }}</p>
-                <p class="text-[9px] font-semibold uppercase tracking-wider text-operacao-400">Faltas</p>
-              </div>
-              <div class="flex-1 rounded-lg py-2 text-center" :class="impactoBg(h.valor_total_divergencia)">
-                <p class="text-sm font-bold leading-none mb-0.5 truncate px-1" :class="impactoColor(h.valor_total_divergencia)">
-                  {{ formatCurrencyCompact(h.valor_total_divergencia) }}
-                </p>
-                <p class="text-[9px] font-semibold uppercase tracking-wider text-operacao-400">R$</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+          <template #status-data="{ row }">
+            <span
+              v-if="row._tipo === 'resultado'"
+              class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold uppercase"
+              :class="row.badgeClass"
+            >
+              <span class="w-1.5 h-1.5 rounded-full" :class="row.dotClass" />
+              {{ row.statusLabel }}
+            </span>
+            <span
+              v-else
+              class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold uppercase bg-operacao-100 text-operacao-400"
+            >
+              Legado
+            </span>
+          </template>
+
+          <template #contados-data="{ row }">
+            <span v-if="row._tipo === 'resultado'" class="font-semibold text-operacao-700 tabular-nums">{{ row.contados }}</span>
+            <span v-else class="text-operacao-300">—</span>
+          </template>
+
+          <template #sobras-data="{ row }">
+            <span class="font-semibold tabular-nums" :class="row.sobras > 0 ? 'text-controle-600' : 'text-operacao-300'">{{ row.sobras }}</span>
+          </template>
+
+          <template #faltas-data="{ row }">
+            <span class="font-semibold tabular-nums" :class="row.faltas > 0 ? 'text-red-500' : 'text-operacao-300'">{{ row.faltas }}</span>
+          </template>
+
+          <template #impacto-data="{ row }">
+            <span class="font-semibold tabular-nums" :class="impactoColor(row.valorDivergencia)">{{ formatCurrencyCompact(row.valorDivergencia) }}</span>
+          </template>
+        </UTable>
+
+        <TablePagination
+          v-if="totalContagens > 0"
+          v-model="historicoPage"
+          :page-size="historicoPageSize"
+          :total-items="allHistoricoRows.length"
+          @update:page-size="historicoPageSize = $event"
+        />
+      </UCard>
     </div>
 
     <!-- ========================================== -->
-    <!-- SLIDEOVER DE DETALHES                       -->
+    <!-- MODAL DE DETALHES DO CICLO                  -->
     <!-- ========================================== -->
-    <USlideover
+    <UModal
       v-model="slideoverOpen"
       :ui="{
-        width: 'max-w-2xl',
+        width: 'sm:max-w-7xl',
         overlay: { background: 'bg-operacao-900/40 backdrop-blur-[2px]' },
-        background: 'bg-white'
+        background: 'bg-white',
+        rounded: 'rounded-2xl',
+        shadow: 'shadow-xl',
+        padding: 'p-0'
       }"
     >
-      <div v-if="resultadoSelecionado" class="flex flex-col h-full">
-        <!-- Slideover header -->
-        <div class="px-6 py-4 border-b border-operacao-100">
-          <div class="flex items-center justify-between mb-3">
-            <div class="flex items-center gap-2.5">
-              <div class="w-9 h-9 rounded-lg flex items-center justify-center" :class="saudeIconBg(resultadoSelecionado)">
-                <UIcon :name="saudeIcon(resultadoSelecionado)" class="w-5 h-5" :class="saudeIconColor(resultadoSelecionado)" />
-              </div>
-              <div>
-                <h3 class="text-base font-bold text-operacao-800">Ciclo #{{ resultadoSelecionado.ciclo || '—' }}</h3>
-                <p class="text-xs text-operacao-400">{{ formatDateTime(resultadoSelecionado.finalizado_em) }}</p>
-              </div>
+      <div v-if="resultadoSelecionado" class="flex flex-col max-h-[85vh]">
+        <!-- Header compacto fixo -->
+        <div class="px-6 py-3 border-b border-operacao-100 flex items-center justify-between flex-shrink-0">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-lg flex items-center justify-center" :class="saudeIconBg(resultadoSelecionado)">
+              <UIcon :name="saudeIcon(resultadoSelecionado)" class="w-4.5 h-4.5" :class="saudeIconColor(resultadoSelecionado)" />
+            </div>
+            <div>
+              <h3 class="text-sm font-bold text-operacao-800 leading-tight">Ciclo #{{ resultadoSelecionado.ciclo || '—' }}</h3>
+              <p class="text-xs text-operacao-400">{{ formatDateTime(resultadoSelecionado.finalizado_em) }}</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-operacao-400">
+              <span class="inline-flex items-center gap-1">
+                <UIcon name="i-heroicons-arrow-path" class="w-3.5 h-3.5 text-operacao-300" />
+                {{ labelRecorrencia(contagem.recorrencia) }}
+              </span>
+              <span class="inline-flex items-center gap-1">
+                <UIcon name="i-heroicons-user-group" class="w-3.5 h-3.5 text-operacao-300" />
+                {{ responsaveisLabel }}
+              </span>
+              <span class="inline-flex items-center gap-1">
+                <UIcon name="i-heroicons-map-pin" class="w-3.5 h-3.5 text-operacao-300" />
+                {{ setoresList.length > 0 ? setoresList.join(', ') : 'Sem setores' }}
+              </span>
             </div>
             <UButton color="gray" variant="ghost" icon="i-heroicons-x-mark" size="sm" @click="slideoverOpen = false" />
           </div>
-
-          <!-- Motivo -->
-          <div v-if="resultadoSelecionado.motivo" class="flex items-start gap-2 px-3 py-2 rounded-lg bg-operacao-50 text-sm text-operacao-600">
-            <UIcon name="i-heroicons-chat-bubble-bottom-center-text" class="w-3.5 h-3.5 text-operacao-400 mt-0.5 flex-shrink-0" />
-            <span>{{ resultadoSelecionado.motivo }}</span>
-          </div>
         </div>
 
+        <!-- Conteudo com scroll (cards + tabela) -->
         <div class="flex-1 overflow-y-auto">
           <!-- Stat cards -->
-          <div class="px-6 py-4 border-b border-operacao-100">
-            <div class="grid grid-cols-5 gap-2">
-              <div class="rounded-lg bg-guardian-50 ring-1 ring-guardian-100 py-2.5 text-center">
-                <p class="text-xl font-bold text-guardian-600 leading-none">{{ resultadoSelecionado.resumo.total_contados }}</p>
-                <p class="text-[10px] text-guardian-500 font-semibold mt-1">Contados</p>
+          <div class="px-6 py-4">
+            <div class="grid grid-cols-5 gap-3">
+              <div class="rounded-lg bg-white ring-1 ring-operacao-100 py-2.5 text-center shadow-sm">
+                <p class="text-xl font-bold text-guardian-600 leading-none tracking-tight">{{ resultadoSelecionado.resumo.total_contados }}</p>
+                <p class="text-[10px] text-operacao-400 font-medium mt-1.5 uppercase tracking-wider">Contados</p>
               </div>
-              <div class="rounded-lg bg-operacao-50 ring-1 ring-operacao-100 py-2.5 text-center">
-                <p class="text-xl font-bold text-operacao-400 leading-none">{{ resultadoSelecionado.resumo.total_nao_contados }}</p>
-                <p class="text-[10px] text-operacao-400 font-semibold mt-1">Ignorados</p>
+              <div class="rounded-lg bg-white ring-1 ring-operacao-100 py-2.5 text-center shadow-sm">
+                <p class="text-xl font-bold text-operacao-300 leading-none tracking-tight">{{ resultadoSelecionado.resumo.total_nao_contados }}</p>
+                <p class="text-[10px] text-operacao-400 font-medium mt-1.5 uppercase tracking-wider">Ignorados</p>
               </div>
-              <div class="rounded-lg bg-controle-50 ring-1 ring-controle-100 py-2.5 text-center">
-                <p class="text-xl font-bold text-controle-600 leading-none">{{ resultadoSelecionado.resumo.total_sobras }}</p>
-                <p class="text-[10px] text-controle-500 font-semibold mt-1">Sobras</p>
+              <div class="rounded-lg bg-white ring-1 ring-operacao-100 py-2.5 text-center shadow-sm">
+                <p class="text-xl font-bold leading-none tracking-tight" :class="resultadoSelecionado.resumo.total_sobras > 0 ? 'text-controle-600' : 'text-operacao-300'">{{ resultadoSelecionado.resumo.total_sobras }}</p>
+                <p class="text-[10px] text-operacao-400 font-medium mt-1.5 uppercase tracking-wider">Sobras</p>
               </div>
-              <div class="rounded-lg bg-red-50 ring-1 ring-red-100 py-2.5 text-center">
-                <p class="text-xl font-bold text-red-500 leading-none">{{ resultadoSelecionado.resumo.total_faltas }}</p>
-                <p class="text-[10px] text-red-400 font-semibold mt-1">Faltas</p>
+              <div class="rounded-lg bg-white ring-1 ring-operacao-100 py-2.5 text-center shadow-sm">
+                <p class="text-xl font-bold leading-none tracking-tight" :class="resultadoSelecionado.resumo.total_faltas > 0 ? 'text-red-500' : 'text-operacao-300'">{{ resultadoSelecionado.resumo.total_faltas }}</p>
+                <p class="text-[10px] text-operacao-400 font-medium mt-1.5 uppercase tracking-wider">Faltas</p>
               </div>
-              <div
-                class="rounded-lg ring-1 py-2.5 text-center"
-                :class="resultadoSelecionado.resumo.valor_total_divergencia >= 0
-                  ? 'bg-controle-50 ring-controle-100'
-                  : 'bg-red-50 ring-red-100'"
-              >
-                <p class="text-lg font-bold leading-none" :class="resultadoSelecionado.resumo.valor_total_divergencia >= 0 ? 'text-controle-600' : 'text-red-500'">
+              <div class="rounded-lg bg-white ring-1 ring-operacao-100 py-2.5 text-center shadow-sm">
+                <p class="text-lg font-bold leading-none tracking-tight" :class="resultadoSelecionado.resumo.valor_total_divergencia >= 0 ? 'text-controle-600' : 'text-red-500'">
                   {{ formatCurrencyCompact(resultadoSelecionado.resumo.valor_total_divergencia) }}
                 </p>
-                <p class="text-[10px] font-semibold mt-1" :class="resultadoSelecionado.resumo.valor_total_divergencia >= 0 ? 'text-controle-500' : 'text-red-400'">Impacto</p>
+                <p class="text-[10px] text-operacao-400 font-medium mt-1.5 uppercase tracking-wider">Impacto</p>
               </div>
             </div>
           </div>
 
           <!-- Items table -->
-          <div class="px-6 py-4">
-            <div class="flex items-center justify-between mb-3">
-              <h4 class="text-sm font-bold text-operacao-700">Itens</h4>
-              <div class="flex items-center rounded-lg bg-operacao-50 p-0.5">
-                <button
-                  class="text-[11px] font-semibold px-2.5 py-1 rounded-md transition-all"
-                  :class="filtroItens === 'todos'
-                    ? 'bg-white text-operacao-700 shadow-sm ring-1 ring-black/5'
-                    : 'text-operacao-400 hover:text-operacao-600'"
-                  @click="filtroItens = 'todos'"
-                >
-                  Todos ({{ resultadoSelecionado.itens.length }})
-                </button>
-                <button
-                  class="text-[11px] font-semibold px-2.5 py-1 rounded-md transition-all"
-                  :class="filtroItens === 'divergencias'
-                    ? 'bg-white text-red-600 shadow-sm ring-1 ring-black/5'
-                    : 'text-operacao-400 hover:text-operacao-600'"
-                  @click="filtroItens = 'divergencias'"
-                >
-                  Divergências ({{ resultadoSelecionado.itens.filter(i => i.diferenca !== 0).length }})
-                </button>
-              </div>
-            </div>
+          <div class="px-6 pb-0">
+            <UCard :ui="{ base: 'overflow-hidden', body: { padding: '' }, ring: 'ring-1 ring-[#EBEBED]', shadow: 'shadow-sm' }">
+              <UTable
+                :columns="cicloColumns"
+                :rows="paginatedItens"
+                :ui="{
+                  divide: 'divide-y divide-operacao-50 dark:divide-operacao-700',
+                  thead: '',
+                  th: { base: 'bg-operacao-100/70 dark:bg-operacao-800 border-b border-operacao-200/60 [&_button]:font-medium [&_button]:uppercase [&_button]:tracking-wider [&_button]:text-xs [&_button]:text-[#5a5a66] [&_button>span+span]:text-operacao-300 [&_button>span+span]:!w-3.5 [&_button>span+span]:!h-3.5', color: 'text-[#5a5a66] dark:text-operacao-400', font: 'font-medium', size: 'text-xs uppercase tracking-wider', padding: 'px-4 py-2' },
+                  td: { color: 'text-operacao-600 dark:text-operacao-200', size: 'text-sm', padding: 'px-4 py-2.5' },
+                  tr: { base: 'hover:bg-operacao-50/50 transition-all duration-200 ease-in-out' }
+                }"
+              >
+                <template #empty-state>
+                  <div class="flex flex-col items-center justify-center py-6 text-operacao-400">
+                    <UIcon name="i-heroicons-clipboard-document-check" class="w-8 h-8 mb-2" />
+                    <p class="text-sm">Nenhum item contado</p>
+                  </div>
+                </template>
 
-            <div class="rounded-lg ring-1 ring-[#EBEBED] overflow-hidden">
-              <table class="w-full text-sm">
-                <thead>
-                  <tr class="bg-operacao-50/60">
-                    <th class="px-3 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-operacao-400">Produto</th>
-                    <th class="px-2 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wider text-operacao-400 w-20">Sistema</th>
-                    <th class="px-2 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wider text-operacao-400 w-20">Contado</th>
-                    <th class="px-2 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wider text-operacao-400 w-24">Diferença</th>
-                    <th class="px-3 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wider text-operacao-400 w-24">Valor</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-operacao-50">
-                  <tr
-                    v-for="item in itensFiltrados"
-                    :key="item.produto_id"
-                    class="transition-colors"
-                    :class="itemRowClass(item)"
+                <template #produto-data="{ row }">
+                  <div>
+                    <p class="font-semibold text-operacao-800">{{ row.nome }}</p>
+                    <p class="text-[10px] text-operacao-400">{{ row.unidade_sigla }}</p>
+                  </div>
+                </template>
+
+                <template #sistema-data="{ row }">
+                  <span class="font-mono tabular-nums">{{ formatNumber(row.saldo_sistema) }}</span>
+                </template>
+
+                <template #contado-data="{ row }">
+                  <UTooltip
+                    v-if="row.setores_breakdown && row.setores_breakdown.length >= 1"
+                    :popper="{ placement: 'top', strategy: 'fixed' }"
+                    :ui="{ container: 'z-[100]' }"
                   >
-                    <td class="px-3 py-2.5">
-                      <p class="font-medium text-operacao-800 text-[13px]">{{ item.nome }}</p>
-                      <p class="text-[10px] text-operacao-400">{{ item.unidade_sigla }}</p>
-                    </td>
-                    <td class="px-2 py-2.5 text-right font-mono text-[13px] text-operacao-500 tabular-nums">
-                      {{ formatNumber(item.saldo_sistema) }}
-                    </td>
-                    <td class="px-2 py-2.5 text-right font-mono text-[13px] text-operacao-800 font-semibold tabular-nums">
-                      {{ formatNumber(item.quantidade_contada) }}
-                    </td>
-                    <td class="px-2 py-2.5 text-right">
-                      <span
-                        v-if="item.diferenca !== 0"
-                        class="inline-flex items-center gap-0.5 font-bold font-mono text-[13px] tabular-nums"
-                        :class="item.diferenca > 0 ? 'text-controle-600' : 'text-red-500'"
-                      >
-                        <UIcon
-                          :name="item.diferenca > 0 ? 'i-heroicons-arrow-small-up' : 'i-heroicons-arrow-small-down'"
-                          class="w-4 h-4"
-                        />
-                        {{ Math.abs(item.diferenca) }}
-                      </span>
-                      <span v-else class="text-operacao-300 text-[13px]">—</span>
-                    </td>
-                    <td class="px-3 py-2.5 text-right">
-                      <span
-                        v-if="item.valor_divergencia !== 0"
-                        class="font-semibold font-mono text-[13px] tabular-nums"
-                        :class="item.valor_divergencia > 0 ? 'text-controle-600' : 'text-red-500'"
-                      >
-                        {{ item.valor_divergencia > 0 ? '+' : '' }}{{ formatCurrency(item.valor_divergencia) }}
-                      </span>
-                      <span v-else class="text-operacao-300 text-[13px]">—</span>
-                    </td>
-                  </tr>
-                  <tr v-if="itensFiltrados.length === 0">
-                    <td colspan="5" class="px-3 py-8 text-center text-operacao-400 text-sm">
-                      Nenhuma divergência encontrada
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+                    <span class="font-mono font-semibold text-operacao-800 tabular-nums border-b border-dashed border-operacao-300 cursor-help">
+                      {{ formatNumber(row.quantidade_contada) }}
+                    </span>
+                    <template #text>
+                      <div class="space-y-1 py-0.5">
+                        <div
+                          v-for="sb in row.setores_breakdown"
+                          :key="sb.setor_id"
+                          class="flex items-center justify-between gap-4 text-xs"
+                        >
+                          <span class="text-white/70">{{ sb.setor_nome }}</span>
+                          <span class="font-semibold text-white font-mono tabular-nums">{{ formatNumber(sb.quantidade) }}</span>
+                        </div>
+                      </div>
+                    </template>
+                  </UTooltip>
+                  <span v-else class="font-mono font-semibold text-operacao-800 tabular-nums border-b border-dashed border-operacao-300">{{ formatNumber(row.quantidade_contada) }}</span>
+                </template>
+
+                <template #diferenca-data="{ row }">
+                  <span
+                    v-if="row.diferenca !== 0"
+                    class="inline-flex items-center gap-0.5 font-bold font-mono tabular-nums"
+                    :class="row.diferenca > 0 ? 'text-controle-600' : 'text-red-500'"
+                  >
+                    <UIcon
+                      :name="row.diferenca > 0 ? 'i-heroicons-arrow-small-up' : 'i-heroicons-arrow-small-down'"
+                      class="w-4 h-4"
+                    />
+                    {{ Math.abs(row.diferenca) }}
+                  </span>
+                  <span v-else class="text-operacao-300">—</span>
+                </template>
+
+                <template #valor-data="{ row }">
+                  <span
+                    v-if="row.valor_divergencia !== 0"
+                    class="font-semibold font-mono tabular-nums"
+                    :class="row.valor_divergencia > 0 ? 'text-controle-600' : 'text-red-500'"
+                  >
+                    {{ row.valor_divergencia > 0 ? '+' : '' }}{{ formatCurrency(row.valor_divergencia) }}
+                  </span>
+                  <span v-else class="text-operacao-300">—</span>
+                </template>
+              </UTable>
+
+              <TablePagination
+                v-if="itensOrdenados.length > 0"
+                v-model="cicloPage"
+                :page-size="cicloPageSize"
+                :total-items="itensOrdenados.length"
+                @update:page-size="cicloPageSize = $event"
+              />
+            </UCard>
           </div>
         </div>
       </div>
-    </USlideover>
+    </UModal>
   </div>
 </template>
 
@@ -391,30 +372,131 @@ const emit = defineEmits<{
   'ver-progresso': []
   'editar': []
   'enviar-lembrete': []
+  'atualizar': []
 }>()
 
 const { formatCurrency, formatNumber } = useFormatters()
 
 // ==========================================
-// SLIDEOVER
+// MODAL DE DETALHES
 // ==========================================
 const slideoverOpen = ref(false)
 const resultadoSelecionado = ref<ContagemResultado | null>(null)
-const filtroItens = ref<'todos' | 'divergencias'>('todos')
-
 const abrirSlideover = (r: ContagemResultado) => {
   resultadoSelecionado.value = r
-  filtroItens.value = 'todos'
+  cicloPage.value = 1
   slideoverOpen.value = true
 }
 
-const itensFiltrados = computed(() => {
+const itensOrdenados = computed(() => {
   if (!resultadoSelecionado.value) return []
-  if (filtroItens.value === 'divergencias') {
-    return resultadoSelecionado.value.itens.filter(i => i.diferenca !== 0)
-  }
-  return resultadoSelecionado.value.itens
+  return [...resultadoSelecionado.value.itens].sort((a, b) => {
+    const absDiffA = Math.abs(a.diferenca)
+    const absDiffB = Math.abs(b.diferenca)
+    if (absDiffA !== absDiffB) return absDiffB - absDiffA
+    return a.nome.localeCompare(b.nome)
+  })
 })
+
+const cicloColumns = [
+  { key: 'produto', label: 'Produto' },
+  { key: 'sistema', label: 'Sistema', class: 'text-right w-24', rowClass: 'text-right' },
+  { key: 'contado', label: 'Contado', class: 'text-right w-24', rowClass: 'text-right' },
+  { key: 'diferenca', label: 'Diferença', class: 'text-right w-28', rowClass: 'text-right' },
+  { key: 'valor', label: 'Valor', class: 'text-right w-28', rowClass: 'text-right' }
+]
+
+const cicloPage = ref(1)
+const cicloPageSize = ref(20)
+const paginatedItens = computed(() => {
+  const start = (cicloPage.value - 1) * cicloPageSize.value
+  return itensOrdenados.value.slice(start, start + cicloPageSize.value)
+})
+
+// ==========================================
+// TABELA DE HISTÓRICO
+// ==========================================
+const historicoColumns = [
+  { key: 'ciclo', label: '#', class: 'w-16' },
+  { key: 'data', label: 'Data', class: 'w-40' },
+  { key: 'tipo', label: 'Tipo' },
+  { key: 'status', label: 'Status', class: 'w-24' },
+  { key: 'contados', label: 'Contados', class: 'text-right w-24' },
+  { key: 'sobras', label: 'Sobras', class: 'text-right w-20' },
+  { key: 'faltas', label: 'Faltas', class: 'text-right w-20' },
+  { key: 'impacto', label: 'Impacto', class: 'text-right w-24' }
+]
+
+const historicoTableUi = {
+  divide: 'divide-y divide-operacao-50 dark:divide-operacao-700',
+  thead: '',
+  th: {
+    base: 'bg-operacao-100/70 dark:bg-operacao-800 border-b border-operacao-200/60 [&_button]:font-medium [&_button]:uppercase [&_button]:tracking-wider [&_button]:text-xs [&_button]:text-[#5a5a66] [&_button>span+span]:text-operacao-300 [&_button>span+span]:!w-3.5 [&_button>span+span]:!h-3.5',
+    color: 'text-[#5a5a66] dark:text-operacao-400',
+    font: 'font-medium',
+    size: 'text-xs uppercase tracking-wider',
+    padding: 'px-4 py-2'
+  },
+  td: {
+    color: 'text-operacao-600 dark:text-operacao-200',
+    size: 'text-sm',
+    padding: 'px-4 py-2.5'
+  },
+  tr: { base: 'cursor-pointer hover:bg-operacao-50 transition-colors' }
+}
+
+const allHistoricoRows = computed(() => {
+  const resultadoRows = props.resultados.map((r, idx) => ({
+    _tipo: 'resultado' as const,
+    _original: r,
+    ciclo: r.ciclo || (props.resultados.length - idx),
+    dataFormatada: formatDateTime(r.finalizado_em),
+    motivo: r.motivo || 'Contagem finalizada',
+    statusLabel: saudeLabel(r),
+    badgeClass: saudeBadge(r),
+    dotClass: saudeDot(r),
+    contados: r.resumo.total_contados,
+    sobras: r.resumo.total_sobras,
+    faltas: r.resumo.total_faltas,
+    valorDivergencia: r.resumo.valor_total_divergencia
+  }))
+
+  const legadoRows = props.historico.map(h => ({
+    _tipo: 'legado' as const,
+    _original: null,
+    ciclo: 0,
+    dataFormatada: formatDate(h.data),
+    motivo: h.motivo,
+    statusLabel: 'Legado',
+    badgeClass: '',
+    dotClass: '',
+    contados: 0,
+    sobras: h.total_sobras,
+    faltas: h.total_faltas,
+    valorDivergencia: h.valor_total_divergencia
+  }))
+
+  return [...resultadoRows, ...legadoRows]
+})
+
+const historicoPage = ref(1)
+const historicoPageSize = ref(10)
+
+const paginatedHistorico = computed(() => {
+  const start = (historicoPage.value - 1) * historicoPageSize.value
+  return allHistoricoRows.value.slice(start, start + historicoPageSize.value)
+})
+
+// Reset page when data changes
+watch([() => props.resultados, () => props.historico], () => {
+  historicoPage.value = 1
+})
+
+const onHistoricoRowClick = (row: any) => {
+  if (row._tipo === 'resultado' && row._original) {
+    abrirSlideover(row._original)
+  }
+}
 
 // ==========================================
 // COMPUTED

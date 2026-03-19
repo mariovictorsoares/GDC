@@ -523,6 +523,12 @@ export interface ContagemHistorico {
 }
 
 // Snapshot de uma contagem finalizada (armazenado em contagens.resultados JSONB)
+export interface ContagemResultadoItemSetor {
+  setor_id: string
+  setor_nome: string
+  quantidade: number
+}
+
 export interface ContagemResultadoItem {
   produto_id: string
   nome: string
@@ -532,6 +538,7 @@ export interface ContagemResultadoItem {
   diferenca: number
   custo_medio: number
   valor_divergencia: number
+  setores_breakdown?: ContagemResultadoItemSetor[]
 }
 
 export interface ContagemResultado {

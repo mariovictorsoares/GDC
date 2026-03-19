@@ -186,11 +186,6 @@ export default defineEventHandler(async (event) => {
 
     console.log(`[Cron] Claim obtido para "${contagem.nome}", enviando...`)
 
-    // Montar nomes dos setores
-    const setores = (contagem.contagem_setores || [])
-      .map((cs: any) => cs.setores?.nome)
-      .filter(Boolean)
-
     // Enviar mensagem para todos os responsáveis
     const horario = contagem.horario_notificacao || '07:00'
     let algumFalhou = false
@@ -199,7 +194,6 @@ export default defineEventHandler(async (event) => {
       const mensagem = montarMensagemLembrete({
         nomeContagem: contagem.nome,
         responsavelNome: resp.nome,
-        setores,
         recorrencia: contagem.recorrencia,
         horario,
         token: contagem.token

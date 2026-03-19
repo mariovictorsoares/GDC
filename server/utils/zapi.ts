@@ -82,15 +82,10 @@ export function montarMensagemLembrete(dados: {
   contagemId?: string
   token?: string
   responsavelNome: string
-  setores: string[]
   recorrencia: string
   horario: string
   baseUrl?: string
 }): string {
-  const setoresTexto = dados.setores.length > 0
-    ? dados.setores.map(s => `  • ${s}`).join('\n')
-    : '  • (setores não disponíveis)'
-
   const appUrl = dados.baseUrl || 'https://www.cmv360app.com.br'
   const link = dados.token
     ? `${appUrl}/contagem/${dados.token}`
@@ -101,9 +96,6 @@ export function montarMensagemLembrete(dados: {
     ``,
     `Olá, *${dados.responsavelNome}*!`,
     `Hora de contar o estoque.`,
-    ``,
-    `📍 *Setores:*`,
-    setoresTexto,
     ``,
     `👉 ${link}`
   ].join('\n')

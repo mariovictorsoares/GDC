@@ -111,7 +111,17 @@
       "Bash(xargs grep -l \"contagem\\\\|Contagem\")",
       "Bash(xargs grep -l \"openEntradaModal\\\\|openSaidaModal\")",
       "Bash(wc -l /c/Users/mario/Desktop/estoque-cd/components/contagem/*.vue)",
-      "Bash(grep -l \"contagens\\\\|setores\" /c/Users/mario/Desktop/estoque-cd/supabase/migrations/*.sql)"
+      "Bash(grep -l \"contagens\\\\|setores\" /c/Users/mario/Desktop/estoque-cd/supabase/migrations/*.sql)",
+      "Bash(xargs grep -l \"contagem_itens\\\\|ContagemResultadoItem\\\\|ContagemItem\")",
+      "Bash(grep -l \"saldo_principal\\\\|saldo_apoio\" C:/Users/mario/Desktop/estoque-cd/supabase/migrations/*.sql)",
+      "Bash(grep -n \"CREATE VIEW.*v_saldo_estoque\\\\|DROP VIEW.*v_saldo_estoque\" C:/Users/mario/Desktop/estoque-cd/supabase/migrations/*.sql)",
+      "Bash(grep -A 5 \"from\\(''v_saldo_estoque''\\)\" C:/Users/mario/Desktop/estoque-cd/server/api/contagem/*.post.ts)",
+      "Bash(ls -1 C:/Users/mario/Desktop/estoque-cd/supabase/migrations/*.sql)",
+      "Bash(grep \"v_saldo_estoque\" C:/Users/mario/Desktop/estoque-cd/supabase/migrations/014_*.sql C:/Users/mario/Desktop/estoque-cd/supabase/migrations/015_*.sql C:/Users/mario/Desktop/estoque-cd/supabase/migrations/016_*.sql C:/Users/mario/Desktop/estoque-cd/supabase/migrations/017_*.sql C:/Users/mario/Desktop/estoque-cd/supabase/migrations/018_*.sql C:/Users/mario/Desktop/estoque-cd/supabase/migrations/019_*.sql C:/Users/mario/Desktop/estoque-cd/supabase/migrations/020_*.sql C:/Users/mario/Desktop/estoque-cd/supabase/migrations/021_*.sql C:/Users/mario/Desktop/estoque-cd/supabase/migrations/022_*.sql)",
+      "Bash(grep -n \"saldo_no_momento\" C:/Users/mario/Desktop/estoque-cd/server/api/contagem/*.ts)",
+      "Bash(grep -A 30 \"CREATE TABLE.*contagem_itens\" C:/Users/mario/Desktop/estoque-cd/supabase/migrations/*.sql)",
+      "Bash(grep -n \"saldo_no_momento\" C:/Users/mario/Desktop/estoque-cd/supabase/migrations/*.sql)",
+      "Bash(grep -B5 -A10 \"from\\(''v_saldo_estoque''\\)\" C:/Users/mario/Desktop/estoque-cd/server/api/contagem/[token].post.ts)"
     ]
   }
 }
