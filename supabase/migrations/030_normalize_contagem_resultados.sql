@@ -97,14 +97,14 @@ SELECT
   COALESCE((item.value->>'custo_medio')::numeric, 0),
   (item.value->>'valor_divergencia')::numeric,
   COALESCE(item.value->'setores_breakdown', '[]'::jsonb)
-FROM contagens c,
-     jsonb_array_elements(COALESCE(c.resultados, '[]'::jsonb)) AS r(value),
-     jsonb_array_elements(COALESCE(r.value->'itens', '[]'::jsonb)) AS item(value)
-     JOIN contagem_resultados cr
-       ON cr.contagem_id = c.id
-       AND cr.ciclo = (r.value->>'ciclo')::integer
-WHERE c.resultados IS NOT NULL
-  AND jsonb_array_length(c.resultados) > 0;
+FROM contagem_resultados cr
+JOIN contagens c ON c.id = cr.contagem_id,
+     LATERAL jsonb_array_elements(
+       (SELECT r.value->'itens'
+        FROM jsonb_array_elements(COALESCE(c.resultados, '[]'::jsonb)) AS r(value)
+        WHERE (r.value->>'ciclo')::integer = cr.ciclo
+        LIMIT 1)
+     ) AS item(value);
 
 -- 5. Marcar coluna JSONB como deprecated (nao dropar)
 COMMENT ON COLUMN contagens.resultados IS 'DEPRECATED: migrado para contagem_resultados + contagem_resultado_itens. Mantido para rollback.';
