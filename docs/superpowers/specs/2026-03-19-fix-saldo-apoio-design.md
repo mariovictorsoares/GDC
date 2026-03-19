@@ -65,9 +65,16 @@ CREATE INDEX IF NOT EXISTS idx_ajustes_tipo ON ajustes(tipo);
 
 **Backfill dados existentes:**
 ```sql
-UPDATE ajustes SET tipo = 'apoio' WHERE motivo = 'Estoque de Apoio';
+-- 1. Via contagem_id FK (confiavel, para ajustes que ja tem contagem_id preenchido)
+UPDATE ajustes a SET tipo = 'apoio'
+FROM contagens c
+WHERE a.contagem_id = c.id AND c.tipo = 'apoio';
+
+-- 2. Fallback: para ajustes sem contagem_id, match por motivo (nome da contagem)
+UPDATE ajustes SET tipo = 'apoio'
+WHERE contagem_id IS NULL AND motivo ILIKE '%apoio%';
 ```
-Match pelo campo `motivo` que guarda o nome da contagem. Ajustes que nao matcharem ficam como `'principal'` (default seguro).
+Estrategia dupla: primeiro tenta via FK (preciso), depois fallback por texto (flexivel). Ajustes que nao matcharem nenhum ficam como `'principal'` (default seguro).
 
 **Recriar view:**
 ```sql
@@ -134,6 +141,10 @@ const ajustesPayload = itensResultado
     tipo: contagemTipo === 'apoio' ? 'apoio' : 'principal'  // NOVO
   }))
 ```
+
+## Nota sobre contagem tipo `inventario`
+
+Contagens de inventario usam `saldo_atual` como referencia. Quando geram ajuste, o tipo fica como `'principal'` (default). Isso funciona corretamente porque `saldo_atual = saldo_principal + saldo_apoio` — um ajuste que incrementa `saldo_principal` automaticamente incrementa `saldo_atual` tambem, reconciliando o valor total.
 
 ## Premissas
 
