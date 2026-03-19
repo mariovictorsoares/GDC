@@ -1496,8 +1496,28 @@ export const useEstoque = () => {
     const tiposExistentes = new Set((existing || []).map((c: any) => c.tipo))
     const temTodos = tiposExistentes.has('principal') && tiposExistentes.has('apoio') && tiposExistentes.has('inventario')
 
-    // Se já tem os 3 tipos, nada a fazer
-    if (temTodos) return
+    // Se já tem os 3 tipos, apenas garantir que setores estejam vinculados
+    if (temTodos) {
+      for (const contagem of (existing || [])) {
+        const { count } = await client
+          .from('contagem_setores')
+          .select('*', { count: 'exact', head: true })
+          .eq('contagem_id', contagem.id)
+
+        if (!count || count === 0) {
+          // Vincular setores disponíveis do tipo correspondente
+          const q = client.from('setores').select('id').eq('empresa_id', empresaId.value)
+          if (contagem.tipo !== 'inventario') q.eq('tipo', contagem.tipo)
+          const { data: setoresDisp } = await q
+          if (setoresDisp?.length) {
+            await client.from('contagem_setores').insert(
+              setoresDisp.map((s: any) => ({ contagem_id: contagem.id, setor_id: s.id }))
+            )
+          }
+        }
+      }
+      return
+    }
 
     // Limpar contagens antigas (usuário autorizou) e recriar do zero
     if (existing && existing.length > 0) {
