@@ -461,7 +461,6 @@ export interface Contagem {
   responsaveis_data?: Array<{ id?: string; nome: string; telefone: string }>
   ultima_contagem?: string
   progresso?: number
-  resultados?: ContagemResultado[]
   created_at?: string
   updated_at?: string
   // Relacionamentos
@@ -523,7 +522,7 @@ export interface ContagemHistorico {
   ajustes: Ajuste[]
 }
 
-// Snapshot de uma contagem finalizada (armazenado em contagens.resultados JSONB)
+// Snapshot de uma contagem finalizada (tabelas contagem_resultados + contagem_resultado_itens)
 export interface ContagemResultadoItemSetor {
   setor_id: string
   setor_nome: string

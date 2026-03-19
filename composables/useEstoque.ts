@@ -1203,7 +1203,7 @@ export const useEstoque = () => {
 
     const { data, error } = await client
       .from('contagens')
-      .select('*, contagem_setores(id, contagem_id, setor_id, status, progresso, finalizado_em, setor:setores(id, nome, tipo))')
+      .select('id, empresa_id, nome, tipo, data, status, recorrencia, horario_notificacao, dias_semana, mensal_posicao, mensal_dia, responsavel_nome, responsavel_telefone, responsavel_id, progresso, ultima_contagem, token, responsaveis_data, created_at, updated_at, contagem_setores(id, contagem_id, setor_id, status, progresso, finalizado_em, setor:setores(id, nome, tipo))')
       .eq('empresa_id', empresaId.value)
       .order('created_at', { ascending: false })
 
