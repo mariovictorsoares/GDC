@@ -252,7 +252,9 @@ export default defineEventHandler(async (event) => {
         produto_id: i.produto_id,
         data: contagem.data || new Date().toISOString().split('T')[0],
         quantidade: i.diferenca,
-        motivo: contagem.nome || 'Contagem'
+        motivo: contagem.nome || 'Contagem',
+        contagem_id: contagem.id,
+        tipo: contagemTipo === 'apoio' ? 'apoio' : 'principal'
       }))
 
     if (ajustesPayload.length > 0) {
