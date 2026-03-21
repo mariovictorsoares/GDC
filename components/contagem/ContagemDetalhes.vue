@@ -332,7 +332,7 @@
                       :name="row.diferenca > 0 ? 'i-heroicons-arrow-small-up' : 'i-heroicons-arrow-small-down'"
                       class="w-4 h-4"
                     />
-                    {{ Math.abs(row.diferenca) }}
+                    {{ formatNumber(Math.abs(row.diferenca)) }}
                   </span>
                   <span v-else class="text-operacao-300">—</span>
                 </template>

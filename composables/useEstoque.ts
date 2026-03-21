@@ -1341,13 +1341,22 @@ export const useEstoque = () => {
     // Buscar status e tipo atual da contagem
     const { data: contagemAtual } = await client
       .from('contagens')
-      .select('status, tipo')
+      .select('status, tipo, horario_notificacao')
       .eq('id', id)
       .single()
 
+    // Se o horário de notificação mudou, resetar o ultimo_lembrete_enviado
+    // para permitir reenvio no novo horário
+    const horarioMudou = contagem.horario_notificacao !== undefined
+      && contagem.horario_notificacao !== contagemAtual?.horario_notificacao
+
     const { error } = await client
       .from('contagens')
-      .update({ ...contagem, updated_at: new Date().toISOString() })
+      .update({
+        ...contagem,
+        updated_at: new Date().toISOString(),
+        ...(horarioMudou ? { ultimo_lembrete_enviado: null } : {})
+      })
       .eq('id', id)
 
     if (error) throw error

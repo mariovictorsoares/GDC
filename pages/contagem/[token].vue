@@ -63,18 +63,46 @@
     <div v-else-if="dados" class="max-w-3xl mx-auto pb-36">
       <!-- Setor selector + Search (sticky together) -->
       <div class="sticky top-[53px] sm:top-[57px] z-20 bg-operacao-50 pt-3 pb-3 px-4 sm:px-6 space-y-2">
-        <select
-          :value="setorAtivo"
-          @change="setorAtivo = ($event.target as HTMLSelectElement).value"
-          class="w-full py-2.5 px-4 rounded-xl bg-white text-sm font-medium text-operacao-800 ring-1 ring-operacao-200 focus:ring-2 focus:ring-guardian-500 focus:outline-none transition-shadow appearance-none cursor-pointer"
-          style="background-image: url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E&quot;); background-position: right 0.75rem center; background-repeat: no-repeat; background-size: 1.25em 1.25em; padding-right: 2.5rem;"
-        >
-          <option
-            v-for="s in dados.setores"
-            :key="s.id"
-            :value="s.id"
-          >{{ s.status === 'finalizado' ? '\u2713 ' : '' }}{{ s.nome }}</option>
-        </select>
+        <!-- Stepper horizontal -->
+        <div v-if="dados.setores.length > 1" class="bg-white rounded-xl ring-1 ring-operacao-200 px-4 py-3">
+          <div class="flex items-center justify-center overflow-x-auto">
+            <template v-for="(s, i) in dados.setores" :key="s.id">
+              <!-- Connector line -->
+              <div
+                v-if="i > 0"
+                class="h-0.5 flex-1 min-w-4 max-w-10 mx-0.5 rounded-full transition-colors"
+                :class="s.status === 'finalizado' || dados.setores[i - 1]?.status === 'finalizado' ? 'bg-controle-300' : 'bg-operacao-200'"
+              />
+              <!-- Step dot -->
+              <button
+                @click="setorAtivo = s.id"
+                class="flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-150 focus:outline-none"
+                :class="[
+                  s.status === 'finalizado'
+                    ? 'bg-controle-500 text-white'
+                    : s.id === setorAtivo
+                      ? 'bg-guardian-500 text-white ring-4 ring-guardian-100'
+                      : 'bg-operacao-100 text-operacao-400 hover:bg-operacao-200'
+                ]"
+                :title="s.nome"
+              >
+                <UIcon v-if="s.status === 'finalizado'" name="i-heroicons-check-20-solid" class="w-4.5 h-4.5" />
+                <span v-else>{{ i + 1 }}</span>
+              </button>
+            </template>
+          </div>
+          <!-- Active sector label -->
+          <p class="text-center text-xs text-operacao-500 mt-2">
+            <span class="font-semibold text-operacao-700">{{ setorAtual?.nome }}</span>
+            <span class="text-operacao-300 mx-1">&middot;</span>
+            Setor {{ setorAtivoIndex + 1 }} de {{ dados.setores.length }}
+          </p>
+        </div>
+
+        <!-- Single sector: just show name -->
+        <div v-else class="bg-white rounded-xl ring-1 ring-operacao-200 px-4 py-3">
+          <p class="text-sm font-medium text-operacao-800 text-center">{{ setorAtual?.nome }}</p>
+        </div>
 
         <!-- Finalized sector banner -->
         <div v-if="setorFinalizado" class="flex items-center gap-2 px-4 py-3 rounded-xl bg-controle-50 text-controle-700 text-sm font-medium">
@@ -342,6 +370,10 @@ onMounted(carregarDados)
 // Current setor
 const setorAtual = computed(() => {
   return dados.value?.setores?.find((s: any) => s.id === setorAtivo.value)
+})
+
+const setorAtivoIndex = computed(() => {
+  return dados.value?.setores?.findIndex((s: any) => s.id === setorAtivo.value) ?? 0
 })
 
 const produtosFiltrados = computed(() => {

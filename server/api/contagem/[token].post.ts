@@ -204,7 +204,7 @@ export default defineEventHandler(async (event) => {
     }
 
     const itensResultado = Array.from(produtoMap.values()).map(item => {
-      const diferenca = item.quantidade_contada - item.saldo_sistema
+      const diferenca = Math.round((item.quantidade_contada - item.saldo_sistema) * 1e10) / 1e10
       return {
         produto_id: item.produto_id,
         nome: item.nome,
@@ -213,7 +213,7 @@ export default defineEventHandler(async (event) => {
         quantidade_contada: item.quantidade_contada,
         diferenca,
         custo_medio: item.custo_medio,
-        valor_divergencia: diferenca * item.custo_medio,
+        valor_divergencia: Math.round(diferenca * item.custo_medio * 100) / 100,
         setores_breakdown: item.setores_breakdown
       }
     }).sort((a, b) => a.nome.localeCompare(b.nome))

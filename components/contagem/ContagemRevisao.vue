@@ -239,7 +239,7 @@ onMounted(async () => {
         const saldo = saldoMap.get(item.produto_id)
         const saldoSistema = getSaldoParaTipo(saldo)
         const qtdContada = Number(item.quantidade_contada)
-        const diferenca = qtdContada - saldoSistema
+        const diferenca = Math.round((qtdContada - saldoSistema) * 1e10) / 1e10
         const custoMedio = Number(saldo?.custo_medio || 0)
 
         return {
@@ -250,7 +250,7 @@ onMounted(async () => {
           quantidade_contada: qtdContada,
           diferenca,
           custo_medio: custoMedio,
-          valor_divergencia: diferenca * custoMedio
+          valor_divergencia: Math.round(diferenca * custoMedio * 100) / 100
         }
       })
       .sort((a: ItemRevisao, b: ItemRevisao) => a.nome.localeCompare(b.nome))
