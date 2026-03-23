@@ -1893,7 +1893,7 @@ const getTipoLabel = (row: any): string => {
   if (row._tipoMov === 'ajuste') {
     const aj = row._ajusteOriginal as Ajuste | null
     if (aj?.tipo === 'apoio') return 'Ajuste (Apoio)'
-    return 'Ajuste'
+    return 'Ajuste (Principal)'
   }
   if (row.tipo === 'transferencia') {
     if (row.empresa_destino) return `→ ${row.empresa_destino.nome}`
