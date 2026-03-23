@@ -65,7 +65,7 @@
       <div class="sticky top-[53px] sm:top-[57px] z-20 bg-operacao-50 pt-3 pb-3 px-4 sm:px-6 space-y-2">
         <!-- Stepper horizontal -->
         <div v-if="dados.setores.length > 1" class="bg-white rounded-xl ring-1 ring-operacao-200 px-4 py-3">
-          <div class="flex items-center justify-center overflow-x-auto">
+          <div class="flex items-center justify-center overflow-x-auto py-1 px-1">
             <template v-for="(s, i) in dados.setores" :key="s.id">
               <!-- Connector line -->
               <div
