@@ -238,10 +238,6 @@
                 <p class="text-[10px] text-operacao-400 font-medium mt-1.5 uppercase tracking-wider">Contados</p>
               </div>
               <div class="rounded-lg bg-white ring-1 ring-operacao-100 py-2.5 text-center shadow-sm">
-                <p class="text-xl font-bold text-operacao-300 leading-none tracking-tight">{{ resultadoSelecionado.resumo.total_nao_contados }}</p>
-                <p class="text-[10px] text-operacao-400 font-medium mt-1.5 uppercase tracking-wider">Ignorados</p>
-              </div>
-              <div class="rounded-lg bg-white ring-1 ring-operacao-100 py-2.5 text-center shadow-sm">
                 <p class="text-xl font-bold leading-none tracking-tight" :class="resultadoSelecionado.resumo.total_sobras > 0 ? 'text-controle-600' : 'text-operacao-300'">{{ resultadoSelecionado.resumo.total_sobras }}</p>
                 <p class="text-[10px] text-operacao-400 font-medium mt-1.5 uppercase tracking-wider">Sobras</p>
               </div>
@@ -254,6 +250,12 @@
                   {{ formatCurrencyCompact(resultadoSelecionado.resumo.valor_total_divergencia) }}
                 </p>
                 <p class="text-[10px] text-operacao-400 font-medium mt-1.5 uppercase tracking-wider">Impacto</p>
+              </div>
+              <div class="rounded-lg bg-white ring-1 ring-operacao-100 py-2.5 text-center shadow-sm">
+                <p class="text-xl font-bold leading-none tracking-tight" :class="acuracidadeColor(resultadoSelecionado.resumo.acuracidade_geral ?? 100)">
+                  {{ formatPercent(resultadoSelecionado.resumo.acuracidade_geral ?? 100) }}
+                </p>
+                <p class="text-[10px] text-operacao-400 font-medium mt-1.5 uppercase tracking-wider">Acuracidade</p>
               </div>
             </div>
           </div>
@@ -347,6 +349,12 @@
                   </span>
                   <span v-else class="text-operacao-300">—</span>
                 </template>
+
+                <template #acuracidade-data="{ row }">
+                  <span class="font-semibold tabular-nums" :class="acuracidadeColor(row.acuracidade ?? 100)">
+                    {{ formatPercent(row.acuracidade ?? 100) }}
+                  </span>
+                </template>
               </UTable>
 
               <TablePagination
@@ -429,13 +437,21 @@ const itensOrdenados = computed(() => {
   })
 })
 
-const cicloColumns = [
+const esperadoLabel = computed(() => {
+  const tipo = props.contagem.tipo
+  if (tipo === 'apoio') return 'Esperado (Apoio)'
+  if (tipo === 'inventario') return 'Esperado (Total)'
+  return 'Esperado (Principal)'
+})
+
+const cicloColumns = computed(() => [
   { key: 'produto', label: 'Produto' },
-  { key: 'sistema', label: 'Sistema', class: 'text-center w-24', rowClass: 'text-center' },
+  { key: 'sistema', label: esperadoLabel.value, class: 'text-center w-36', rowClass: 'text-center' },
   { key: 'contado', label: 'Contado', class: 'text-center w-24', rowClass: 'text-center' },
   { key: 'diferenca', label: 'Diferença', class: 'text-center w-28', rowClass: 'text-center' },
-  { key: 'valor', label: 'Valor', class: 'text-right w-28', rowClass: 'text-right' }
-]
+  { key: 'valor', label: 'Valor', class: 'text-right w-28', rowClass: 'text-right' },
+  { key: 'acuracidade', label: 'Acuracidade', class: 'text-center w-28', rowClass: 'text-center' }
+])
 
 const cicloPage = ref(1)
 const cicloPageSize = ref(20)
@@ -738,6 +754,14 @@ const saudeIconColor = (r: ContagemResultado) => {
 // ==========================================
 const impactoBg = (v: number) => v >= 0 ? 'bg-controle-50' : 'bg-red-50'
 const impactoColor = (v: number) => v >= 0 ? 'text-controle-600' : 'text-red-500'
+
+const acuracidadeColor = (v: number) => {
+  if (v >= 95) return 'text-controle-600'
+  if (v >= 80) return 'text-amber-500'
+  return 'text-red-500'
+}
+
+const formatPercent = (v: number) => `${Math.round(v)}%`
 
 const itemRowClass = (item: ContagemResultadoItem) => {
   if (item.diferenca > 0) return 'bg-controle-50/20 hover:bg-controle-50/40'

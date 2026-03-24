@@ -82,6 +82,40 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 500, message: errUpsert.message })
   }
 
+  // 4b. Snapshot: gravar saldo_no_momento no momento do save (não na finalização)
+  const contagemTipoSave = (contagem as any).tipo || 'principal'
+  const produtoIdsSaved = itensValidos.map((i: any) => i.produto_id)
+  const { data: saldoSnap } = await supabase
+    .from('v_saldo_estoque')
+    .select('produto_id, saldo_principal, saldo_apoio, saldo_atual, custo_medio')
+    .in('produto_id', produtoIdsSaved)
+
+  if (saldoSnap && saldoSnap.length > 0) {
+    // Buscar tipo do setor para inventário (setores mistos)
+    let setorTipo = contagemTipoSave
+    if (contagemTipoSave === 'inventario') {
+      const { data: setorInfo } = await supabase
+        .from('setores')
+        .select('tipo')
+        .eq('id', body.setor_id)
+        .single()
+      setorTipo = setorInfo?.tipo || 'principal'
+    }
+
+    await Promise.all(saldoSnap.map((s: any) => {
+      const saldoValor = setorTipo === 'apoio'
+        ? Number(s.saldo_apoio || 0)
+        : Number(s.saldo_principal || 0)
+
+      return supabase
+        .from('contagem_itens')
+        .update({ saldo_no_momento: saldoValor })
+        .eq('contagem_id', contagem.id)
+        .eq('setor_id', body.setor_id)
+        .eq('produto_id', s.produto_id)
+    }))
+  }
+
   // 5. Atualizar progresso do setor
   const totalProdutos = produtosValidos.size
   const { count: contados } = await supabase
@@ -131,44 +165,25 @@ export default defineEventHandler(async (event) => {
     const setorIds = [...new Set((itensContagem || []).map((i: any) => i.setor_id))]
     const { data: setoresData } = await supabase
       .from('setores')
-      .select('id, nome')
+      .select('id, nome, tipo')
       .in('id', setorIds)
     const setorNomeMap = new Map((setoresData || []).map((s: any) => [s.id, s.nome]))
+    const setorTipoMap = new Map((setoresData || []).map((s: any) => [s.id, s.tipo || 'principal']))
 
-    // Buscar saldos atuais
+    // Buscar custo_medio atual (saldo já foi congelado em saldo_no_momento no save do setor)
     const produtoIds = [...new Set((itensContagem || []).map((i: any) => i.produto_id))]
-    // Nota: v_saldo_estoque nao possui coluna empresa_id, mas produto_id ja pertence a empresa correta
     const { data: saldoData } = await supabase
       .from('v_saldo_estoque')
       .select('produto_id, saldo_principal, saldo_apoio, saldo_atual, custo_medio')
       .in('produto_id', produtoIds)
 
+    const custoMedioMap = new Map((saldoData || []).map((s: any) => [s.produto_id, Number(s.custo_medio || 0)]))
+    // saldoMap ainda necessário para ajustes de inventário (split por tipo de setor)
     const saldoMap = new Map((saldoData || []).map((s: any) => [s.produto_id, s]))
 
-    // Determinar qual saldo usar baseado no tipo da contagem
     const contagemTipo = (contagem as any).tipo || 'principal'
-    const getSaldoParaTipo = (saldo: any) => {
-      if (contagemTipo === 'apoio') return Number(saldo?.saldo_apoio || 0)
-      if (contagemTipo === 'inventario') return Number(saldo?.saldo_atual || 0)
-      return Number(saldo?.saldo_principal || 0) // 'principal' e legacy 'estoque'
-    }
 
-    // Atualizar saldo_no_momento para cada item
-    if (itensContagem && itensContagem.length > 0) {
-      await Promise.all(itensContagem.map((item: any) => {
-        const saldo = saldoMap.get(item.produto_id)
-        const saldoValor = getSaldoParaTipo(saldo)
-
-        return supabase
-          .from('contagem_itens')
-          .update({ saldo_no_momento: saldoValor })
-          .eq('contagem_id', contagem.id)
-          .eq('produto_id', item.produto_id)
-          .eq('setor_id', item.setor_id)
-      }))
-    }
-
-    // Construir itens do resultado (agrupar por produto_id, somando se houver em múltiplos setores, preservando breakdown)
+    // Construir itens do resultado usando saldo_no_momento (congelado no save do setor)
     const produtoMap = new Map<string, {
       produto_id: string
       nome: string
@@ -181,8 +196,8 @@ export default defineEventHandler(async (event) => {
 
     for (const item of (itensContagem || [])) {
       const pid = item.produto_id
-      const saldo = saldoMap.get(pid)
-      const saldoSistema = getSaldoParaTipo(saldo)
+      // Usar saldo_no_momento congelado no save do setor (não saldo atual)
+      const saldoSistema = Number(item.saldo_no_momento || 0)
       const qtd = Number(item.quantidade_contada || 0)
       const setorNome = setorNomeMap.get(item.setor_id) || ''
 
@@ -193,12 +208,14 @@ export default defineEventHandler(async (event) => {
           unidade_sigla: (item as any).produto?.unidade?.sigla || '',
           saldo_sistema: saldoSistema,
           quantidade_contada: qtd,
-          custo_medio: Number(saldo?.custo_medio || 0),
+          custo_medio: custoMedioMap.get(pid) || 0,
           setores_breakdown: [{ setor_id: item.setor_id, setor_nome: setorNome, quantidade: qtd }]
         })
       } else {
         const existing = produtoMap.get(pid)!
         existing.quantidade_contada += qtd
+        // Para produto em múltiplos setores: somar saldos congelados (cada setor tem seu snapshot)
+        existing.saldo_sistema += saldoSistema
         existing.setores_breakdown.push({ setor_id: item.setor_id, setor_nome: setorNome, quantidade: qtd })
       }
     }
@@ -214,6 +231,9 @@ export default defineEventHandler(async (event) => {
         diferenca,
         custo_medio: item.custo_medio,
         valor_divergencia: Math.round(diferenca * item.custo_medio * 100) / 100,
+        acuracidade: item.saldo_sistema === 0
+          ? (item.quantidade_contada === 0 ? 100 : 0)
+          : Math.max(0, Math.round((1 - Math.abs(diferenca) / item.saldo_sistema) * 10000) / 100),
         setores_breakdown: item.setores_breakdown
       }
     }).sort((a, b) => a.nome.localeCompare(b.nome))
@@ -222,6 +242,8 @@ export default defineEventHandler(async (event) => {
     const totalSobras = itensResultado.filter(i => i.diferenca > 0).length
     const totalFaltas = itensResultado.filter(i => i.diferenca < 0).length
     const valorTotal = itensResultado.reduce((sum, i) => sum + i.valor_divergencia, 0)
+    const totalExatos = itensResultado.filter(i => i.diferenca === 0).length
+    const acuracidadeGeral = totalContados > 0 ? Math.round((totalExatos / totalContados) * 10000) / 100 : 100
 
     // Calcular ciclo baseado em resultados existentes na tabela normalizada
     const { count: existingCount } = await supabase
@@ -246,7 +268,8 @@ export default defineEventHandler(async (event) => {
         total_nao_contados: 0,
         total_sobras: totalSobras,
         total_faltas: totalFaltas,
-        valor_total_divergencia: valorTotal
+        valor_total_divergencia: valorTotal,
+        acuracidade_geral: acuracidadeGeral
       })
       .select('id')
       .single()
@@ -273,17 +296,64 @@ export default defineEventHandler(async (event) => {
     }
 
     // Criar ajustes para itens com divergência
-    const ajustesPayload = itensResultado
-      .filter(i => i.diferenca !== 0)
-      .map(i => ({
-        empresa_id: contagem.empresa_id,
-        produto_id: i.produto_id,
-        data: new Date().toISOString().split('T')[0],
-        quantidade: i.diferenca,
-        motivo: contagem.nome || 'Contagem',
-        contagem_id: contagem.id,
-        tipo: contagemTipo === 'apoio' ? 'apoio' : 'principal'
-      }))
+    let ajustesPayload: Array<{
+      empresa_id: string; produto_id: string; data: string;
+      quantidade: number; motivo: string; contagem_id: string; tipo: string
+    }> = []
+
+    if (contagemTipo === 'inventario') {
+      // Inventário: separar ajustes por tipo de setor
+      const hoje = new Date().toISOString().split('T')[0]
+      for (const item of itensResultado) {
+        let qtdPrincipal = 0
+        let qtdApoio = 0
+        for (const sb of item.setores_breakdown) {
+          const setorTipo = setorTipoMap.get(sb.setor_id) || 'principal'
+          if (setorTipo === 'apoio') qtdApoio += sb.quantidade
+          else qtdPrincipal += sb.quantidade
+        }
+
+        const saldo = saldoMap.get(item.produto_id)
+        const diffPrincipal = Math.round((qtdPrincipal - Number(saldo?.saldo_principal || 0)) * 1e10) / 1e10
+        const diffApoio = Math.round((qtdApoio - Number(saldo?.saldo_apoio || 0)) * 1e10) / 1e10
+
+        if (diffPrincipal !== 0) {
+          ajustesPayload.push({
+            empresa_id: contagem.empresa_id,
+            produto_id: item.produto_id,
+            data: hoje,
+            quantidade: diffPrincipal,
+            motivo: contagem.nome || 'Contagem',
+            contagem_id: contagem.id,
+            tipo: 'principal'
+          })
+        }
+        if (diffApoio !== 0) {
+          ajustesPayload.push({
+            empresa_id: contagem.empresa_id,
+            produto_id: item.produto_id,
+            data: hoje,
+            quantidade: diffApoio,
+            motivo: contagem.nome || 'Contagem',
+            contagem_id: contagem.id,
+            tipo: 'apoio'
+          })
+        }
+      }
+    } else {
+      // Principal / Apoio: ajuste único por produto
+      ajustesPayload = itensResultado
+        .filter(i => i.diferenca !== 0)
+        .map(i => ({
+          empresa_id: contagem.empresa_id,
+          produto_id: i.produto_id,
+          data: new Date().toISOString().split('T')[0],
+          quantidade: i.diferenca,
+          motivo: contagem.nome || 'Contagem',
+          contagem_id: contagem.id,
+          tipo: contagemTipo === 'apoio' ? 'apoio' : 'principal'
+        }))
+    }
 
     if (ajustesPayload.length > 0) {
       await supabase

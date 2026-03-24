@@ -5,6 +5,10 @@
     <div class="flex items-center justify-between">
       <h1 class="text-2xl font-semibold text-[#5a5a66]">Controle de Estoque</h1>
       <div class="flex gap-2 flex-shrink-0">
+        <UButton color="white" :ui="toolbarButtonUi" :loading="loading" @click="loadAll()">
+          <UIcon name="i-heroicons-arrow-path" class="w-4 h-4 mr-1.5 text-operacao-400" />
+          Atualizar
+        </UButton>
         <UButton v-if="pendentesTransfCount > 0" color="white" class="hover:!bg-blue-50 hover:!ring-blue-200" :ui="toolbarButtonUi" @click="showPendentesTransf = true">
           <UIcon name="i-heroicons-truck" class="w-4 h-4 mr-1.5 text-blue-500" />
           Transferências

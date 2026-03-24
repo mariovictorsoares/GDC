@@ -75,7 +75,7 @@
             <thead>
               <tr class="text-left text-[#5a5a66] border-b border-operacao-200">
                 <th class="px-4 sm:px-6 pb-3 font-medium">Produto</th>
-                <th class="px-2 pb-3 font-medium text-right">Sistema</th>
+                <th class="px-2 pb-3 font-medium text-right">{{ esperadoLabel }}</th>
                 <th class="px-2 pb-3 font-medium text-right">Contado</th>
                 <th class="px-2 pb-3 font-medium text-right">Diferença</th>
                 <th class="px-4 sm:px-6 pb-3 font-medium text-right">Valor (R$)</th>
@@ -180,6 +180,7 @@ interface ItemRevisao {
   diferenca: number
   custo_medio: number
   valor_divergencia: number
+  acuracidade: number
 }
 
 const props = defineProps<{
@@ -195,6 +196,13 @@ const emit = defineEmits<{
 const toast = useToast()
 const { getContagemItens, getSaldoEstoque, createAjustesEmLote, updateContagemStatus, deleteContagemItens, appendContagemResultado, getContagemResultados } = useEstoque()
 const { formatCurrency, formatNumber } = useFormatters()
+
+const esperadoLabel = computed(() => {
+  const tipo = props.contagem?.tipo
+  if (tipo === 'apoio') return 'Esperado (Apoio)'
+  if (tipo === 'inventario') return 'Esperado (Total)'
+  return 'Esperado (Principal)'
+})
 
 // State
 const loading = ref(true)
@@ -250,7 +258,10 @@ onMounted(async () => {
           quantidade_contada: qtdContada,
           diferenca,
           custo_medio: custoMedio,
-          valor_divergencia: Math.round(diferenca * custoMedio * 100) / 100
+          valor_divergencia: Math.round(diferenca * custoMedio * 100) / 100,
+          acuracidade: saldoSistema === 0
+            ? (qtdContada === 0 ? 100 : 0)
+            : Math.max(0, Math.round((1 - Math.abs(diferenca) / saldoSistema) * 10000) / 100)
         }
       })
       .sort((a: ItemRevisao, b: ItemRevisao) => a.nome.localeCompare(b.nome))
@@ -298,11 +309,14 @@ const salvarContagem = async () => {
     salvando.value = true
 
     // Create ajustes em lote
+    const contagemTipo = (props.contagem?.tipo as string) || 'principal'
     const ajustesPayload = itensParaSalvar.value.map(item => ({
       produto_id: item.produto_id,
       data: props.contagem?.data || new Date().toISOString().split('T')[0],
       quantidade: item.diferenca,
-      motivo: motivoContagem.value.trim()
+      motivo: motivoContagem.value.trim(),
+      contagem_id: props.contagemId,
+      tipo: contagemTipo === 'apoio' ? 'apoio' as const : 'principal' as const
     }))
 
     if (ajustesPayload.length > 0) {
@@ -323,7 +337,10 @@ const salvarContagem = async () => {
         total_nao_contados: itensNaoContados.value,
         total_sobras: itensComSobra.value,
         total_faltas: itensComFalta.value,
-        valor_total_divergencia: valorTotalDivergencia.value
+        valor_total_divergencia: valorTotalDivergencia.value,
+        acuracidade_geral: itensContados.value > 0
+          ? Math.round((itensRevisao.value.filter(i => i.diferenca === 0).length / itensContados.value) * 10000) / 100
+          : 100
       },
       itens: itensRevisao.value.map(item => ({
         produto_id: item.produto_id,
@@ -333,7 +350,8 @@ const salvarContagem = async () => {
         quantidade_contada: item.quantidade_contada,
         diferenca: item.diferenca,
         custo_medio: item.custo_medio,
-        valor_divergencia: item.valor_divergencia
+        valor_divergencia: item.valor_divergencia,
+        acuracidade: item.acuracidade
       }))
     }
 

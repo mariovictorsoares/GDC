@@ -638,7 +638,7 @@ export const useEstoque = () => {
     if (error) throw error
   }
 
-  const createAjustesEmLote = async (ajustes: Array<{ produto_id: string; data: string; semana: string; quantidade: number; motivo: string; contagem_id?: string }>) => {
+  const createAjustesEmLote = async (ajustes: Array<{ produto_id: string; data: string; semana?: string; quantidade: number; motivo: string; contagem_id?: string; tipo?: 'principal' | 'apoio' }>) => {
     if (!ajustes.length) return []
 
     const payload = ajustes.map(a => ({
@@ -1607,7 +1607,8 @@ export const useEstoque = () => {
         total_nao_contados: resultado.resumo.total_nao_contados,
         total_sobras: resultado.resumo.total_sobras,
         total_faltas: resultado.resumo.total_faltas,
-        valor_total_divergencia: resultado.resumo.valor_total_divergencia
+        valor_total_divergencia: resultado.resumo.valor_total_divergencia,
+        acuracidade_geral: resultado.resumo.acuracidade_geral ?? 100
       })
       .select('id')
       .single()
@@ -1629,6 +1630,7 @@ export const useEstoque = () => {
           diferenca: item.diferenca,
           custo_medio: item.custo_medio,
           valor_divergencia: item.valor_divergencia,
+          acuracidade: item.acuracidade ?? 100,
           setores_breakdown: item.setores_breakdown || []
         })))
 
@@ -1658,7 +1660,8 @@ export const useEstoque = () => {
         total_nao_contados: row.total_nao_contados,
         total_sobras: row.total_sobras,
         total_faltas: row.total_faltas,
-        valor_total_divergencia: Number(row.valor_total_divergencia)
+        valor_total_divergencia: Number(row.valor_total_divergencia),
+        acuracidade_geral: Number(row.acuracidade_geral ?? 100)
       },
       itens: (row.itens || []).map((item: any) => ({
         produto_id: item.produto_id,
@@ -1669,6 +1672,7 @@ export const useEstoque = () => {
         diferenca: Number(item.diferenca),
         custo_medio: Number(item.custo_medio),
         valor_divergencia: Number(item.valor_divergencia),
+        acuracidade: Number(item.acuracidade ?? 100),
         setores_breakdown: item.setores_breakdown
       }))
     }))

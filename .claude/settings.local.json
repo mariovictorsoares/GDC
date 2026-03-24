@@ -125,7 +125,14 @@
       "Bash(grep -l \"ajustes\" /c/Users/mario/Desktop/estoque-cd/supabase/migrations/*.sql)",
       "Bash(grep -n -B 5 -A 30 \"calcular_custo_medio\\\\|CREATE FUNCTION\\\\|CREATE OR REPLACE FUNCTION\" /c/Users/mario/Desktop/estoque-cd/supabase/migrations/*.sql)",
       "Bash(grep -n \"ALTER TABLE ajustes\\\\|ADD COLUMN.*tipo\\\\|ALTER TABLE.*ajustes.*ADD\" /c/Users/mario/Desktop/estoque-cd/supabase/migrations/*.sql)",
-      "Bash(grep -n \"tipo.*principal\\\\|tipo.*apoio\\\\|tipo.*inventario\" /c/Users/mario/Desktop/estoque-cd/supabase/migrations/*.sql)"
+      "Bash(grep -n \"tipo.*principal\\\\|tipo.*apoio\\\\|tipo.*inventario\" /c/Users/mario/Desktop/estoque-cd/supabase/migrations/*.sql)",
+      "Bash(grep -n \"CREATE TABLE.*contagem_resultados\\\\|ALTER TABLE.*contagem_resultados\\\\|ADD.*COLUMN.*acuracidade\" /c/Users/mario/Desktop/estoque-cd/supabase/migrations/*.sql)",
+      "Bash(xargs grep -l \"receita\\\\|ficha\")",
+      "Bash(grep -A 30 \"setores\\\\|responsaveis\\\\|tipo.*principal\\\\|tipo.*apoio\" /c/Users/mario/Desktop/estoque-cd/supabase/migrations/*.sql)",
+      "Bash(grep -B 5 -A 10 \"ALTER TABLE setores\\\\|ADD COLUMN.*tipo\" /c/Users/mario/Desktop/estoque-cd/supabase/migrations/*.sql)",
+      "Bash(grep -B 3 -A 8 \"token_requisicao\\\\|token_contagem\\\\|token\" /c/Users/mario/Desktop/estoque-cd/supabase/migrations/*.sql)",
+      "Bash(head -100 /c/Users/mario/Desktop/estoque-cd/server/api/contagem/[token].post.ts)",
+      "Bash(grep -l \"receita\\\\|ficha\" /c/Users/mario/Desktop/estoque-cd/supabase/migrations/*.sql)"
     ]
   }
 }

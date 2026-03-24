@@ -15,66 +15,98 @@
 
       <!-- Contagens -->
       <div class="flex flex-col gap-4">
-        <div
-          v-for="c in contagensFixas"
-          :key="c.tipo"
-          class="flex rounded-xl bg-white ring-1 ring-[#EBEBED] shadow-sm hover:shadow-md overflow-hidden transition-shadow duration-200"
-          :class="c.configurada ? 'cursor-pointer' : ''"
-          @click="c.contagem && c.configurada && abrirDetalhes(c.contagem)"
-        >
-          <!-- Accent -->
-          <div class="w-[3px] flex-shrink-0" :class="c.accentClass" />
-
-          <!-- Content -->
-          <div class="flex items-center gap-6 px-6 py-4 flex-1 min-w-0">
-            <!-- Icon + title -->
-            <div class="flex items-center gap-3.5 min-w-0 w-48 flex-shrink-0">
-              <div class="w-10 h-10 rounded-lg bg-operacao-100/70 flex items-center justify-center flex-shrink-0">
-                <UIcon :name="c.icon" class="w-5 h-5 text-[#5a5a66]" />
-              </div>
-              <div class="min-w-0">
-                <h3 class="text-sm font-medium text-[#5a5a66] truncate">{{ c.label }}</h3>
-                <p class="text-xs text-operacao-400 mt-0.5">{{ c.setoresCount }} {{ c.setoresCount === 1 ? 'setor' : 'setores' }}</p>
-              </div>
-            </div>
-
-            <!-- Info grid 2x2 -->
-            <div class="grid grid-cols-2 gap-x-8 gap-y-2.5 flex-1 min-w-0">
-              <div class="min-w-0">
-                <p class="text-[10px] uppercase tracking-wider text-operacao-400 font-medium mb-0.5">Recorrência</p>
-                <p class="text-sm font-medium truncate" :class="c.configurada ? 'text-[#5a5a66]' : 'text-operacao-300'">{{ c.recorrenciaLabel }}</p>
-              </div>
-              <div class="min-w-0">
-                <p class="text-[10px] uppercase tracking-wider text-operacao-400 font-medium mb-0.5">Responsáveis</p>
-                <p class="text-sm font-medium truncate" :class="c.configurada ? 'text-[#5a5a66]' : 'text-operacao-300'">{{ c.responsavelLabel }}</p>
-              </div>
-              <div class="min-w-0">
-                <p class="text-[10px] uppercase tracking-wider text-operacao-400 font-medium mb-0.5">Última contagem</p>
-                <p class="text-sm font-medium truncate" :class="c.contagem?.ultima_contagem ? 'text-[#5a5a66]' : 'text-operacao-300'">{{ c.ultimaContagemLabel }}</p>
-              </div>
-              <div class="min-w-0">
-                <p class="text-[10px] uppercase tracking-wider text-operacao-400 font-medium mb-0.5">Próxima contagem</p>
-                <div class="flex items-center gap-1.5 min-w-0">
-                  <span v-if="c.proximaStatusDot" class="w-1.5 h-1.5 rounded-full flex-shrink-0" :class="c.proximaStatusDot" />
-                  <p class="text-sm font-medium truncate" :class="c.proximaTextClass">{{ c.proximaContagemLabel }}</p>
+        <!-- Skeleton loading -->
+        <template v-if="loadingContagens">
+          <div
+            v-for="i in 3"
+            :key="'skeleton-' + i"
+            class="flex rounded-xl bg-white ring-1 ring-[#EBEBED] shadow-sm overflow-hidden"
+          >
+            <div class="w-[3px] flex-shrink-0 bg-gray-200 animate-pulse" />
+            <div class="flex items-center gap-6 px-6 py-4 flex-1 min-w-0">
+              <div class="flex items-center gap-3.5 min-w-0 w-48 flex-shrink-0">
+                <div class="w-10 h-10 rounded-lg bg-gray-200 animate-pulse flex-shrink-0" />
+                <div class="min-w-0 space-y-2">
+                  <div class="h-4 w-28 bg-gray-200 rounded animate-pulse" />
+                  <div class="h-3 w-16 bg-gray-100 rounded animate-pulse" />
                 </div>
               </div>
-            </div>
-
-            <!-- Action -->
-            <div class="flex items-center flex-shrink-0">
-              <UButton
-                :color="c.configurada ? 'gray' : 'primary'"
-                variant="soft"
-                size="sm"
-                @click.stop="c.contagem && abrirConfigurar(c.contagem)"
-              >
-                <UIcon name="i-heroicons-cog-6-tooth" class="w-4 h-4 mr-1.5" />
-                {{ c.configurada ? 'Editar' : 'Configurar' }}
-              </UButton>
+              <div class="grid grid-cols-2 gap-x-8 gap-y-2.5 flex-1 min-w-0">
+                <div v-for="j in 4" :key="j" class="min-w-0 space-y-1.5">
+                  <div class="h-2.5 w-20 bg-gray-100 rounded animate-pulse" />
+                  <div class="h-4 w-24 bg-gray-200 rounded animate-pulse" />
+                </div>
+              </div>
+              <div class="flex items-center flex-shrink-0">
+                <div class="h-8 w-24 bg-gray-200 rounded-md animate-pulse" />
+              </div>
             </div>
           </div>
-        </div>
+        </template>
+
+        <!-- Cards reais -->
+        <template v-else>
+          <div
+            v-for="c in contagensFixas"
+            :key="c.tipo"
+            class="flex rounded-xl bg-white ring-1 ring-[#EBEBED] shadow-sm hover:shadow-md overflow-hidden transition-shadow duration-200"
+            :class="c.configurada ? 'cursor-pointer' : ''"
+            @click="c.contagem && c.configurada && abrirDetalhes(c.contagem)"
+          >
+            <!-- Accent -->
+            <div class="w-[3px] flex-shrink-0" :class="c.accentClass" />
+
+            <!-- Content -->
+            <div class="flex items-center gap-6 px-6 py-4 flex-1 min-w-0">
+              <!-- Icon + title -->
+              <div class="flex items-center gap-3.5 min-w-0 w-48 flex-shrink-0">
+                <div class="w-10 h-10 rounded-lg bg-operacao-100/70 flex items-center justify-center flex-shrink-0">
+                  <UIcon :name="c.icon" class="w-5 h-5 text-[#5a5a66]" />
+                </div>
+                <div class="min-w-0">
+                  <h3 class="text-sm font-medium text-[#5a5a66] truncate">{{ c.label }}</h3>
+                  <p class="text-xs text-operacao-400 mt-0.5">{{ c.setoresCount }} {{ c.setoresCount === 1 ? 'setor' : 'setores' }}</p>
+                </div>
+              </div>
+
+              <!-- Info grid 2x2 -->
+              <div class="grid grid-cols-2 gap-x-8 gap-y-2.5 flex-1 min-w-0">
+                <div class="min-w-0">
+                  <p class="text-[10px] uppercase tracking-wider text-operacao-400 font-medium mb-0.5">Recorrência</p>
+                  <p class="text-sm font-medium truncate" :class="c.configurada ? 'text-[#5a5a66]' : 'text-operacao-300'">{{ c.recorrenciaLabel }}</p>
+                </div>
+                <div class="min-w-0">
+                  <p class="text-[10px] uppercase tracking-wider text-operacao-400 font-medium mb-0.5">Responsáveis</p>
+                  <p class="text-sm font-medium truncate" :class="c.configurada ? 'text-[#5a5a66]' : 'text-operacao-300'">{{ c.responsavelLabel }}</p>
+                </div>
+                <div class="min-w-0">
+                  <p class="text-[10px] uppercase tracking-wider text-operacao-400 font-medium mb-0.5">Última contagem</p>
+                  <p class="text-sm font-medium truncate" :class="c.contagem?.ultima_contagem ? 'text-[#5a5a66]' : 'text-operacao-300'">{{ c.ultimaContagemLabel }}</p>
+                </div>
+                <div class="min-w-0">
+                  <p class="text-[10px] uppercase tracking-wider text-operacao-400 font-medium mb-0.5">Próxima contagem</p>
+                  <div class="flex items-center gap-1.5 min-w-0">
+                    <span v-if="c.proximaStatusDot" class="w-1.5 h-1.5 rounded-full flex-shrink-0" :class="c.proximaStatusDot" />
+                    <p class="text-sm font-medium truncate" :class="c.proximaTextClass">{{ c.proximaContagemLabel }}</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Action -->
+              <div class="flex items-center flex-shrink-0">
+                <UButton
+                  :color="c.configurada ? 'gray' : 'primary'"
+                  variant="soft"
+                  size="sm"
+                  @click.stop="c.contagem && abrirConfigurar(c.contagem)"
+                >
+                  <UIcon name="i-heroicons-cog-6-tooth" class="w-4 h-4 mr-1.5" />
+                  {{ c.configurada ? 'Editar' : 'Configurar' }}
+                </UButton>
+              </div>
+            </div>
+          </div>
+        </template>
       </div>
     </div>
 

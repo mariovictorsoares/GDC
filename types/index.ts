@@ -120,7 +120,7 @@ export interface Entrada {
   fornecedor?: Fornecedor
 }
 
-export type TipoSaida = 'transferencia' | 'definitiva'
+export type TipoSaida = 'transferencia' | 'definitiva' | 'beneficiamento' | 'producao'
 
 export interface Saida {
   id: string
@@ -538,6 +538,7 @@ export interface ContagemResultadoItem {
   diferenca: number
   custo_medio: number
   valor_divergencia: number
+  acuracidade: number
   setores_breakdown?: ContagemResultadoItemSetor[]
 }
 
@@ -554,6 +555,7 @@ export interface ContagemResultado {
     total_sobras: number
     total_faltas: number
     valor_total_divergencia: number
+    acuracidade_geral: number
   }
   itens: ContagemResultadoItem[]
 }
@@ -684,6 +686,83 @@ export interface RequisicaoItem {
   produto_id: string
   quantidade_solicitada: number
   quantidade_enviada?: number
+  created_at?: string
+  // Relacionamentos
+  produto?: Produto
+}
+
+// =============================================
+// Fichas Técnicas (Receitas)
+// =============================================
+
+export interface FichaTecnica {
+  id: string
+  empresa_id?: string
+  produto_id: string
+  nome: string
+  rendimento: number
+  versao: number
+  ativa: boolean
+  observacao?: string
+  created_at?: string
+  updated_at?: string
+  // Relacionamentos
+  produto?: Produto
+  ingredientes?: FichaTecnicaIngrediente[]
+}
+
+export interface FichaTecnicaIngrediente {
+  id: string
+  ficha_tecnica_id: string
+  produto_id: string
+  quantidade: number
+  fator_correcao: number
+  observacao?: string
+  created_at?: string
+  // Relacionamentos
+  produto?: Produto
+}
+
+// =============================================
+// Ordens de Produção
+// =============================================
+
+export type StatusOP = 'planejada' | 'em_producao' | 'concluida' | 'cancelada'
+
+export interface OrdemProducao {
+  id: string
+  empresa_id?: string
+  codigo: string
+  ficha_tecnica_id: string
+  produto_id: string
+  status: StatusOP
+  quantidade_planejada: number
+  quantidade_produzida?: number
+  data_planejada: string
+  data_inicio?: string
+  data_conclusao?: string
+  responsavel_nome?: string
+  ficha_versao: number
+  custo_estimado?: number
+  custo_real?: number
+  observacao?: string
+  motivo_cancelamento?: string
+  created_at?: string
+  updated_at?: string
+  // Relacionamentos
+  produto?: Produto
+  ficha_tecnica?: FichaTecnica
+  ingredientes?: OPIngrediente[]
+}
+
+export interface OPIngrediente {
+  id: string
+  ordem_id: string
+  produto_id: string
+  quantidade_planejada: number
+  quantidade_real?: number
+  custo_unitario?: number
+  fator_correcao: number
   created_at?: string
   // Relacionamentos
   produto?: Produto
