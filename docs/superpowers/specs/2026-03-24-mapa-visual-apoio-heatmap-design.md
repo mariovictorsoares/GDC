@@ -29,22 +29,18 @@ Cada produto tem seu próprio ritmo, uma soma geral não agrega valor.
 
 ### Lógica
 
-- Calcula o valor máximo de En e o máximo de CMV entre todos os produtos visíveis na página atual da semana selecionada
+- Calcula o valor máximo de En e o máximo de CMV entre todos os produtos visíveis **na página atual** da semana selecionada. Isso é intencional — maximiza o contraste visual dentro de cada página. As cores se recalculam ao trocar de página.
 - Cada célula recebe intensidade de cor proporcional: `valor / máximo`
 - Valor zero = sem cor, exibe "-"
-
-### Escala de cores
-
-- **En (entradas):** branco → emerald-50 → emerald-100 → emerald-200 → emerald-300
-- **CMV (consumo):** branco → rose-50 → rose-100 → rose-200 → rose-300
+- Se uma semana inteira não tiver movimentação, todas as células ficam "-" sem background (max === 0).
 
 ### Colunas de Total
 
-Também recebem heatmap, mas com máximos calculados separadamente (max dos totais de En e max dos totais de CMV).
+Também recebem heatmap, mas com máximos calculados separadamente (max dos totais de En e max dos totais de CMV entre os produtos da página).
 
 ### Implementação
 
-Uma função `heatmapStyle(value: number, max: number, type: 'en' | 'cmv')` que retorna um objeto de estilo inline com `backgroundColor` usando RGBA com opacidade proporcional:
+Uma função `heatmapStyle(value: number, max: number, type: 'en' | 'cmv')` que retorna um objeto de estilo inline com `backgroundColor` usando RGBA com opacidade proporcional. Gradiente contínuo (não discreto):
 
 - `type === 'en'` → `rgba(16, 185, 129, opacity)` (emerald-500 base)
 - `type === 'cmv'` → `rgba(244, 63, 94, opacity)` (rose-500 base)
@@ -62,6 +58,39 @@ Uma função `heatmapStyle(value: number, max: number, type: 'en' | 'cmv')` que 
 - Sub-headers En: `text-emerald-600`, fundo `bg-emerald-50/40`
 - Sub-headers CMV: `text-rose-600`, fundo `bg-rose-50/40`
 - Header dos dias: fundo `bg-operacao-100/50`
+
+## Mudanças no Script
+
+### Novo helper: `getMapaTotalEn`
+
+```ts
+const getMapaTotalEn = (item: MapaVisualApoioItem) => {
+  const semana = item.semanas[semanaIndex.value]
+  if (!semana) return 0
+  return semana.dias.reduce((sum, dia) => sum + (dia.en || 0), 0)
+}
+```
+
+`getMapaTotal` (CMV) permanece como está.
+
+### Computeds de max para heatmap
+
+```ts
+const heatmapMaxEn = computed(() => Math.max(...mapaPaginatedItems.value.map(i => /* max de en diário */)))
+const heatmapMaxCmv = computed(() => Math.max(...mapaPaginatedItems.value.map(i => /* max de cmv diário */)))
+const heatmapMaxTotalEn = computed(() => Math.max(...mapaPaginatedItems.value.map(i => getMapaTotalEn(i))))
+const heatmapMaxTotalCmv = computed(() => Math.max(...mapaPaginatedItems.value.map(i => getMapaTotal(i))))
+```
+
+### Colunas sortable
+
+- **Produto**: sortable (alfabético) — já existe
+- **Total CMV**: sortable (numérico, default desc) — já existe
+- **Total En**: NÃO sortable
+
+### Coluna Produto (sticky)
+
+Mantém `bg-white` no body para contraste com as células de heatmap ao lado.
 
 ## O que NÃO muda
 
