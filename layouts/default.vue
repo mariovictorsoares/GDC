@@ -678,7 +678,7 @@
               @click="confirmarLimparDados"
             >
               <UIcon name="i-heroicons-trash" class="w-3.5 h-3.5 mr-1" />
-              Limpar dados (teste)
+              Limpar dados: {{ empresaAtiva?.nome || 'empresa' }}
             </UButton>
             <div class="flex flex-col-reverse sm:flex-row gap-3">
               <UButton color="gray" variant="ghost" class="w-full sm:w-auto" @click="showPerfilModal = false">
@@ -896,6 +896,7 @@ const toast = useToast()
 // Multi-empresa
 const {
   empresaAtiva,
+  empresaId,
   empresas: listaEmpresas,
   carregarEmpresaAtiva,
   setEmpresaAtiva,
@@ -1472,25 +1473,29 @@ const executarDeletarEmpresa = async () => {
 }
 
 const confirmarLimparDados = async () => {
-  if (!confirm('ATENÇÃO: Isso vai apagar TODOS os dados da empresa atual (produtos, entradas, saídas, ajustes, contagens, etc). Tem certeza?')) return
+  const nomeEmpresa = empresaAtiva.value?.nome || 'empresa atual'
+  if (!confirm(`ATENÇÃO: Isso vai apagar TODOS os dados de "${nomeEmpresa}" (produtos, entradas, saídas, pedidos, contagens, etc).\n\nEssa ação NÃO pode ser desfeita. Tem certeza?`)) return
   if (!empresaId.value) return
 
   limpandoDados.value = true
   try {
     const eid = empresaId.value
+    const erros: string[] = []
+
     // Ordem: filhos primeiro, pais depois (respeitar FKs)
+    // Tabelas-filhas SEM empresa_id (cascateiam via ON DELETE CASCADE do pai):
+    //   op_ingredientes, ficha_tecnica_ingredientes, contagem_setores,
+    //   requisicao_itens, pedido_itens, beneficiamento_itens,
+    //   beneficiamentos, produtos_beneficiamento
     const tabelas = [
-      'op_ingredientes',
       'ordens_producao',
-      'ficha_tecnica_ingredientes',
       'fichas_tecnicas',
       'contagem_resultado_itens',
       'contagem_resultados',
       'contagem_itens',
-      'contagem_setores',
       'contagens',
-      'requisicao_itens',
       'requisicoes',
+      'pedidos',
       'setor_produtos',
       'setores',
       'responsaveis',
@@ -1509,10 +1514,15 @@ const confirmarLimparDados = async () => {
     ]
 
     for (const tabela of tabelas) {
-      await client.from(tabela).delete().eq('empresa_id', eid)
+      const { error } = await client.from(tabela).delete().eq('empresa_id', eid)
+      if (error) erros.push(`${tabela}: ${error.message}`)
     }
 
-    toast.add({ title: 'Dados limpos', description: 'Todos os registros da empresa foram apagados.', color: 'green' })
+    if (erros.length > 0) {
+      toast.add({ title: 'Limpeza parcial', description: `Falha em ${erros.length} tabela(s): ${erros.join('; ')}`, color: 'yellow' })
+    } else {
+      toast.add({ title: 'Dados limpos', description: `Todos os registros de "${nomeEmpresa}" foram apagados.`, color: 'green' })
+    }
     showPerfilModal.value = false
     window.location.reload()
   } catch (error: any) {

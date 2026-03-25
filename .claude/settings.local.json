@@ -148,7 +148,13 @@
       "Bash(grep -A5 -B5 \"trigger.*entradas\\\\|entradas.*trigger\" /c/Users/mario/Desktop/estoque-cd/supabase/migrations/*.sql)",
       "Bash(grep -l \"pedidos\" /c/Users/mario/Desktop/estoque-cd/supabase/migrations/*.sql)",
       "Bash(grep -r \"CREATE TABLE\" /c/Users/mario/Desktop/estoque-cd/supabase/migrations/*.sql)",
-      "Bash(grep -n \"CREATE TABLE.*grupos\\\\|CREATE TABLE.*subgrupos\" /c/Users/mario/Desktop/estoque-cd/supabase/migrations/*.sql)"
+      "Bash(grep -n \"CREATE TABLE.*grupos\\\\|CREATE TABLE.*subgrupos\" /c/Users/mario/Desktop/estoque-cd/supabase/migrations/*.sql)",
+      "Bash(xargs grep -l \"DashboardKpiCard\\\\|useDashboardData\")",
+      "Bash(grep -n \"CMV\\\\|CurvaABC\\\\|GiroEstoque\\\\|EstoqueMinimo\" /c/Users/mario/Desktop/estoque-cd/types/*.ts)",
+      "Bash(grep -l \"empresa_id\" /c/Users/mario/Desktop/estoque-cd/supabase/migrations/*.sql)",
+      "Bash(ls -la /c/Users/mario/Desktop/estoque-cd/supabase/migrations/*.sql)",
+      "Bash(ls /c/Users/mario/Desktop/estoque-cd/supabase/migrations/*.sql)",
+      "Bash(grep -i \"pedido\" /c/Users/mario/Desktop/estoque-cd/supabase/migrations/*.sql)"
     ]
   }
 }
