@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-6">
     <!-- Header -->
-    <h1 class="text-2xl font-semibold text-[#5a5a66] mb-2">Fichas Técnicas</h1>
+    <h1 class="text-2xl font-semibold text-[#5a5a66] pb-4">Fichas Técnicas</h1>
 
     <!-- Toolbar -->
     <div class="flex flex-col lg:flex-row lg:items-center gap-3 lg:gap-6">
@@ -15,10 +15,10 @@
         />
       </div>
       <div class="flex gap-2 flex-shrink-0">
-        <UButton color="primary" @click="abrirForm()">
-          <UIcon name="i-heroicons-plus" class="w-4 h-4 mr-1.5" />
+        <button class="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-medium rounded-lg bg-blue-500 text-white shadow-sm hover:bg-blue-600 hover:shadow-md active:bg-blue-700 transition-all duration-150" @click="abrirForm()">
+          <UIcon name="i-heroicons-plus" class="w-4 h-4" />
           Nova Ficha
-        </UButton>
+        </button>
       </div>
     </div>
 
@@ -26,7 +26,7 @@
     <UCard :ui="{ base: 'overflow-hidden', body: { padding: '' }, ring: 'ring-1 ring-[#EBEBED]', shadow: 'shadow-sm' }">
       <UTable
         :columns="columns"
-        :rows="fichasFiltradas"
+        :rows="paginatedItems"
         :loading="loading"
         :ui="{
           divide: 'divide-y divide-operacao-50 dark:divide-operacao-700',
@@ -64,10 +64,6 @@
           </UBadge>
         </template>
 
-        <template #versao-data="{ row }">
-          <span class="text-operacao-400">v{{ row.versao }}</span>
-        </template>
-
         <template #actions-data="{ row }">
           <div class="flex gap-2 justify-end">
             <UButton
@@ -87,13 +83,20 @@
           </div>
         </template>
       </UTable>
+      <TablePagination
+        v-model="page"
+        :page-size="pageSize"
+        :total-items="fichasFiltradas.length"
+        @update:page-size="pageSize = $event"
+      />
     </UCard>
 
-    <!-- Slideover Criar/Editar -->
+    <!-- Criar/Editar -->
     <ProducaoFichaTecnicaForm
       v-model="formOpen"
       :ficha="fichaEditando"
       :produtos="produtos"
+      :custos-map="custosMap"
       @salvo="carregarDados"
     />
 
@@ -120,7 +123,7 @@ import type { Produto, FichaTecnica } from '~/types'
 definePageMeta({ layout: 'default' })
 
 const { getFichasTecnicas, deleteFichaTecnica } = useProducao()
-const { getProdutos } = useEstoque()
+const { getProdutos, getSaldoEstoque } = useEstoque()
 const toast = useToast()
 
 const toolbarInputUi = { color: { white: { outline: 'shadow-sm bg-white text-gray-900 ring-1 ring-inset ring-[#EBEBED] focus:ring-1 focus:ring-operacao-200 dark:ring-operacao-700' } } }
@@ -128,6 +131,7 @@ const toolbarInputUi = { color: { white: { outline: 'shadow-sm bg-white text-gra
 const loading = ref(false)
 const fichas = ref<FichaTecnica[]>([])
 const produtos = ref<Produto[]>([])
+const custosMap = ref(new Map<string, number>())
 const search = ref('')
 
 // Form
@@ -144,7 +148,6 @@ const columns = [
   { key: 'produto', label: 'Produto' },
   { key: 'rendimento', label: 'Rendimento', sortable: true },
   { key: 'ingredientes', label: 'Ingredientes' },
-  { key: 'versao', label: 'Versão' },
   { key: 'actions', label: '' }
 ]
 
@@ -157,15 +160,19 @@ const fichasFiltradas = computed(() => {
   )
 })
 
+const { page, pageSize, paginatedItems } = usePagination(fichasFiltradas)
+
 const carregarDados = async () => {
   loading.value = true
   try {
-    const [fichasData, produtosData] = await Promise.all([
+    const [fichasData, produtosData, saldos] = await Promise.all([
       getFichasTecnicas(false),
-      getProdutos()
+      getProdutos(),
+      getSaldoEstoque()
     ])
     fichas.value = fichasData
     produtos.value = produtosData
+    custosMap.value = new Map(saldos.map(s => [s.produto_id, s.custo_medio || 0]))
   } catch (e: any) {
     toast.add({ title: 'Erro ao carregar dados', description: e.message, color: 'red' })
   } finally {

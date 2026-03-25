@@ -71,6 +71,9 @@ ALTER TABLE saidas ADD COLUMN IF NOT EXISTS ordem_producao_id UUID REFERENCES or
 CREATE INDEX IF NOT EXISTS idx_saidas_op ON saidas(ordem_producao_id) WHERE ordem_producao_id IS NOT NULL;
 
 -- 6. Recriar v_saldo_estoque com suporte a saídas tipo='producao'
+-- Mudanças vs migration 029:
+--   - Adicionado p.empresa_id ao SELECT (necessário para filtro PostgREST)
+--   - saldo_atual agora subtrai tipo='producao' além de 'definitiva'
 DROP VIEW IF EXISTS v_saldo_estoque;
 CREATE VIEW v_saldo_estoque AS
 SELECT
@@ -80,35 +83,35 @@ SELECT
   p.nome as produto,
   u.sigla as unidade,
   p.estoque_inicial,
-  COALESCE((SELECT SUM(quantidade) FROM entradas WHERE produto_id = p.id AND empresa_id = p.empresa_id), 0) as total_entradas,
-  COALESCE((SELECT SUM(quantidade) FROM saidas WHERE produto_id = p.id AND empresa_id = p.empresa_id), 0) as total_saidas,
-  COALESCE((SELECT SUM(quantidade) FROM ajustes WHERE produto_id = p.id AND empresa_id = p.empresa_id), 0) as total_ajustes,
+  COALESCE((SELECT SUM(quantidade) FROM entradas WHERE produto_id = p.id), 0) as total_entradas,
+  COALESCE((SELECT SUM(quantidade) FROM saidas WHERE produto_id = p.id), 0) as total_saidas,
+  COALESCE((SELECT SUM(quantidade) FROM ajustes WHERE produto_id = p.id), 0) as total_ajustes,
 
   -- Estoque Principal: entradas - TODAS saidas + ajustes PRINCIPAL apenas
   p.estoque_inicial
-    + COALESCE((SELECT SUM(quantidade) FROM entradas WHERE produto_id = p.id AND empresa_id = p.empresa_id), 0)
-    - COALESCE((SELECT SUM(quantidade) FROM saidas WHERE produto_id = p.id AND empresa_id = p.empresa_id), 0)
-    + COALESCE((SELECT SUM(quantidade) FROM ajustes WHERE produto_id = p.id AND empresa_id = p.empresa_id AND tipo = 'principal'), 0)
+    + COALESCE((SELECT SUM(quantidade) FROM entradas WHERE produto_id = p.id), 0)
+    - COALESCE((SELECT SUM(quantidade) FROM saidas WHERE produto_id = p.id), 0)
+    + COALESCE((SELECT SUM(quantidade) FROM ajustes WHERE produto_id = p.id AND tipo = 'principal'), 0)
     as saldo_principal,
 
   -- Estoque Apoio: transferencias internas (para apoio, nao outra loja) + ajustes APOIO
-  COALESCE((SELECT SUM(quantidade) FROM saidas WHERE produto_id = p.id AND empresa_id = p.empresa_id AND tipo = 'transferencia' AND empresa_destino_id IS NULL), 0)
-    + COALESCE((SELECT SUM(quantidade) FROM ajustes WHERE produto_id = p.id AND empresa_id = p.empresa_id AND tipo = 'apoio'), 0)
+  COALESCE((SELECT SUM(quantidade) FROM saidas WHERE produto_id = p.id AND tipo = 'transferencia' AND empresa_destino_id IS NULL), 0)
+    + COALESCE((SELECT SUM(quantidade) FROM ajustes WHERE produto_id = p.id AND tipo = 'apoio'), 0)
     as saldo_apoio,
 
   -- Saldo total: EI + entradas - (definitiva + producao + outra loja) + TODOS ajustes
   p.estoque_inicial
-    + COALESCE((SELECT SUM(quantidade) FROM entradas WHERE produto_id = p.id AND empresa_id = p.empresa_id), 0)
-    - COALESCE((SELECT SUM(quantidade) FROM saidas WHERE produto_id = p.id AND empresa_id = p.empresa_id AND (tipo IN ('definitiva', 'producao') OR empresa_destino_id IS NOT NULL)), 0)
-    + COALESCE((SELECT SUM(quantidade) FROM ajustes WHERE produto_id = p.id AND empresa_id = p.empresa_id), 0)
+    + COALESCE((SELECT SUM(quantidade) FROM entradas WHERE produto_id = p.id), 0)
+    - COALESCE((SELECT SUM(quantidade) FROM saidas WHERE produto_id = p.id AND (tipo IN ('definitiva', 'producao') OR empresa_destino_id IS NOT NULL)), 0)
+    + COALESCE((SELECT SUM(quantidade) FROM ajustes WHERE produto_id = p.id), 0)
     as saldo_atual,
 
   calcular_custo_medio(p.id) as custo_medio,
 
   (p.estoque_inicial
-    + COALESCE((SELECT SUM(quantidade) FROM entradas WHERE produto_id = p.id AND empresa_id = p.empresa_id), 0)
-    - COALESCE((SELECT SUM(quantidade) FROM saidas WHERE produto_id = p.id AND empresa_id = p.empresa_id AND (tipo IN ('definitiva', 'producao') OR empresa_destino_id IS NOT NULL)), 0)
-    + COALESCE((SELECT SUM(quantidade) FROM ajustes WHERE produto_id = p.id AND empresa_id = p.empresa_id), 0))
+    + COALESCE((SELECT SUM(quantidade) FROM entradas WHERE produto_id = p.id), 0)
+    - COALESCE((SELECT SUM(quantidade) FROM saidas WHERE produto_id = p.id AND (tipo IN ('definitiva', 'producao') OR empresa_destino_id IS NOT NULL)), 0)
+    + COALESCE((SELECT SUM(quantidade) FROM ajustes WHERE produto_id = p.id), 0))
     * calcular_custo_medio(p.id) as valor_estoque
 
 FROM produtos p

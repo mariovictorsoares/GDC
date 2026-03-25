@@ -1,10 +1,7 @@
 import type {
   FichaTecnica,
-  FichaTecnicaIngrediente,
   OrdemProducao,
-  OPIngrediente,
-  StatusOP,
-  SaldoEstoque
+  StatusOP
 } from '~/types'
 
 export const useProducao = () => {
@@ -107,7 +104,7 @@ export const useProducao = () => {
     ficha: Partial<FichaTecnica>,
     ingredientes: Array<{ produto_id: string; quantidade: number; fator_correcao?: number; observacao?: string }>
   ) => {
-    // 1. Atualizar cabeçalho (incrementar versão)
+    // 1. Atualizar cabeçalho
     const { data: fichaData, error: fichaError } = await client
       .from('fichas_tecnicas')
       .update({
@@ -264,8 +261,10 @@ export const useProducao = () => {
     const codigo = await getProximoCodigo()
 
     // 4. Calcular BOM e custo estimado
+    // Fórmula: (qtd_ingrediente / rendimento_receita) × qtd_a_produzir × fator_correcao
+    const rendimento = ficha.rendimento || 1
     const ingredientes = (ficha.ingredientes || []).map(ing => {
-      const qtdPlanejada = ing.quantidade * dados.quantidade_planejada * ing.fator_correcao
+      const qtdPlanejada = (ing.quantidade / rendimento) * dados.quantidade_planejada * ing.fator_correcao
       const custoUnit = custoMap.get(ing.produto_id) || 0
       return {
         produto_id: ing.produto_id,
@@ -296,7 +295,13 @@ export const useProducao = () => {
       .select()
       .single()
 
-    if (opError) throw opError
+    if (opError) {
+      // Tratar duplicidade de código (race condition em uso simultâneo)
+      if (opError.code === '23505') {
+        throw new Error('Código de OP já existe. Tente novamente.')
+      }
+      throw opError
+    }
 
     // 6. Inserir ingredientes da OP
     if (ingredientes.length > 0) {

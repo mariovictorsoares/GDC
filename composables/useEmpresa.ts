@@ -81,27 +81,36 @@ export const useEmpresa = () => {
   const criarEmpresa = async (nome: string, cnpj?: string): Promise<Empresa> => {
     if (!user.value) throw new Error('Usuário não autenticado')
 
-    const insertData: any = { nome }
+    // Gerar UUID client-side para não depender do RETURNING (bloqueado por RLS)
+    const empresaId = crypto.randomUUID()
+    const insertData: any = { id: empresaId, nome }
     if (cnpj) insertData.cnpj = cnpj
 
-    const { data: empresa, error: empError } = await client
+    const { error: empError } = await client
       .from('empresas')
       .insert(insertData)
-      .select()
-      .single()
 
     if (empError) throw empError
 
-    // Vincular como admin
+    // Vincular como admin (ANTES de ler a empresa, para RLS permitir o SELECT)
     const { error: vincError } = await client
       .from('usuarios_empresas')
       .insert({
         user_id: user.value.id,
-        empresa_id: empresa.id,
+        empresa_id: empresaId,
         papel: 'admin'
       })
 
     if (vincError) throw vincError
+
+    // Agora o RLS permite ler (usuarios_empresas já existe)
+    const { data: empresa, error: fetchError } = await client
+      .from('empresas')
+      .select()
+      .eq('id', empresaId)
+      .single()
+
+    if (fetchError) throw fetchError
 
     // Criar unidades padrão para a empresa
     const unidadesPadrao = [

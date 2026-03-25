@@ -1,6 +1,6 @@
 <template>
   <div class="space-y-6">
-    <h1 class="text-2xl font-semibold text-[#5a5a66] mb-2">Curva ABC</h1>
+    <h1 class="text-2xl font-semibold text-[#5a5a66] pb-4">Curva ABC</h1>
 
     <!-- Resumo por Status -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-3">

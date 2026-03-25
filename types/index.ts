@@ -54,13 +54,6 @@ export interface Unidade {
   created_at?: string
 }
 
-export interface Destino {
-  id: string
-  nome: string
-  ativo: boolean
-  created_at?: string
-}
-
 export interface Fornecedor {
   id: string
   nome_empresa: string
@@ -114,20 +107,22 @@ export interface Entrada {
   valor_total: number
   numero_nf?: string
   observacao?: string
+  origem_producao?: boolean
+  ordem_producao_id?: string
   created_at?: string
   // Relacionamentos
   produto?: Produto
   fornecedor?: Fornecedor
 }
 
-export type TipoSaida = 'transferencia' | 'definitiva' | 'beneficiamento' | 'producao'
+export type TipoSaida = 'transferencia' | 'definitiva' | 'producao'
 
 export interface Saida {
   id: string
   produto_id: string
   tipo: TipoSaida
-  destino_id?: string
   empresa_destino_id?: string
+  ordem_producao_id?: string
   data: string
   semana: string
   quantidade: number
@@ -136,7 +131,6 @@ export interface Saida {
   created_at?: string
   // Relacionamentos
   produto?: Produto
-  destino?: Destino
   empresa_destino?: Empresa
 }
 
@@ -218,6 +212,7 @@ export interface PainelMes {
   saidas_definitiva_por_semana: number[]
   saidas_transf_loja_por_semana: number[]
   saidas_transf_apoio_por_semana: number[]
+  saidas_producao_por_semana: number[]
   total_saidas: number
   total_entradas: number
   estoque_final: number
@@ -327,6 +322,17 @@ export interface EstoqueMinimo {
   media_semanas: number
 }
 
+export interface PosicaoEstoqueItem {
+  produto_id: string
+  categoria: string
+  produto: string
+  unidade: string
+  saldo: number
+  custo_medio: number
+  valor_estoque: number
+  media_semanal: number
+}
+
 export interface GestaoInventario {
   produto_id: string
   produto: string
@@ -347,6 +353,9 @@ export interface GestaoInventario {
   ei_valor_apoio: number
   ef_quantidade_apoio: number
   ef_valor_apoio: number
+  entradas_valor: number
+  entradas_valor_principal: number
+  entradas_valor_apoio: number
   custo_ultima_entrada: number
   variacao_quantidade: number
   variacao_valor: number

@@ -2,7 +2,7 @@
   <div class="space-y-6">
     <!-- Header -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2">
-      <h1 class="text-2xl font-semibold text-[#5a5a66] mb-2">Lista de Pedidos</h1>
+      <h1 class="text-2xl font-semibold text-[#5a5a66] pb-4">Lista de Pedidos</h1>
       <UButton color="primary" class="w-full sm:w-auto" @click="abrirModalSetup">
         <UIcon name="i-heroicons-plus" class="w-4 h-4 mr-2" />
         Novo Pedido

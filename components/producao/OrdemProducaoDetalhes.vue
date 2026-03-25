@@ -1,20 +1,29 @@
 <template>
-  <USlideover v-model="isOpen" :ui="{ width: 'max-w-3xl' }">
-    <div v-if="op" class="flex flex-col h-full">
-      <!-- Header -->
-      <div class="flex items-center justify-between px-6 py-4 border-b border-operacao-200">
-        <div class="flex items-center gap-3">
-          <h3 class="text-lg font-semibold text-operacao-800">{{ op.codigo }}</h3>
-          <UBadge :color="statusColor" variant="subtle" size="sm">
-            {{ statusLabel }}
-          </UBadge>
-          <UBadge v-if="atrasada" color="red" variant="solid" size="xs">Atrasada</UBadge>
+  <UModal
+    v-model="isOpen"
+    :ui="{
+      width: 'sm:max-w-3xl',
+      overlay: { background: 'bg-operacao-900/50 backdrop-blur-sm' },
+      background: 'bg-white dark:bg-operacao-800',
+      ring: 'ring-1 ring-operacao-200 dark:ring-operacao-700',
+      shadow: 'shadow-2xl'
+    }"
+  >
+    <UCard v-if="op" :ui="{ background: 'bg-transparent', ring: 'ring-0', shadow: '', divide: 'divide-operacao-100 dark:divide-operacao-700' }">
+      <template #header>
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <h3 class="text-lg font-semibold">{{ op.codigo }}</h3>
+            <UBadge :color="statusColor" variant="subtle" size="sm">
+              {{ statusLabel }}
+            </UBadge>
+            <UBadge v-if="atrasada" color="red" variant="solid" size="xs">Atrasada</UBadge>
+          </div>
+          <UButton color="gray" variant="ghost" icon="i-heroicons-x-mark" @click="isOpen = false" />
         </div>
-        <UButton color="gray" variant="ghost" icon="i-heroicons-x-mark" @click="fechar" />
-      </div>
+      </template>
 
-      <!-- Corpo -->
-      <div class="flex-1 overflow-y-auto px-6 py-4 space-y-5">
+      <div class="space-y-5">
         <!-- Info básica -->
         <div class="grid grid-cols-2 gap-4 text-sm">
           <div>
@@ -126,8 +135,12 @@
           </UFormGroup>
 
           <div class="flex items-center justify-between text-sm">
-            <span class="text-guardian-700">Custo real estimado:</span>
+            <span class="text-guardian-700">Custo total ingredientes:</span>
             <span class="font-semibold text-guardian-800">{{ formatCurrency(custoRealEstimado) }}</span>
+          </div>
+          <div class="flex items-center justify-between text-sm">
+            <span class="text-guardian-700">Custo unitário produzido:</span>
+            <span class="font-semibold text-guardian-800">{{ formatCurrency(custoUnitarioEstimado) }}/{{ op.produto?.unidade?.sigla || 'un' }}</span>
           </div>
 
           <!-- Alerta de variância -->
@@ -143,7 +156,7 @@
           <p class="text-sm text-red-800 mt-1">{{ op.motivo_cancelamento }}</p>
         </div>
 
-        <!-- Modal cancelar -->
+        <!-- Seção cancelar -->
         <div v-if="cancelando" class="space-y-3 p-4 bg-red-50 rounded-lg border border-red-200">
           <label class="text-sm font-medium text-red-800 block">Cancelar OP</label>
           <UFormGroup label="Motivo (obrigatório)">
@@ -152,65 +165,66 @@
         </div>
       </div>
 
-      <!-- Footer -->
-      <div class="flex items-center justify-between px-6 py-4 border-t border-operacao-200">
-        <div>
-          <!-- Botão cancelar OP -->
-          <UButton
-            v-if="(op.status === 'planejada' || op.status === 'em_producao') && !emConclusao"
-            color="red"
-            variant="soft"
-            size="sm"
-            @click="cancelando ? confirmarCancelamento() : (cancelando = true)"
-            :loading="processando"
-            :disabled="cancelando && !motivoCancelamento.trim()"
-          >
-            {{ cancelando ? 'Confirmar Cancelamento' : 'Cancelar OP' }}
-          </UButton>
-          <UButton v-if="cancelando" color="white" size="sm" class="ml-2" @click="cancelando = false">
-            Voltar
-          </UButton>
+      <template #footer>
+        <div class="flex items-center justify-between">
+          <div>
+            <!-- Botão cancelar OP -->
+            <UButton
+              v-if="(op.status === 'planejada' || op.status === 'em_producao') && !emConclusao"
+              color="red"
+              variant="soft"
+              size="sm"
+              @click="cancelando ? confirmarCancelamento() : (cancelando = true)"
+              :loading="processando"
+              :disabled="cancelando && !motivoCancelamento.trim()"
+            >
+              {{ cancelando ? 'Confirmar Cancelamento' : 'Cancelar OP' }}
+            </UButton>
+            <UButton v-if="cancelando" color="white" size="sm" class="ml-2" @click="cancelando = false">
+              Voltar
+            </UButton>
+          </div>
+
+          <div class="flex gap-2">
+            <!-- Imprimir -->
+            <UButton v-if="op.status !== 'cancelada'" color="gray" variant="ghost" size="sm" @click="imprimir">
+              <UIcon name="i-heroicons-printer" class="w-4 h-4 mr-1" />
+              Imprimir
+            </UButton>
+
+            <!-- Iniciar Produção -->
+            <UButton
+              v-if="op.status === 'planejada'"
+              color="primary"
+              :loading="processando"
+              @click="iniciar"
+            >
+              Iniciar Produção
+            </UButton>
+
+            <!-- Concluir -->
+            <UButton
+              v-if="op.status === 'em_producao' && !emConclusao"
+              color="primary"
+              @click="emConclusao = true"
+            >
+              Concluir Produção
+            </UButton>
+
+            <UButton
+              v-if="emConclusao"
+              color="primary"
+              :loading="processando"
+              :disabled="!quantidadeProduzida || quantidadeProduzida <= 0"
+              @click="concluir"
+            >
+              Confirmar e Baixar Estoque
+            </UButton>
+          </div>
         </div>
-
-        <div class="flex gap-2">
-          <!-- Imprimir -->
-          <UButton v-if="op.status !== 'cancelada'" color="white" size="sm" @click="imprimir">
-            <UIcon name="i-heroicons-printer" class="w-4 h-4 mr-1" />
-            Imprimir
-          </UButton>
-
-          <!-- Iniciar Produção -->
-          <UButton
-            v-if="op.status === 'planejada'"
-            color="primary"
-            :loading="processando"
-            @click="iniciar"
-          >
-            Iniciar Produção
-          </UButton>
-
-          <!-- Concluir -->
-          <UButton
-            v-if="op.status === 'em_producao' && !emConclusao"
-            color="primary"
-            @click="emConclusao = true"
-          >
-            Concluir Produção
-          </UButton>
-
-          <UButton
-            v-if="emConclusao"
-            color="primary"
-            :loading="processando"
-            :disabled="!quantidadeProduzida || quantidadeProduzida <= 0"
-            @click="concluir"
-          >
-            Confirmar e Baixar Estoque
-          </UButton>
-        </div>
-      </div>
-    </div>
-  </USlideover>
+      </template>
+    </UCard>
+  </UModal>
 </template>
 
 <script setup lang="ts">
@@ -248,7 +262,7 @@ const disponibilidadeMap = ref(new Map<string, 'verde' | 'amarelo' | 'vermelho'>
 const statusColor = computed(() => {
   switch (props.op?.status) {
     case 'planejada': return 'blue'
-    case 'em_producao': return 'orange'
+    case 'em_producao': return 'amber'
     case 'concluida': return 'green'
     case 'cancelada': return 'red'
     default: return 'gray'
@@ -296,6 +310,11 @@ const custoRealEstimado = computed(() => {
     const qtdReal = quantidadesReais.value[idx] || ing.quantidade_planejada
     return acc + ((ing.custo_unitario || 0) * qtdReal)
   }, 0)
+})
+
+const custoUnitarioEstimado = computed(() => {
+  if (!quantidadeProduzida.value || quantidadeProduzida.value <= 0) return 0
+  return custoRealEstimado.value / quantidadeProduzida.value
 })
 
 // Variância styling
@@ -349,8 +368,6 @@ const formatDateTime = (d: string) => {
   const dt = new Date(d)
   return dt.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
 }
-
-const fechar = () => { isOpen.value = false }
 
 // Ações
 const iniciar = async () => {

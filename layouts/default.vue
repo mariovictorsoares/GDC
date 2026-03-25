@@ -37,9 +37,9 @@
       </div>
 
       <!-- Navigation -->
-      <nav class="flex-1 overflow-y-auto overflow-x-hidden" :class="sidebarCollapsed ? 'py-3' : 'p-4 pb-0'">
-        <!-- Dashboard + Empresas -->
-        <div :class="sidebarCollapsed ? 'flex flex-col items-center space-y-1' : 'space-y-1'">
+      <nav class="flex-1 overflow-y-auto overflow-x-hidden" :class="sidebarCollapsed ? 'py-3' : 'px-3 py-3 pb-0'">
+        <!-- Dashboard -->
+        <div :class="sidebarCollapsed ? 'flex flex-col items-center space-y-0.5' : 'space-y-0.5'">
           <div v-for="item in menuDashboard" :key="item.to">
             <div v-if="sidebarCollapsed" class="flex justify-center">
               <UTooltip :text="item.label" :popper="{ placement: 'right' }">
@@ -48,25 +48,25 @@
                   class="flex items-center justify-center w-10 h-10 rounded-lg transition-colors"
                   :class="isActive(item.to) ? 'bg-guardian-50 text-guardian-700' : 'text-operacao-400 hover:bg-operacao-100'"
                 >
-                  <UIcon :name="item.icon" class="w-5 h-5" />
+                  <UIcon :name="item.icon" class="w-[18px] h-[18px]" />
                 </NuxtLink>
               </UTooltip>
             </div>
             <NuxtLink
               v-else
               :to="item.to"
-              class="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-colors"
+              class="flex items-center gap-3 px-3 py-1.5 text-[13px] font-medium rounded-lg transition-colors"
               :class="isActive(item.to) ? 'bg-guardian-50 text-guardian-700' : 'text-operacao-600 hover:bg-operacao-100'"
             >
-              <UIcon :name="item.icon" class="w-5 h-5 flex-shrink-0" />
+              <UIcon :name="item.icon" class="w-[18px] h-[18px] flex-shrink-0" />
               <span>{{ item.label }}</span>
             </NuxtLink>
           </div>
         </div>
 
-        <!-- Cadastros -->
-        <div :class="sidebarCollapsed ? 'mt-1' : 'mt-1'">
-          <div :class="sidebarCollapsed ? 'flex flex-col items-center space-y-1' : 'space-y-1'">
+        <!-- Operação -->
+        <div :class="sidebarCollapsed ? 'mt-1' : 'mt-0.5'">
+          <div :class="sidebarCollapsed ? 'flex flex-col items-center space-y-0.5' : 'space-y-0.5'">
             <div v-for="item in menuCadastros" :key="item.to">
               <div v-if="sidebarCollapsed" class="flex justify-center">
                 <UTooltip :text="item.label" :popper="{ placement: 'right' }">
@@ -75,81 +75,114 @@
                     class="flex items-center justify-center w-10 h-10 rounded-lg transition-colors"
                     :class="isActive(item.to) ? 'bg-guardian-50 text-guardian-700' : 'text-operacao-400 hover:bg-operacao-100'"
                   >
-                    <UIcon :name="item.icon" class="w-5 h-5" />
+                    <UIcon :name="item.icon" class="w-[18px] h-[18px]" />
                   </NuxtLink>
                 </UTooltip>
               </div>
               <NuxtLink
                 v-else
                 :to="item.to"
-                class="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-colors"
+                class="flex items-center gap-3 px-3 py-1.5 text-[13px] font-medium rounded-lg transition-colors"
                 :class="isActive(item.to) ? 'bg-guardian-50 text-guardian-700' : 'text-operacao-600 hover:bg-operacao-100'"
               >
-                <UIcon :name="item.icon" class="w-5 h-5 flex-shrink-0" />
+                <UIcon :name="item.icon" class="w-[18px] h-[18px] flex-shrink-0" />
                 <span>{{ item.label }}</span>
               </NuxtLink>
             </div>
-
           </div>
         </div>
 
-        <!-- Relatórios (collapsible) -->
-        <div class="mt-1">
-          <!-- Header toggle -->
-          <div v-if="sidebarCollapsed" class="flex justify-center">
-            <UTooltip text="Relatórios" :popper="{ placement: 'right' }">
-              <button
-                class="flex items-center justify-center w-10 h-10 rounded-lg transition-colors"
-                :class="isRelatorioActive ? 'bg-guardian-50 text-guardian-700' : 'text-operacao-400 hover:bg-operacao-100'"
-                @click="toggleRelatorios"
-              >
-                <UIcon name="i-heroicons-document-chart-bar" class="w-5 h-5" />
-              </button>
-            </UTooltip>
-          </div>
-          <button
-            v-else
-            class="flex items-center justify-between w-full px-3 py-2 text-sm font-medium rounded-lg transition-colors"
-            :class="isRelatorioActive && !relatoriosOpen ? 'bg-guardian-50 text-guardian-700' : 'text-operacao-600 hover:bg-operacao-100'"
-            @click="toggleRelatorios"
-          >
-            <span class="flex items-center gap-3">
-              <UIcon name="i-heroicons-document-chart-bar" class="w-5 h-5 flex-shrink-0" />
-              <span>Relatórios</span>
-            </span>
-            <UIcon
-              name="i-heroicons-chevron-down"
-              class="w-4 h-4 transition-transform duration-200"
-              :class="relatoriosOpen ? '' : '-rotate-90'"
-            />
-          </button>
-
-          <!-- Sub-items (animated) -->
-          <div
-            v-if="!sidebarCollapsed"
-            class="grid transition-[grid-template-rows] duration-200 ease-in-out"
-            :class="relatoriosOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'"
-          >
-            <div class="overflow-hidden">
-              <div class="mt-0.5 space-y-0.5 pl-5">
-                <NuxtLink
-                  v-for="item in menuRelatorios"
-                  :key="item.to"
-                  :to="item.to"
-                  class="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-colors"
-                  :class="isActive(item.to) ? 'bg-guardian-50 text-guardian-700' : 'text-operacao-600 hover:bg-operacao-100'"
-                >
-                  <UIcon :name="item.icon" class="w-4 h-4 flex-shrink-0" />
-                  <span>{{ item.label }}</span>
-                </NuxtLink>
+        <!-- Estoque -->
+        <div :class="sidebarCollapsed ? 'mt-1' : 'mt-3'">
+          <p v-if="!sidebarCollapsed" class="px-2.5 mb-0.5 text-[10px] font-semibold uppercase tracking-widest text-operacao-400">Estoque</p>
+          <div :class="sidebarCollapsed ? 'flex flex-col items-center space-y-0.5' : 'space-y-0.5'">
+            <div v-for="item in menuEstoque" :key="item.to">
+              <div v-if="sidebarCollapsed" class="flex justify-center">
+                <UTooltip :text="item.label" :popper="{ placement: 'right' }">
+                  <NuxtLink
+                    :to="item.to"
+                    class="flex items-center justify-center w-10 h-10 rounded-lg transition-colors"
+                    :class="isActive(item.to) ? 'bg-guardian-50 text-guardian-700' : 'text-operacao-400 hover:bg-operacao-100'"
+                  >
+                    <UIcon :name="item.icon" class="w-[18px] h-[18px]" />
+                  </NuxtLink>
+                </UTooltip>
               </div>
+              <NuxtLink
+                v-else
+                :to="item.to"
+                class="flex items-center gap-3 px-3 py-1.5 text-[13px] font-medium rounded-lg transition-colors"
+                :class="isActive(item.to) ? 'bg-guardian-50 text-guardian-700' : 'text-operacao-600 hover:bg-operacao-100'"
+              >
+                <UIcon :name="item.icon" class="w-[18px] h-[18px] flex-shrink-0" />
+                <span>{{ item.label }}</span>
+              </NuxtLink>
+            </div>
+          </div>
+        </div>
+
+        <!-- Produção -->
+        <div :class="sidebarCollapsed ? 'mt-1' : 'mt-3'">
+          <p v-if="!sidebarCollapsed" class="px-2.5 mb-0.5 text-[10px] font-semibold uppercase tracking-widest text-operacao-400">Produção</p>
+          <div :class="sidebarCollapsed ? 'flex flex-col items-center space-y-0.5' : 'space-y-0.5'">
+            <div v-for="item in menuProducao" :key="item.to">
+              <div v-if="sidebarCollapsed" class="flex justify-center">
+                <UTooltip :text="item.label" :popper="{ placement: 'right' }">
+                  <NuxtLink
+                    :to="item.to"
+                    class="flex items-center justify-center w-10 h-10 rounded-lg transition-colors"
+                    :class="isActive(item.to) ? 'bg-guardian-50 text-guardian-700' : 'text-operacao-400 hover:bg-operacao-100'"
+                  >
+                    <UIcon :name="item.icon" class="w-[18px] h-[18px]" />
+                  </NuxtLink>
+                </UTooltip>
+              </div>
+              <NuxtLink
+                v-else
+                :to="item.to"
+                class="flex items-center gap-3 px-3 py-1.5 text-[13px] font-medium rounded-lg transition-colors"
+                :class="isActive(item.to) ? 'bg-guardian-50 text-guardian-700' : 'text-operacao-600 hover:bg-operacao-100'"
+              >
+                <UIcon :name="item.icon" class="w-[18px] h-[18px] flex-shrink-0" />
+                <span>{{ item.label }}</span>
+              </NuxtLink>
+            </div>
+          </div>
+        </div>
+
+        <!-- Relatórios -->
+        <div :class="sidebarCollapsed ? 'mt-1' : 'mt-3'">
+          <p v-if="!sidebarCollapsed" class="px-2.5 mb-0.5 text-[10px] font-semibold uppercase tracking-widest text-operacao-400">Relatórios</p>
+          <div :class="sidebarCollapsed ? 'flex flex-col items-center space-y-0.5' : 'space-y-0.5'">
+            <div v-for="item in menuRelatorios" :key="item.to">
+              <div v-if="sidebarCollapsed" class="flex justify-center">
+                <UTooltip :text="item.label" :popper="{ placement: 'right' }">
+                  <NuxtLink
+                    :to="item.to"
+                    class="flex items-center justify-center w-10 h-10 rounded-lg transition-colors"
+                    :class="isActive(item.to) ? 'bg-guardian-50 text-guardian-700' : 'text-operacao-400 hover:bg-operacao-100'"
+                  >
+                    <UIcon :name="item.icon" class="w-[18px] h-[18px]" />
+                  </NuxtLink>
+                </UTooltip>
+              </div>
+              <NuxtLink
+                v-else
+                :to="item.to"
+                class="flex items-center gap-3 px-3 py-1.5 text-[13px] font-medium rounded-lg transition-colors"
+                :class="isActive(item.to) ? 'bg-guardian-50 text-guardian-700' : 'text-operacao-600 hover:bg-operacao-100'"
+              >
+                <UIcon :name="item.icon" class="w-[18px] h-[18px] flex-shrink-0" />
+                <span>{{ item.label }}</span>
+              </NuxtLink>
             </div>
           </div>
         </div>
 
         <!-- Admin (super-admin only) -->
-        <div v-if="isSuperAdmin" :class="sidebarCollapsed ? 'mt-1' : 'mt-1'">
-          <div :class="sidebarCollapsed ? 'flex flex-col items-center space-y-1' : 'space-y-1'">
+        <div v-if="isSuperAdmin" :class="sidebarCollapsed ? 'mt-1' : 'mt-3'">
+          <p v-if="!sidebarCollapsed" class="px-2.5 mb-0.5 text-[10px] font-semibold uppercase tracking-widest text-operacao-400">Admin</p>
+          <div :class="sidebarCollapsed ? 'flex flex-col items-center space-y-0.5' : 'space-y-0.5'">
             <div v-for="item in menuAdmin" :key="item.to">
               <div v-if="sidebarCollapsed" class="flex justify-center">
                 <UTooltip :text="item.label" :popper="{ placement: 'right' }">
@@ -158,17 +191,17 @@
                     class="flex items-center justify-center w-10 h-10 rounded-lg transition-colors"
                     :class="isActive(item.to) ? 'bg-guardian-50 text-guardian-700' : 'text-operacao-400 hover:bg-operacao-100'"
                   >
-                    <UIcon :name="item.icon" class="w-5 h-5" />
+                    <UIcon :name="item.icon" class="w-[18px] h-[18px]" />
                   </NuxtLink>
                 </UTooltip>
               </div>
               <NuxtLink
                 v-else
                 :to="item.to"
-                class="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-colors"
+                class="flex items-center gap-3 px-3 py-1.5 text-[13px] font-medium rounded-lg transition-colors"
                 :class="isActive(item.to) ? 'bg-guardian-50 text-guardian-700' : 'text-operacao-600 hover:bg-operacao-100'"
               >
-                <UIcon :name="item.icon" class="w-5 h-5 flex-shrink-0" />
+                <UIcon :name="item.icon" class="w-[18px] h-[18px] flex-shrink-0" />
                 <span>{{ item.label }}</span>
               </NuxtLink>
             </div>
@@ -180,43 +213,39 @@
       <!-- Footer: Empresa + User -->
       <div class="border-t border-operacao-100 flex-shrink-0">
         <!-- Seletor de Empresa -->
-        <div :class="sidebarCollapsed ? 'p-1.5 flex justify-center' : 'px-2.5 pt-2.5 pb-2'">
+        <div :class="sidebarCollapsed ? 'p-1.5 flex justify-center' : 'px-2 pt-2 pb-1.5'">
           <UPopover v-model:open="empresaPopoverOpen" :popper="{ placement: 'top-start' }">
             <button
               :class="[
                 'group flex items-center rounded-lg transition-colors duration-150',
                 sidebarCollapsed
                   ? 'justify-center p-1 hover:bg-operacao-100'
-                  : 'w-full gap-2.5 px-2 py-1.5 hover:bg-operacao-50'
+                  : 'w-full gap-2.5 px-2 py-1 hover:bg-operacao-50'
               ]"
             >
               <div
                 v-if="empresaAtiva?.logo_url"
-                class="flex-shrink-0 rounded-lg overflow-hidden"
-                :class="sidebarCollapsed ? 'w-7 h-7' : 'w-8 h-8'"
+                class="flex-shrink-0 rounded-md overflow-hidden"
+                :class="sidebarCollapsed ? 'w-7 h-7' : 'w-7 h-7'"
               >
                 <img
                   :src="empresaAtiva.logo_url"
-                  :class="sidebarCollapsed ? 'w-7 h-7' : 'w-8 h-8'"
+                  :class="sidebarCollapsed ? 'w-7 h-7' : 'w-7 h-7'"
                   class="object-cover"
                 />
               </div>
               <div
                 v-else
-                class="flex-shrink-0 bg-operacao-100 flex items-center justify-center rounded-lg"
-                :class="sidebarCollapsed ? 'w-7 h-7' : 'w-8 h-8'"
+                class="flex-shrink-0 bg-operacao-100 flex items-center justify-center rounded-md"
+                :class="sidebarCollapsed ? 'w-7 h-7' : 'w-7 h-7'"
               >
-                <UIcon name="i-heroicons-building-storefront" class="text-operacao-400 w-4 h-4" />
+                <UIcon name="i-heroicons-building-storefront" class="text-operacao-400 w-3.5 h-3.5" />
               </div>
               <template v-if="!sidebarCollapsed">
                 <div class="flex-1 min-w-0 text-left">
-                  <p class="text-[13px] font-semibold text-operacao-800 truncate leading-none">{{ empresaAtiva?.nome || 'Sem empresa' }}</p>
-                  <p class="text-[10px] text-operacao-400 leading-none mt-1">Empresa atual</p>
+                  <p class="text-[13px] font-medium text-operacao-800 truncate leading-tight">{{ empresaAtiva?.nome || 'Sem empresa' }}</p>
                 </div>
-                <div class="flex flex-col items-center text-operacao-300 group-hover:text-operacao-400 transition-colors flex-shrink-0">
-                  <UIcon name="i-heroicons-chevron-up" class="w-2.5 h-2.5" />
-                  <UIcon name="i-heroicons-chevron-down" class="w-2.5 h-2.5 -mt-0.5" />
-                </div>
+                <UIcon name="i-heroicons-chevron-up-down" class="w-[18px] h-[18px] text-operacao-400 group-hover:text-operacao-600 transition-colors flex-shrink-0" />
               </template>
             </button>
 
@@ -326,7 +355,7 @@
         <div v-if="showAssinaturaBanner" :class="sidebarCollapsed ? 'mx-2 mt-2' : 'mx-3 mt-2'" class="border-t border-operacao-100" />
 
         <!-- Linha do User -->
-        <div :class="sidebarCollapsed ? 'p-1.5 flex justify-center' : 'px-2.5 pt-2 pb-2.5'">
+        <div :class="sidebarCollapsed ? 'p-1.5 flex justify-center' : 'px-2 pt-1.5 pb-2'">
           <div :class="sidebarCollapsed ? 'flex items-center justify-center' : 'flex items-center gap-2.5 px-2 py-1'">
             <template v-if="sidebarCollapsed">
               <UTooltip :text="nomeCompletoUsuario" :popper="{ placement: 'right' }">
@@ -341,23 +370,23 @@
             </template>
             <template v-else>
               <button
-                class="flex-shrink-0 w-8 h-8 rounded-full bg-guardian-600 text-white flex items-center justify-center text-[11px] font-bold tracking-wide hover:ring-2 hover:ring-guardian-300 transition-all overflow-hidden"
+                class="flex-shrink-0 w-7 h-7 rounded-full bg-guardian-600 text-white flex items-center justify-center text-[10px] font-bold tracking-wide hover:ring-2 hover:ring-guardian-300 transition-all overflow-hidden"
                 @click="showPerfilModal = true"
               >
-                <img v-if="fotoPerfilUsuario" :src="fotoPerfilUsuario" class="w-8 h-8 object-cover" />
+                <img v-if="fotoPerfilUsuario" :src="fotoPerfilUsuario" class="w-7 h-7 object-cover" />
                 <span v-else>{{ iniciaisUsuario }}</span>
               </button>
               <button class="flex-1 min-w-0 text-left" @click="showPerfilModal = true">
-                <p class="text-[13px] font-semibold text-operacao-800 truncate leading-none uppercase hover:text-guardian-700 transition-colors">{{ nomeCompletoUsuario }}</p>
-                <p v-if="sidebarPlanoLabel" class="text-[10px] mt-1 truncate leading-none" :class="sidebarPlanoLabelClass">{{ sidebarPlanoLabel }}</p>
+                <p class="text-[13px] font-medium text-operacao-800 truncate leading-tight hover:text-guardian-700 transition-colors">{{ nomeCompletoUsuario }}</p>
+                <p v-if="sidebarPlanoLabel" class="text-[10px] truncate leading-tight" :class="sidebarPlanoLabelClass">{{ sidebarPlanoLabel }}</p>
               </button>
               <button
                 v-if="user"
-                class="flex-shrink-0 w-7 h-7 flex items-center justify-center text-operacao-300 hover:text-red-500 hover:bg-red-50 transition-colors rounded-lg"
+                class="flex-shrink-0 w-7 h-7 flex items-center justify-center text-operacao-400 hover:text-red-500 hover:bg-red-50 transition-colors rounded-md"
                 title="Sair"
                 @click="logout"
               >
-                <UIcon name="i-heroicons-arrow-right-on-rectangle" class="w-4 h-4" />
+                <UIcon name="i-heroicons-arrow-right-on-rectangle" class="w-[18px] h-[18px]" />
               </button>
             </template>
           </div>
@@ -640,20 +669,32 @@
         </div>
 
         <template #footer>
-          <div class="flex flex-col-reverse sm:flex-row justify-end gap-3">
-            <UButton color="gray" variant="ghost" class="w-full sm:w-auto" @click="showPerfilModal = false">
-              Cancelar
-            </UButton>
+          <div class="flex flex-col-reverse sm:flex-row justify-between gap-3">
             <UButton
-              color="primary"
-              class="w-full sm:w-auto"
-              :loading="salvandoPerfil"
-              :disabled="!perfilForm.nome.trim()"
-              @click="salvarPerfil"
+              color="red"
+              variant="soft"
+              size="xs"
+              :loading="limpandoDados"
+              @click="confirmarLimparDados"
             >
-              <UIcon name="i-heroicons-check" class="w-4 h-4 mr-1.5" />
-              Salvar
+              <UIcon name="i-heroicons-trash" class="w-3.5 h-3.5 mr-1" />
+              Limpar dados (teste)
             </UButton>
+            <div class="flex flex-col-reverse sm:flex-row gap-3">
+              <UButton color="gray" variant="ghost" class="w-full sm:w-auto" @click="showPerfilModal = false">
+                Cancelar
+              </UButton>
+              <UButton
+                color="primary"
+                class="w-full sm:w-auto"
+                :loading="salvandoPerfil"
+                :disabled="!perfilForm.nome.trim()"
+                @click="salvarPerfil"
+              >
+                <UIcon name="i-heroicons-check" class="w-4 h-4 mr-1.5" />
+                Salvar
+              </UButton>
+            </div>
           </div>
         </template>
       </UCard>
@@ -1058,6 +1099,7 @@ const deletandoEmpresa = ref(false)
 // Perfil do usuário
 const showPerfilModal = ref(false)
 const salvandoPerfil = ref(false)
+const limpandoDados = ref(false)
 const uploadingAvatar = ref(false)
 const enderecoAberto = ref(false)
 const perfilForm = reactive({
@@ -1206,20 +1248,28 @@ const menuDashboard = [
 
 const menuCadastros = [
   { to: '/cadastro/produtos', icon: 'i-heroicons-cube', label: 'Produtos' },
-  { to: '/movimentos/controle-estoque', icon: 'i-heroicons-clipboard-document-list', label: 'Controle de Estoque', iconColor: 'text-guardian-500' },
   { to: '/movimentos/contagens', icon: 'i-heroicons-clipboard-document-check', label: 'Contagens' },
   { to: '/compras', icon: 'i-heroicons-shopping-cart', label: 'Compras' }
+]
+
+const menuEstoque = [
+  { to: '/estoque/principal', icon: 'i-heroicons-archive-box', label: 'Estoque Principal' },
+  { to: '/estoque/apoio', icon: 'i-heroicons-circle-stack', label: 'Estoque Apoio' },
+  { to: '/estoque/movimentacoes', icon: 'i-heroicons-arrows-up-down', label: 'Movimentações' },
+  { to: '/estoque/requisicoes', icon: 'i-heroicons-clipboard-document-list', label: 'Requisições' }
+]
+
+const menuProducao = [
+  { to: '/producao/ordens', icon: 'i-heroicons-clipboard-document-list', label: 'Ordens de Produção' },
+  { to: '/producao/fichas-tecnicas', icon: 'i-heroicons-beaker', label: 'Fichas Técnicas' }
 ]
 
 const menuRelatorios = [
   { to: '/relatorios/cmv', icon: 'i-heroicons-calculator', label: 'CMV' },
   { to: '/relatorios/gestao-inventario', icon: 'i-heroicons-clipboard-document-list', label: 'Inventário' },
-  { to: '/relatorios/giro-estoque', icon: 'i-heroicons-arrow-path', label: 'Giro de Estoque' },
   { to: '/relatorios/curva-abc', icon: 'i-heroicons-chart-bar', label: 'Curva ABC' },
   { to: '/relatorios/cmc-semanal?tab=1', icon: 'i-heroicons-currency-dollar', label: 'CMC Semanal' }
 ]
-
-const relatoriosOpen = ref(false)
 
 const menuAdmin = [
   { to: '/admin', icon: 'i-heroicons-cog-6-tooth', label: 'Painel Admin' }
@@ -1239,27 +1289,6 @@ const isActive = (fullPath: string) => {
   }
   if (route.path === path) return true
   return route.path.startsWith(path + '/')
-}
-
-const isRelatorioActive = computed(() => {
-  return menuRelatorios.some(item => isActive(item.to))
-})
-
-// Auto-open when a relatório route is active
-watch(isRelatorioActive, (active) => {
-  if (active) relatoriosOpen.value = true
-}, { immediate: true })
-
-const toggleRelatorios = () => {
-  if (sidebarCollapsed.value) {
-    sidebarCollapsed.value = false
-    if (import.meta.client) {
-      localStorage.setItem('sidebar_collapsed', 'false')
-    }
-    relatoriosOpen.value = true
-  } else {
-    relatoriosOpen.value = !relatoriosOpen.value
-  }
 }
 
 const toggleCollapse = () => {
@@ -1439,6 +1468,57 @@ const executarDeletarEmpresa = async () => {
     toast.add({ title: 'Erro', description: error.message || 'Erro ao excluir empresa', color: 'red' })
   } finally {
     deletandoEmpresa.value = false
+  }
+}
+
+const confirmarLimparDados = async () => {
+  if (!confirm('ATENÇÃO: Isso vai apagar TODOS os dados da empresa atual (produtos, entradas, saídas, ajustes, contagens, etc). Tem certeza?')) return
+  if (!empresaId.value) return
+
+  limpandoDados.value = true
+  try {
+    const eid = empresaId.value
+    // Ordem: filhos primeiro, pais depois (respeitar FKs)
+    const tabelas = [
+      'op_ingredientes',
+      'ordens_producao',
+      'ficha_tecnica_ingredientes',
+      'fichas_tecnicas',
+      'contagem_resultado_itens',
+      'contagem_resultados',
+      'contagem_itens',
+      'contagem_setores',
+      'contagens',
+      'requisicao_itens',
+      'requisicoes',
+      'setor_produtos',
+      'setores',
+      'responsaveis',
+      'saidas',
+      'entradas',
+      'ajustes',
+      'custos_mensais',
+      'faturamentos_semanais',
+      'faturamentos',
+      'produtos',
+      'subgrupos',
+      'grupos',
+      'categorias',
+      'fornecedores',
+      'unidades',
+    ]
+
+    for (const tabela of tabelas) {
+      await client.from(tabela).delete().eq('empresa_id', eid)
+    }
+
+    toast.add({ title: 'Dados limpos', description: 'Todos os registros da empresa foram apagados.', color: 'green' })
+    showPerfilModal.value = false
+    window.location.reload()
+  } catch (error: any) {
+    toast.add({ title: 'Erro', description: error.message || 'Erro ao limpar dados', color: 'red' })
+  } finally {
+    limpandoDados.value = false
   }
 }
 

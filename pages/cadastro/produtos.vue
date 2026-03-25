@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-6">
     <!-- Header -->
-    <h1 class="text-2xl font-semibold text-[#5a5a66] mb-2">Produtos</h1>
+    <h1 class="text-2xl font-semibold text-[#5a5a66] pb-4">Produtos</h1>
 
     <!-- Toolbar: Filtros + Ações -->
     <div class="flex flex-col lg:flex-row lg:items-center gap-3 lg:gap-6">
@@ -86,18 +86,18 @@
 
       <!-- Ações (direita) -->
       <div class="flex gap-2 flex-shrink-0">
-        <UButton color="white" :ui="toolbarButtonUi" @click="openGruposModal()">
-          <UIcon name="i-heroicons-folder" class="w-4 h-4 mr-1.5" />
+        <button class="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-medium rounded-lg bg-white text-[#5a5a66] border border-gray-300 shadow-sm hover:bg-gray-50 active:bg-gray-100 transition-all duration-150" @click="openGruposModal()">
+          <UIcon name="i-heroicons-folder" class="w-4 h-4" />
           Grupos
-        </UButton>
-        <UButton color="white" :ui="toolbarButtonUi" @click="openUnidadesModal()">
-          <UIcon name="i-heroicons-cog-6-tooth" class="w-4 h-4 mr-1.5" />
+        </button>
+        <button class="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-medium rounded-lg bg-white text-[#5a5a66] border border-gray-300 shadow-sm hover:bg-gray-50 active:bg-gray-100 transition-all duration-150" @click="openUnidadesModal()">
+          <UIcon name="i-heroicons-cog-6-tooth" class="w-4 h-4" />
           Unidades
-        </UButton>
-        <UButton color="primary" @click="openModal()">
-          <UIcon name="i-heroicons-plus" class="w-4 h-4 mr-1.5" />
+        </button>
+        <button class="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-medium rounded-lg bg-blue-500 text-white shadow-sm hover:bg-blue-600 hover:shadow-md active:bg-blue-700 transition-all duration-150" @click="openModal()">
+          <UIcon name="i-heroicons-plus" class="w-4 h-4" />
           Novo Produto
-        </UButton>
+        </button>
       </div>
     </div>
 

@@ -21,9 +21,7 @@ const TABELAS_REALTIME = [
   'contagem_itens',
   'setores',
   'setor_produtos',
-  'responsaveis',
-  'destinos',
-  'configuracoes'
+  'responsaveis'
 ] as const
 
 type TabelaRealtime = typeof TABELAS_REALTIME[number]

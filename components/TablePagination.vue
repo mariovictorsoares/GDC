@@ -11,6 +11,7 @@
       <span class="text-sm text-operacao-500">
         {{ totalItems }} registros encontrados
       </span>
+      <slot name="extra" />
     </div>
 
     <!-- Direita: Navegacao de paginas -->

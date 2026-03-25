@@ -233,7 +233,8 @@ export default defineEventHandler(async (event) => {
         valor_divergencia: Math.round(diferenca * item.custo_medio * 100) / 100,
         acuracidade: item.saldo_sistema === 0
           ? (item.quantidade_contada === 0 ? 100 : 0)
-          : Math.max(0, Math.round((1 - Math.abs(diferenca) / item.saldo_sistema) * 10000) / 100),
+          : item.saldo_sistema < 0 ? 0
+          : Math.round((item.quantidade_contada / item.saldo_sistema) * 10000) / 100,
         setores_breakdown: item.setores_breakdown
       }
     }).sort((a, b) => a.nome.localeCompare(b.nome))
@@ -291,6 +292,7 @@ export default defineEventHandler(async (event) => {
           diferenca: item.diferenca,
           custo_medio: item.custo_medio,
           valor_divergencia: item.valor_divergencia,
+          acuracidade: item.acuracidade,
           setores_breakdown: item.setores_breakdown || []
         })))
     }

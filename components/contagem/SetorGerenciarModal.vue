@@ -154,14 +154,29 @@
                 <div
                   v-for="prod in produtosDisponiveis.slice(0, 100)"
                   :key="prod.id"
-                  class="flex items-center justify-between px-4 py-2 hover:bg-controle-50 transition-colors cursor-pointer group"
+                  class="flex items-center justify-between px-4 py-2 transition-colors group"
+                  :class="setorSelecionado?.tipo === 'apoio' && produtosEmOutrosSetoresApoio.has(prod.id)
+                    ? 'bg-amber-50/50 cursor-not-allowed'
+                    : 'hover:bg-controle-50 cursor-pointer'"
                   @click="adicionarProdutoAoSetor(prod.id)"
                 >
                   <div class="flex-1 min-w-0">
                     <p class="text-sm text-operacao-600 truncate">{{ prod.nome }}</p>
                     <p class="text-xs text-operacao-400 truncate">{{ prod.subgrupo?.grupo?.nome }} / {{ prod.subgrupo?.nome }}</p>
+                    <p v-if="setorSelecionado?.tipo === 'apoio' && produtosEmOutrosSetoresApoio.has(prod.id)" class="text-[10px] text-amber-600 mt-0.5">
+                      Já em: {{ produtosEmOutrosSetoresApoio.get(prod.id) }}
+                    </p>
                   </div>
-                  <UIcon name="i-heroicons-plus-circle" class="w-5 h-5 text-operacao-300 group-hover:text-controle-500 transition-colors flex-shrink-0 ml-2" />
+                  <UIcon
+                    v-if="!(setorSelecionado?.tipo === 'apoio' && produtosEmOutrosSetoresApoio.has(prod.id))"
+                    name="i-heroicons-plus-circle"
+                    class="w-5 h-5 text-operacao-300 group-hover:text-controle-500 transition-colors flex-shrink-0 ml-2"
+                  />
+                  <UIcon
+                    v-else
+                    name="i-heroicons-exclamation-triangle"
+                    class="w-4 h-4 text-amber-400 flex-shrink-0 ml-2"
+                  />
                 </div>
                 <p v-if="produtosDisponiveis.length > 100" class="text-xs text-operacao-400 text-center py-3">
                   Mostrando 100 de {{ produtosDisponiveis.length }} — filtre para ver mais
@@ -262,7 +277,7 @@ const emit = defineEmits<{
 }>()
 
 const toast = useToast()
-const { createSetor, deleteSetor, getSetorProdutos, addProdutosToSetor, removeProdutoFromSetor } = useEstoque()
+const { createSetor, deleteSetor, getSetorProdutos, addProdutosToSetor, removeProdutoFromSetor, getAllSetorProdutos } = useEstoque()
 
 // State
 const novoSetorNome = ref('')
@@ -279,6 +294,9 @@ const buscaProdutoSetor = ref('')
 const adicionandoProdutos = ref(false)
 const filtroGrupoSetor = ref('')
 const filtroSubgrupoSetor = ref('')
+
+// Mapa: produto_id → setor nome (para setores de apoio, excluindo o setor atual)
+const produtosEmOutrosSetoresApoio = ref<Map<string, string>>(new Map())
 
 const subgruposFiltro = computed(() => {
   if (!filtroGrupoSetor.value) return []
@@ -324,6 +342,24 @@ const selecionarSetor = async (setor: Setor) => {
   try {
     loadingSetorProdutos.value = true
     setorProdutosLista.value = await getSetorProdutos(setor.id)
+
+    // Se setor é apoio, carregar mapa de produtos em outros setores apoio
+    if (setor.tipo === 'apoio') {
+      const allSP = await getAllSetorProdutos()
+      const setoresApoioIds = new Set(
+        props.setores.filter(s => s.tipo === 'apoio' && s.id !== setor.id).map(s => s.id)
+      )
+      const mapa = new Map<string, string>()
+      for (const sp of allSP) {
+        if (setoresApoioIds.has(sp.setor_id)) {
+          const nomeSetor = props.setores.find(s => s.id === sp.setor_id)?.nome || 'Outro setor'
+          mapa.set(sp.produto_id, nomeSetor)
+        }
+      }
+      produtosEmOutrosSetoresApoio.value = mapa
+    } else {
+      produtosEmOutrosSetoresApoio.value = new Map()
+    }
   } catch (error: any) {
     toast.add({ title: 'Erro', description: error.message || 'Erro ao carregar produtos do setor', color: 'red' })
   } finally {
@@ -383,6 +419,22 @@ const removerSetorConfirmado = async () => {
 
 const adicionarProdutoAoSetor = async (produtoId: string) => {
   if (!setorSelecionado.value) return
+
+  // Validação: produto único por setor de apoio
+  if (setorSelecionado.value.tipo === 'apoio') {
+    const setorConflitante = produtosEmOutrosSetoresApoio.value.get(produtoId)
+    if (setorConflitante) {
+      const produto = props.produtos.find(p => p.id === produtoId)
+      toast.add({
+        title: 'Produto já vinculado',
+        description: `"${produto?.nome}" já está no setor "${setorConflitante}". Remova de lá primeiro.`,
+        color: 'amber',
+        timeout: 5000
+      })
+      return
+    }
+  }
+
   try {
     adicionandoProdutos.value = true
     const novos = await addProdutosToSetor(setorSelecionado.value.id, [produtoId])
@@ -398,7 +450,23 @@ const adicionarTodosVisiveis = async () => {
   if (!setorSelecionado.value || produtosDisponiveis.value.length === 0) return
   try {
     adicionandoProdutos.value = true
-    const ids = produtosDisponiveis.value.map(p => p.id)
+    let ids = produtosDisponiveis.value.map(p => p.id)
+
+    // Filtrar produtos conflitantes para setores de apoio
+    if (setorSelecionado.value.tipo === 'apoio') {
+      const conflitantes = ids.filter(id => produtosEmOutrosSetoresApoio.value.has(id))
+      if (conflitantes.length > 0) {
+        ids = ids.filter(id => !produtosEmOutrosSetoresApoio.value.has(id))
+        toast.add({
+          title: 'Alguns produtos ignorados',
+          description: `${conflitantes.length} produto(s) já vinculado(s) a outros setores de apoio foram ignorados.`,
+          color: 'amber',
+          timeout: 5000
+        })
+      }
+      if (ids.length === 0) return
+    }
+
     const novos = await addProdutosToSetor(setorSelecionado.value.id, ids)
     setorProdutosLista.value.push(...novos)
     toast.add({ title: 'Sucesso', description: `${novos.length} produtos adicionados`, color: 'green' })

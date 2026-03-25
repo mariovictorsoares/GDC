@@ -132,7 +132,23 @@
       "Bash(grep -B 5 -A 10 \"ALTER TABLE setores\\\\|ADD COLUMN.*tipo\" /c/Users/mario/Desktop/estoque-cd/supabase/migrations/*.sql)",
       "Bash(grep -B 3 -A 8 \"token_requisicao\\\\|token_contagem\\\\|token\" /c/Users/mario/Desktop/estoque-cd/supabase/migrations/*.sql)",
       "Bash(head -100 /c/Users/mario/Desktop/estoque-cd/server/api/contagem/[token].post.ts)",
-      "Bash(grep -l \"receita\\\\|ficha\" /c/Users/mario/Desktop/estoque-cd/supabase/migrations/*.sql)"
+      "Bash(grep -l \"receita\\\\|ficha\" /c/Users/mario/Desktop/estoque-cd/supabase/migrations/*.sql)",
+      "Bash(grep -r \"ponto_reposicao\\\\|tempo_reposicao\\\\|margem_seguranca\" /c/Users/mario/Desktop/estoque-cd/supabase/migrations/*.sql)",
+      "Bash(npx vue-tsc --noEmit)",
+      "Bash(xargs grep -l \"giro-estoque\\\\|cmv\")",
+      "Bash(wc -l /c/Users/mario/Desktop/estoque-cd/pages/estoque/*.vue /c/Users/mario/Desktop/estoque-cd/composables/useRelatorios.ts)",
+      "Bash(npx vue-tsc --noEmit pages/index.vue)",
+      "Bash(for f in pages/estoque/principal.vue pages/estoque/apoio.vue pages/estoque/movimentacoes.vue pages/estoque/requisicoes.vue pages/cadastro/produtos.vue pages/compras/index.vue pages/producao/fichas-tecnicas.vue pages/producao/ordens.vue pages/movimentos/contagens.vue)",
+      "Bash(do echo \"=== $f ===\")",
+      "Bash(grep -n \"getMapaVisualApoio\\\\|getPosicaoApoio\" /c/Users/mario/Desktop/estoque-cd/composables/*.ts)",
+      "Bash(grep -l \"setores\\\\|setor_produtos\" /c/Users/mario/Desktop/estoque-cd/supabase/migrations/*.sql)",
+      "Bash(grep -A 30 \"ALTER TABLE setores\" /c/Users/mario/Desktop/estoque-cd/supabase/migrations/*.sql)",
+      "Bash(grep -n \"acuracidade\\\\|accuracy\" /c/Users/mario/Desktop/estoque-cd/server/api/contagem/[token].post.ts)",
+      "Bash(grep -l \"entradas\" /c/Users/mario/Desktop/estoque-cd/supabase/migrations/*.sql)",
+      "Bash(grep -A5 -B5 \"trigger.*entradas\\\\|entradas.*trigger\" /c/Users/mario/Desktop/estoque-cd/supabase/migrations/*.sql)",
+      "Bash(grep -l \"pedidos\" /c/Users/mario/Desktop/estoque-cd/supabase/migrations/*.sql)",
+      "Bash(grep -r \"CREATE TABLE\" /c/Users/mario/Desktop/estoque-cd/supabase/migrations/*.sql)",
+      "Bash(grep -n \"CREATE TABLE.*grupos\\\\|CREATE TABLE.*subgrupos\" /c/Users/mario/Desktop/estoque-cd/supabase/migrations/*.sql)"
     ]
   }
 }

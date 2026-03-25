@@ -1,44 +1,55 @@
 <template>
-  <UModal v-model="isOpen" :ui="{ width: 'max-w-2xl' }">
-    <div class="p-6">
-      <h3 class="text-lg font-semibold text-operacao-800 mb-5">Nova Ordem de Produção</h3>
+  <UModal
+    v-model="isOpen"
+    :ui="{
+      width: 'sm:max-w-2xl',
+      overlay: { background: 'bg-operacao-900/50 backdrop-blur-sm' },
+      background: 'bg-white dark:bg-operacao-800',
+      ring: 'ring-1 ring-operacao-200 dark:ring-operacao-700',
+      shadow: 'shadow-2xl'
+    }"
+  >
+    <UCard :ui="{ background: 'bg-transparent', ring: 'ring-0', shadow: '', divide: 'divide-operacao-100 dark:divide-operacao-700' }">
+      <template #header>
+        <div class="flex items-center justify-between">
+          <h3 class="text-lg font-semibold">Nova Ordem de Produção</h3>
+          <UButton color="gray" variant="ghost" icon="i-heroicons-x-mark" @click="isOpen = false" />
+        </div>
+      </template>
 
       <div class="space-y-4">
-        <!-- Ficha Técnica -->
-        <UFormGroup label="Ficha Técnica">
-          <USelectMenu
-            v-model="form.ficha_tecnica_id"
-            :options="fichasOptions"
-            searchable
-            searchable-placeholder="Buscar ficha..."
-            placeholder="Selecione a ficha técnica"
-            value-attribute="value"
-            option-attribute="label"
-          />
-        </UFormGroup>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <UFormGroup label="Ficha Técnica" required class="md:col-span-2">
+            <USelectMenu
+              v-model="form.ficha_tecnica_id"
+              :options="fichasOptions"
+              searchable
+              searchable-placeholder="Buscar ficha..."
+              placeholder="Selecione a ficha técnica"
+              value-attribute="value"
+              option-attribute="label"
+            />
+          </UFormGroup>
 
-        <!-- Quantidade -->
-        <UFormGroup :label="`Quantidade a Produzir (${unidadeReceita})`">
-          <UInput v-model.number="form.quantidade_planejada" type="number" step="0.01" min="0.01" placeholder="1" />
-        </UFormGroup>
+          <UFormGroup :label="`Quantidade a Produzir (${unidadeReceita})`" required>
+            <UInput v-model.number="form.quantidade_planejada" type="number" step="0.01" min="0.01" placeholder="1" />
+          </UFormGroup>
 
-        <!-- Data -->
-        <UFormGroup label="Data de Produção">
-          <UInput v-model="form.data_planejada" type="date" />
-        </UFormGroup>
+          <UFormGroup label="Data de Produção" required>
+            <UInput v-model="form.data_planejada" type="date" />
+          </UFormGroup>
 
-        <!-- Responsável -->
-        <UFormGroup label="Responsável">
-          <UInput v-model="form.responsavel_nome" placeholder="Nome do responsável" />
-        </UFormGroup>
+          <UFormGroup label="Responsável">
+            <UInput v-model="form.responsavel_nome" placeholder="Nome do responsável" />
+          </UFormGroup>
 
-        <!-- Observações -->
-        <UFormGroup label="Observações">
-          <UTextarea v-model="form.observacao" placeholder="Observações (opcional)" :rows="2" />
-        </UFormGroup>
+          <UFormGroup label="Observações">
+            <UTextarea v-model="form.observacao" placeholder="Observações (opcional)" :rows="2" />
+          </UFormGroup>
+        </div>
 
         <!-- Preview Ingredientes -->
-        <div v-if="fichaSelecionada && form.quantidade_planejada > 0" class="mt-4">
+        <div v-if="fichaSelecionada && form.quantidade_planejada > 0">
           <div class="flex items-center justify-between mb-2">
             <label class="text-sm font-medium text-operacao-700">Ingredientes Necessários</label>
             <span v-if="disponibilidade.length > 0" class="text-xs text-operacao-400">
@@ -78,21 +89,24 @@
             </table>
           </div>
 
-          <div v-if="temInsuficiente" class="mt-2 flex items-center gap-2 text-xs text-amber-600 bg-amber-50 px-3 py-2 rounded-lg">
-            <UIcon name="i-heroicons-exclamation-triangle" class="w-4 h-4" />
-            Alguns ingredientes têm estoque insuficiente. Você pode criar a OP mesmo assim.
+          <div v-if="temInsuficiente" class="mt-2 flex items-center gap-2 text-xs text-red-600 bg-red-50 px-3 py-2 rounded-lg">
+            <UIcon name="i-heroicons-x-circle" class="w-4 h-4" />
+            Estoque insuficiente. Não é possível criar a OP.
           </div>
         </div>
       </div>
 
-      <!-- Footer -->
-      <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-operacao-200">
-        <UButton color="white" @click="isOpen = false">Cancelar</UButton>
-        <UButton color="primary" :loading="criando" :disabled="!formValido" @click="criar">
-          Criar OP
-        </UButton>
-      </div>
-    </div>
+      <template #footer>
+        <div class="flex flex-col-reverse sm:flex-row justify-end gap-3">
+          <UButton color="gray" variant="ghost" class="w-full sm:w-auto" @click="isOpen = false">
+            Cancelar
+          </UButton>
+          <UButton color="primary" class="w-full sm:w-auto" :loading="criando" :disabled="!formValido || temInsuficiente" @click="criar">
+            Criar OP
+          </UButton>
+        </div>
+      </template>
+    </UCard>
   </UModal>
 </template>
 
@@ -191,9 +205,10 @@ watch([() => form.value.ficha_tecnica_id, () => form.value.quantidade_planejada]
   }
 
   try {
+    const rendimento = ficha.rendimento || 1
     const ingredientes = ficha.ingredientes.map(ing => ({
       produto_id: ing.produto_id,
-      quantidade_planejada: Number((ing.quantidade * qtd * ing.fator_correcao).toFixed(4))
+      quantidade_planejada: Number(((ing.quantidade / rendimento) * qtd * ing.fator_correcao).toFixed(4))
     }))
     disponibilidade.value = await calcularDisponibilidade(ingredientes)
   } catch (e) {

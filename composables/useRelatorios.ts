@@ -14,6 +14,7 @@ import type {
   CmcSemanalSubgrupo,
   FaturamentoSemanal,
   GestaoInventario,
+  PosicaoEstoqueItem,
   MapaVisualApoioItem,
   MapaVisualApoioSemana,
   MapaVisualApoioDia
@@ -263,6 +264,7 @@ export const useRelatorios = () => {
       const saidas_definitiva_por_semana = new Array(qtdSemanas).fill(0)
       const saidas_transf_loja_por_semana = new Array(qtdSemanas).fill(0)
       const saidas_transf_apoio_por_semana = new Array(qtdSemanas).fill(0)
+      const saidas_producao_por_semana = new Array(qtdSemanas).fill(0)
 
       prodSaidasAll.forEach(s => {
         const idx = getIndiceSemana(s.data)
@@ -270,6 +272,7 @@ export const useRelatorios = () => {
         const qty = Number(s.quantidade)
         saidas_por_semana[idx] += qty
         if (s.tipo === 'definitiva') saidas_definitiva_por_semana[idx] += qty
+        else if (s.tipo === 'producao') saidas_producao_por_semana[idx] += qty
         else if (s.tipo === 'transferencia' && s.empresa_destino_id) saidas_transf_loja_por_semana[idx] += qty
         else if (s.tipo === 'transferencia' && !s.empresa_destino_id) saidas_transf_apoio_por_semana[idx] += qty
       })
@@ -310,6 +313,7 @@ export const useRelatorios = () => {
         saidas_definitiva_por_semana,
         saidas_transf_loja_por_semana,
         saidas_transf_apoio_por_semana,
+        saidas_producao_por_semana,
         total_saidas,
         total_entradas,
         estoque_final,
@@ -1714,6 +1718,9 @@ export const useRelatorios = () => {
       const ajustesNoMes = prodAjustes.filter(a => a.data >= dataInicio && a.data <= dataFim)
       const semMovimentacao = entradasNoMes.length === 0 && saidasNoMes.length === 0 && ajustesNoMes.length === 0
 
+      // Entradas (compras) do mês em valor
+      const entradas_valor = entradasNoMes.reduce((sum, e) => sum + Number(e.valor_total || 0), 0)
+
       return {
         produto_id: p.id,
         produto: p.nome,
@@ -1733,6 +1740,9 @@ export const useRelatorios = () => {
         ei_valor_apoio,
         ef_quantidade_apoio,
         ef_valor_apoio,
+        entradas_valor,
+        entradas_valor_principal: entradas_valor,
+        entradas_valor_apoio: 0,
         custo_ultima_entrada: custoUltimaEntrada,
         variacao_quantidade: ef_quantidade - ei_quantidade,
         variacao_valor: ef_valor - ei_valor,
@@ -1945,6 +1955,94 @@ export const useRelatorios = () => {
     })
   }
 
+  // ==========================================
+  // POSIÇÃO DE ESTOQUE PRINCIPAL
+  // ==========================================
+
+  const getPosicaoEstoque = async (): Promise<PosicaoEstoqueItem[]> => {
+    if (!empresaId.value) return []
+
+    // Buscar saldos atuais com custo médio
+    const { data: saldos, error: saldoErr } = await client
+      .from('v_saldo_estoque')
+      .select('produto_id, categoria, produto, unidade, saldo_principal, custo_medio')
+      .eq('empresa_id', empresaId.value) as { data: { produto_id: string; categoria: string; produto: string; unidade: string; saldo_principal: number; custo_medio: number }[] | null; error: any }
+
+    if (saldoErr) throw saldoErr
+
+    // Calcular média semanal (saídas definitivas das 3 últimas semanas seg-dom)
+    const hoje = new Date()
+    const diaSemana = hoje.getDay()
+    const segAtual = new Date(hoje)
+    segAtual.setDate(hoje.getDate() - ((diaSemana + 6) % 7))
+    segAtual.setHours(0, 0, 0, 0)
+
+    const sem3Inicio = new Date(segAtual)
+    sem3Inicio.setDate(segAtual.getDate() - 21)
+    const sem1Fim = new Date(segAtual)
+    sem1Fim.setDate(segAtual.getDate() - 1)
+
+    const formatData = (d: Date) => d.toISOString().split('T')[0]
+
+    const { data: saidas } = await comEmpresa(client
+      .from('saidas')
+      .select('produto_id, quantidade')
+      .eq('tipo', 'definitiva')
+      .gte('data', formatData(sem3Inicio))
+      .lte('data', formatData(sem1Fim))) as { data: { produto_id: string; quantidade: number }[] | null }
+
+    // Agregar saídas por produto
+    const saidasPorProduto = new Map<string, number>()
+    saidas?.forEach(s => {
+      const atual = saidasPorProduto.get(s.produto_id) || 0
+      saidasPorProduto.set(s.produto_id, atual + Number(s.quantidade))
+    })
+
+    return (saldos || []).map(s => {
+      const saldo = Number(s.saldo_principal || 0)
+      const custoMedio = Number(s.custo_medio || 0)
+      const totalSaidas3Sem = saidasPorProduto.get(s.produto_id) || 0
+      const mediaSemanal = totalSaidas3Sem / 3
+
+      return {
+        produto_id: s.produto_id,
+        categoria: s.categoria || '',
+        produto: s.produto,
+        unidade: s.unidade || '',
+        saldo,
+        custo_medio: custoMedio,
+        valor_estoque: saldo * custoMedio,
+        media_semanal: mediaSemanal
+      }
+    })
+  }
+
+  const getPosicaoApoio = async (): Promise<PosicaoEstoqueItem[]> => {
+    if (!empresaId.value) return []
+
+    const { data: saldos, error: saldoErr } = await client
+      .from('v_saldo_estoque')
+      .select('produto_id, categoria, produto, unidade, saldo_apoio, custo_medio')
+      .eq('empresa_id', empresaId.value) as { data: { produto_id: string; categoria: string; produto: string; unidade: string; saldo_apoio: number; custo_medio: number }[] | null; error: any }
+
+    if (saldoErr) throw saldoErr
+
+    return (saldos || []).map(s => {
+        const saldo = Number(s.saldo_apoio || 0)
+        const custoMedio = Number(s.custo_medio || 0)
+        return {
+          produto_id: s.produto_id,
+          categoria: s.categoria || '',
+          produto: s.produto,
+          unidade: s.unidade || '',
+          saldo,
+          custo_medio: custoMedio,
+          valor_estoque: saldo * custoMedio,
+          media_semanal: 0
+        }
+      })
+  }
+
   return {
     getPainelMes,
     getPainelMesApoio,
@@ -1962,6 +2060,8 @@ export const useRelatorios = () => {
     getVariacaoCusto,
     getVariacaoCustoDiaria,
     getDashboardResumo,
-    getGestaoInventario
+    getGestaoInventario,
+    getPosicaoEstoque,
+    getPosicaoApoio
   }
 }

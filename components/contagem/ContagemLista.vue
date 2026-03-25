@@ -118,10 +118,10 @@ const calcProximaContagem = (contagem: Contagem) => {
           <UIcon name="i-heroicons-map-pin" class="w-4 h-4 mr-1.5" />
           Setores
         </UButton>
-        <UButton color="white" :ui="toolbarButtonUi" @click="$emit('nova-contagem')">
-          <UIcon name="i-heroicons-plus" class="w-4 h-4 mr-1.5" />
+        <button class="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-medium rounded-lg bg-blue-500 text-white shadow-sm hover:bg-blue-600 hover:shadow-md active:bg-blue-700 transition-all duration-150" @click="$emit('nova-contagem')">
+          <UIcon name="i-heroicons-plus" class="w-4 h-4" />
           Nova Contagem
-        </UButton>
+        </button>
       </div>
     </div>
 

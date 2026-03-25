@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-6">
     <!-- Header -->
-    <h1 class="text-2xl font-semibold text-[#5a5a66] mb-2">Inventário</h1>
+    <h1 class="text-2xl font-semibold text-[#5a5a66] pb-4">Inventário</h1>
 
     <!-- Cards Resumo -->
     <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
@@ -193,21 +193,6 @@
       </div>
     </div>
 
-    <!-- Toggle Local de Estoque -->
-    <div class="flex items-center gap-1 p-1 bg-operacao-100/60 rounded-lg w-fit">
-      <button
-        v-for="opt in localOptions"
-        :key="opt.value"
-        class="px-3 py-1.5 text-sm rounded-md transition-all"
-        :class="filterLocal === opt.value
-          ? 'bg-white text-gray-900 font-medium shadow-sm'
-          : 'text-operacao-500 hover:text-operacao-700'"
-        @click="filterLocal = opt.value"
-      >
-        {{ opt.label }}
-      </button>
-    </div>
-
     <!-- Tabela -->
     <UCard :ui="{ base: 'overflow-hidden', body: { padding: '' }, ring: 'ring-1 ring-[#EBEBED]', shadow: 'shadow-sm' }">
       <UTable :columns="columns" :rows="paginatedData" :loading="loading" :sort="{ column: 'ef_valor', direction: 'desc' }" :ui="{
@@ -228,13 +213,6 @@
             <span class="font-medium">{{ row.produto }}</span>
             <span class="text-xs text-operacao-400 ml-1">({{ row.unidade }})</span>
           </div>
-        </template>
-        <template #grupo-data="{ row }">
-          <span class="whitespace-nowrap">
-            <span class="text-operacao-400">{{ row.grupo }}</span>
-            <span v-if="row.grupo && row.subgrupo" class="text-operacao-300 mx-1">›</span>
-            <span>{{ row.subgrupo || '-' }}</span>
-          </span>
         </template>
         <template #ei-data="{ row }">
           <div>
@@ -260,6 +238,15 @@
               {{ viewVar(row).qtd > 0 ? '+' : '' }}{{ formatNumber(viewVar(row).qtd) }} {{ row.unidade }}
             </p>
           </div>
+        </template>
+        <template #cmv-data="{ row }">
+          <span class="text-red-600 font-medium">{{ formatCurrency(viewCmv(row)) }}</span>
+        </template>
+        <template #giro-data="{ row }">
+          <span v-if="viewCmv(row) <= 0" class="text-operacao-400">-</span>
+          <span v-else :class="getGiroClass(viewGiro(row))">
+            {{ viewGiro(row).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }} dias
+          </span>
         </template>
       </UTable>
       <TablePagination
@@ -295,7 +282,6 @@ const filterCategoria = ref('')
 const categoriaPopoverOpen = ref(false)
 const expandedGrupos = ref<Set<string>>(new Set())
 const filterMovimentacao = ref('')
-const filterLocal = ref<'' | 'principal' | 'apoio'>('')
 
 // Mês/Ano
 const hoje = new Date()
@@ -321,11 +307,12 @@ const pageSize = ref(20)
 // Colunas
 const columns = [
   { key: 'produto', label: 'Produto', sortable: true },
-  { key: 'grupo', label: 'Grupo / Subgrupo', sortable: true },
   { key: 'ei', label: 'Estoque Inicial', sortable: true },
   { key: 'ef', label: 'Estoque Final', sortable: true },
   { key: 'custo_ultima_entrada', label: 'Ult. Entrada', sortable: true },
-  { key: 'variacao', label: 'Variação', sortable: true }
+  { key: 'variacao', label: 'Variação', sortable: true },
+  { key: 'cmv', label: 'CMV (R$)', sortable: true },
+  { key: 'giro', label: 'Giro (dias)', sortable: true }
 ]
 
 // Filtro expansível Grupo/Subgrupo
@@ -380,29 +367,27 @@ const movimentacaoOptions = [
   { label: 'Com movimentação', value: 'com' }
 ]
 
-const localOptions = [
-  { label: 'Total', value: '' },
-  { label: 'Principal', value: 'principal' },
-  { label: 'Apoio', value: 'apoio' }
-]
+// Helpers
+const viewEi = (row: GestaoInventario) => ({ valor: row.ei_valor, qtd: row.ei_quantidade })
+const viewEf = (row: GestaoInventario) => ({ valor: row.ef_valor, qtd: row.ef_quantidade })
+const viewVar = (row: GestaoInventario) => ({ valor: row.ef_valor - row.ei_valor, qtd: row.ef_quantidade - row.ei_quantidade })
 
-// Helpers para exibir valores conforme a view selecionada
-const viewEi = (row: GestaoInventario) => {
-  if (filterLocal.value === 'principal') return { valor: row.ei_valor_principal, qtd: row.ei_quantidade_principal }
-  if (filterLocal.value === 'apoio') return { valor: row.ei_valor_apoio, qtd: row.ei_quantidade_apoio }
-  return { valor: row.ei_valor, qtd: row.ei_quantidade }
+// CMV = EI + Entradas - EF
+const viewCmv = (row: GestaoInventario) => {
+  return Math.max(0, row.ei_valor + row.entradas_valor - row.ef_valor)
 }
 
-const viewEf = (row: GestaoInventario) => {
-  if (filterLocal.value === 'principal') return { valor: row.ef_valor_principal, qtd: row.ef_quantidade_principal }
-  if (filterLocal.value === 'apoio') return { valor: row.ef_valor_apoio, qtd: row.ef_quantidade_apoio }
-  return { valor: row.ef_valor, qtd: row.ef_quantidade }
+// Giro = EF(R$) / CMV(R$) * 30
+const viewGiro = (row: GestaoInventario) => {
+  const cmv = viewCmv(row)
+  if (cmv <= 0) return 0
+  return (row.ef_valor / cmv) * 30
 }
 
-const viewVar = (row: GestaoInventario) => {
-  const ei = viewEi(row)
-  const ef = viewEf(row)
-  return { valor: ef.valor - ei.valor, qtd: ef.qtd - ei.qtd }
+const getGiroClass = (dias: number) => {
+  if (dias <= 6.99) return 'text-controle-600 font-medium'
+  if (dias <= 9.99) return 'text-alerta-600 font-medium'
+  return 'text-red-600 font-medium'
 }
 
 const hasActiveFilters = computed(() => {
@@ -458,12 +443,12 @@ const paginatedData = computed(() => {
   return filteredData.value.slice(start, start + pageSize.value)
 })
 
-// Totais (respeitam a view selecionada)
+// Totais
 const totais = computed(() => {
-  const ei_quantidade = dados.value.reduce((sum, d) => sum + viewEi(d).qtd, 0)
-  const ei_valor = dados.value.reduce((sum, d) => sum + viewEi(d).valor, 0)
-  const ef_quantidade = dados.value.reduce((sum, d) => sum + viewEf(d).qtd, 0)
-  const ef_valor = dados.value.reduce((sum, d) => sum + viewEf(d).valor, 0)
+  const ei_quantidade = dados.value.reduce((sum, d) => sum + d.ei_quantidade, 0)
+  const ei_valor = dados.value.reduce((sum, d) => sum + d.ei_valor, 0)
+  const ef_quantidade = dados.value.reduce((sum, d) => sum + d.ef_quantidade, 0)
+  const ef_valor = dados.value.reduce((sum, d) => sum + d.ef_valor, 0)
   return {
     ei_quantidade,
     ei_valor,

@@ -5,12 +5,12 @@
     <!-- ============================================ -->
     <div v-if="etapa === 'principal'" class="flex flex-col h-full">
       <!-- Toolbar -->
-      <div class="flex items-center justify-between mb-8">
+      <div class="flex items-center justify-between pb-4">
         <h1 class="text-2xl font-semibold text-[#5a5a66]">Contagens</h1>
-        <UButton color="white" :ui="{ color: { white: { solid: 'shadow-sm ring-1 ring-inset ring-[#EBEBED] text-gray-700 bg-white hover:bg-gray-50 focus-visible:ring-2 focus-visible:ring-guardian-500' } } }" @click="slideoverSetoresOpen = true">
-          <UIcon name="i-heroicons-map-pin" class="w-4 h-4 mr-1.5 text-operacao-400" />
+        <button class="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-medium rounded-lg bg-white text-[#5a5a66] border border-gray-300 shadow-sm hover:bg-gray-50 active:bg-gray-100 transition-all duration-150" @click="slideoverSetoresOpen = true">
+          <UIcon name="i-heroicons-map-pin" class="w-4 h-4" />
           Gerenciar Setores
-        </UButton>
+        </button>
       </div>
 
       <!-- Contagens -->
@@ -305,16 +305,66 @@
             </div>
           </div>
 
-          <div class="border-t border-operacao-200" />
+          <!-- Seleção de setores (apenas apoio) -->
+          <template v-if="configurandoEhApoio">
+            <div class="border-t border-operacao-200" />
+            <div>
+              <h4 class="font-semibold text-operacao-800 mb-1">Selecionar Setores</h4>
+              <p class="text-sm text-operacao-400 mb-3">Escolha quais setores de apoio serão incluídos nesta contagem.</p>
 
-          <!-- Info: setores que serão contados -->
-          <div v-if="setoresDoTipoSelecionado.length > 0" class="flex items-center gap-2 px-3 py-2 rounded-lg bg-operacao-50 border border-operacao-200 text-sm text-operacao-500">
-            <UIcon name="i-heroicons-information-circle" class="w-4 h-4 flex-shrink-0 text-operacao-400" />
-            <span>
-              <span class="font-medium text-operacao-700">{{ setoresDoTipoSelecionado.length }} {{ setoresDoTipoSelecionado.length === 1 ? 'setor' : 'setores' }}</span>
-              serão contados: {{ setoresDoTipoSelecionado.map(s => s.nome).join(', ') }}
-            </span>
-          </div>
+              <div v-if="setoresApoioDisponiveis.length === 0" class="text-center py-4 text-operacao-400">
+                <UIcon name="i-heroicons-map-pin" class="w-6 h-6 mb-1 mx-auto" />
+                <p class="text-sm">Nenhum setor de apoio cadastrado</p>
+              </div>
+
+              <div v-else class="space-y-2">
+                <div
+                  v-for="setor in setoresApoioDisponiveis"
+                  :key="setor.id"
+                  class="flex items-center justify-between p-3 rounded-lg border transition-all cursor-pointer"
+                  :class="setupSetoresSelecionados.has(setor.id)
+                    ? 'border-emerald-500 bg-emerald-50'
+                    : 'border-operacao-200 bg-white hover:border-operacao-300'"
+                  @click="toggleSetorSetup(setor.id)"
+                >
+                  <div class="flex items-center gap-3">
+                    <div
+                      class="w-5 h-5 rounded border-2 flex items-center justify-center transition-all"
+                      :class="setupSetoresSelecionados.has(setor.id)
+                        ? 'border-emerald-500 bg-emerald-500'
+                        : 'border-operacao-300 bg-white'"
+                    >
+                      <UIcon
+                        v-if="setupSetoresSelecionados.has(setor.id)"
+                        name="i-heroicons-check"
+                        class="w-3.5 h-3.5 text-white"
+                      />
+                    </div>
+                    <div>
+                      <p class="font-medium text-operacao-800 text-sm">{{ setor.nome }}</p>
+                      <p class="text-xs text-operacao-400">{{ setorProdutosCount[setor.id] || 0 }} {{ (setorProdutosCount[setor.id] || 0) === 1 ? 'produto' : 'produtos' }}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <p v-if="setupSetoresSelecionados.size > 0" class="text-xs text-operacao-400 mt-2">
+                {{ setupSetoresSelecionados.size }} {{ setupSetoresSelecionados.size === 1 ? 'setor selecionado' : 'setores selecionados' }}
+              </p>
+            </div>
+          </template>
+
+          <!-- Info: setores que serão contados (principal/inventário - read-only) -->
+          <template v-else>
+            <div class="border-t border-operacao-200" />
+            <div v-if="setoresDoTipoSelecionado.length > 0" class="flex items-center gap-2 px-3 py-2 rounded-lg bg-operacao-50 border border-operacao-200 text-sm text-operacao-500">
+              <UIcon name="i-heroicons-information-circle" class="w-4 h-4 flex-shrink-0 text-operacao-400" />
+              <span>
+                <span class="font-medium text-operacao-700">{{ setoresDoTipoSelecionado.length }} {{ setoresDoTipoSelecionado.length === 1 ? 'setor' : 'setores' }}</span>
+                serão contados: {{ setoresDoTipoSelecionado.map(s => s.nome).join(', ') }}
+              </span>
+            </div>
+          </template>
         </div>
 
         <div class="px-6 py-4 border-t border-operacao-200 bg-white">
@@ -322,7 +372,7 @@
             <UButton color="gray" variant="ghost" @click="slideoverSetupOpen = false">Cancelar</UButton>
             <UButton
               color="primary"
-              :disabled="!setupRecorrencia || setupResponsaveis.length === 0"
+              :disabled="!setupRecorrencia || setupResponsaveis.length === 0 || (configurandoEhApoio && setupSetoresSelecionados.size === 0)"
               :loading="loadingSetup"
               @click="salvarContagem"
             >
@@ -428,6 +478,7 @@ const setupHorarioNotificacao = ref('07:00')
 const setupDiasSemana = ref<Set<string>>(new Set())
 const setupMensalPosicao = ref('primeira')
 const setupMensalDia = ref('segunda')
+const setupSetoresSelecionados = ref<Set<string>>(new Set())
 
 // Responsáveis
 const responsaveis = ref<{ id?: string; nome: string; telefone: string }[]>([])
@@ -675,6 +726,14 @@ const configurandoTipoIcon = computed(() => {
   }
   return icons[contagem.tipo] || 'i-heroicons-clipboard-document-check'
 })
+const configurandoEhApoio = computed(() => {
+  if (!editandoContagemId.value) return false
+  const c = contagensPersistidas.value.find(ct => ct.id === editandoContagemId.value)
+  return c?.tipo === 'apoio'
+})
+const setoresApoioDisponiveis = computed(() => {
+  return setores.value.filter(s => s.tipo === 'apoio')
+})
 
 // ==========================================
 // CARREGAMENTO DE DADOS
@@ -884,6 +943,16 @@ const cancelarContagem = async () => {
 // AÇÕES DE CONTAGEM
 // ==========================================
 
+const toggleSetorSetup = (setorId: string) => {
+  const novo = new Set(setupSetoresSelecionados.value)
+  if (novo.has(setorId)) {
+    novo.delete(setorId)
+  } else {
+    novo.add(setorId)
+  }
+  setupSetoresSelecionados.value = novo
+}
+
 // ==========================================
 // ENVIAR LEMBRETE WHATSAPP
 // ==========================================
@@ -1010,6 +1079,16 @@ const abrirConfigurar = async (contagem: Contagem) => {
     setupResponsaveis.value = []
   }
 
+  // Inicializar setores selecionados a partir dos contagem_setores existentes
+  const idsExistentes = (contagem.contagem_setores || []).map(cs => cs.setor_id)
+  if (idsExistentes.length === 0 && contagem.tipo === 'apoio') {
+    // Primeira configuração: pré-selecionar todos os setores de apoio
+    const apoioIds = setores.value.filter(s => s.tipo === 'apoio').map(s => s.id)
+    setupSetoresSelecionados.value = new Set(apoioIds)
+  } else {
+    setupSetoresSelecionados.value = new Set(idsExistentes)
+  }
+
   slideoverSetupOpen.value = true
 }
 
@@ -1019,6 +1098,12 @@ const salvarContagem = async () => {
     loadingSetup.value = true
     const diasSemanaArr = Array.from(setupDiasSemana.value)
     const primeiro = setupResponsaveis.value[0]
+
+    // Para apoio: passar setores selecionados explicitamente
+    // Para principal/inventário: não passar (auto-query por tipo)
+    const setorIdsParam = configurandoEhApoio.value
+      ? Array.from(setupSetoresSelecionados.value)
+      : undefined
 
     await updateContagem(
       editandoContagemId.value,
@@ -1034,7 +1119,8 @@ const salvarContagem = async () => {
         responsavel_id: (primeiro as any).id || undefined,
         // Array completo
         responsaveis_data: setupResponsaveis.value.map(r => ({ id: r.id, nome: r.nome, telefone: r.telefone }))
-      }
+      },
+      setorIdsParam
     )
     slideoverSetupOpen.value = false
     toast.add({ title: 'Sucesso', description: 'Contagem configurada com sucesso', color: 'green' })

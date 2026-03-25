@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-6">
     <!-- Header -->
-    <h1 class="text-2xl font-semibold text-[#5a5a66] mb-2">Ordens de Produção</h1>
+    <h1 class="text-2xl font-semibold text-[#5a5a66] pb-4">Ordens de Produção</h1>
 
     <!-- KPI Cards -->
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -44,16 +44,10 @@
         />
       </div>
       <div class="flex gap-2 flex-shrink-0">
-        <NuxtLink to="/producao/fichas-tecnicas">
-          <UButton color="white" :ui="toolbarButtonUi">
-            <UIcon name="i-heroicons-beaker" class="w-4 h-4 mr-1.5" />
-            Fichas Técnicas
-          </UButton>
-        </NuxtLink>
-        <UButton color="primary" @click="criarModalOpen = true">
-          <UIcon name="i-heroicons-plus" class="w-4 h-4 mr-1.5" />
+        <button class="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-medium rounded-lg bg-blue-500 text-white shadow-sm hover:bg-blue-600 hover:shadow-md active:bg-blue-700 transition-all duration-150" @click="criarModalOpen = true">
+          <UIcon name="i-heroicons-plus" class="w-4 h-4" />
           Nova OP
-        </UButton>
+        </button>
       </div>
     </div>
 
@@ -61,7 +55,7 @@
     <UCard :ui="{ base: 'overflow-hidden', body: { padding: '' }, ring: 'ring-1 ring-[#EBEBED]', shadow: 'shadow-sm' }">
       <UTable
         :columns="columns"
-        :rows="ordensFiltradas"
+        :rows="paginatedItems"
         :loading="loading"
         :ui="{
           divide: 'divide-y divide-operacao-50 dark:divide-operacao-700',
@@ -135,6 +129,12 @@
           </div>
         </template>
       </UTable>
+      <TablePagination
+        v-model="page"
+        :page-size="pageSize"
+        :total-items="ordensFiltradas.length"
+        @update:page-size="pageSize = $event"
+      />
     </UCard>
 
     <!-- Modal Criar OP -->
@@ -165,7 +165,6 @@ const { formatCurrency } = useFormatters()
 const toast = useToast()
 
 const toolbarInputUi = { color: { white: { outline: 'shadow-sm bg-white text-gray-900 ring-1 ring-inset ring-[#EBEBED] focus:ring-1 focus:ring-operacao-200 dark:ring-operacao-700' } } }
-const toolbarButtonUi = { color: { white: { solid: 'shadow-sm ring-1 ring-inset ring-[#EBEBED] text-gray-700 bg-white hover:bg-gray-50 focus-visible:ring-2 focus-visible:ring-guardian-500 dark:ring-operacao-700 dark:bg-gray-900 dark:text-white dark:hover:bg-gray-800/50' } } }
 
 const loading = ref(false)
 const ordens = ref<OrdemProducao[]>([])
@@ -233,10 +232,12 @@ const ordensFiltradas = computed(() => {
   return result
 })
 
+const { page, pageSize, paginatedItems } = usePagination(ordensFiltradas)
+
 const getStatusColor = (status: StatusOP) => {
   switch (status) {
     case 'planejada': return 'blue'
-    case 'em_producao': return 'orange'
+    case 'em_producao': return 'amber'
     case 'concluida': return 'green'
     case 'cancelada': return 'red'
     default: return 'gray'

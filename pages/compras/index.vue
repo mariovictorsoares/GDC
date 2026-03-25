@@ -2,7 +2,7 @@
   <div class="space-y-6">
 
     <!-- ======================== HEADER ======================== -->
-    <h1 class="text-2xl font-semibold text-[#5a5a66] mb-2">Compras</h1>
+    <h1 class="text-2xl font-semibold text-[#5a5a66] pb-4">Compras</h1>
 
     <!-- ======================== TOOLBAR ======================== -->
     <div class="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6">
@@ -51,14 +51,14 @@
       </div>
       <!-- Ações (direita) -->
       <div class="flex gap-2 flex-shrink-0">
-        <UButton color="white" :ui="toolbarButtonUi" @click="analisesSlideover = true">
-          <UIcon name="i-heroicons-chart-bar-square" class="w-4 h-4 mr-1.5" />
+        <button class="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-medium rounded-lg bg-white text-[#5a5a66] border border-gray-300 shadow-sm hover:bg-gray-50 active:bg-gray-100 transition-all duration-150" @click="analisesSlideover = true">
+          <UIcon name="i-heroicons-chart-bar-square" class="w-4 h-4" />
           Análises
-        </UButton>
-        <UButton color="white" :ui="toolbarButtonUi" @click="openNovaLista()">
-          <UIcon name="i-heroicons-plus" class="w-4 h-4 mr-1.5" />
+        </button>
+        <button class="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-medium rounded-lg bg-blue-500 text-white shadow-sm hover:bg-blue-600 hover:shadow-md active:bg-blue-700 transition-all duration-150" @click="openNovaLista()">
+          <UIcon name="i-heroicons-plus" class="w-4 h-4" />
           Nova Lista
-        </UButton>
+        </button>
       </div>
     </div>
 

@@ -552,7 +552,8 @@ export const useEstoque = () => {
     })
 
     // 2. Criar entrada na empresa destino com o produto escolhido pelo usuário
-    const custoUnit = Number(saidaCriada.custo_saida) / saida.quantidade!
+    const qty = Number(saida.quantidade) || 0
+    const custoUnit = qty > 0 ? Number(saidaCriada.custo_saida) / qty : 0
     const { error: entradaError } = await client
       .from('entradas')
       .insert({
@@ -567,7 +568,8 @@ export const useEstoque = () => {
 
     if (entradaError) {
       // Reverter a saída criada para não deixar estoque inconsistente
-      await client.from('saidas').delete().eq('id', saidaCriada.id)
+      const { error: rollbackErr } = await client.from('saidas').delete().eq('id', saidaCriada.id)
+      if (rollbackErr) console.error('[Transferência] Falha no rollback da saída:', rollbackErr.message)
       throw entradaError
     }
 
@@ -873,7 +875,8 @@ export const useEstoque = () => {
 
     if (entradaError) {
       // Reverter saída
-      await client.from('saidas').delete().eq('id', saidaCriada.id)
+      const { error: rollbackErr } = await client.from('saidas').delete().eq('id', saidaCriada.id)
+      if (rollbackErr) console.error('[confirmarTransferencia] Falha no rollback da saída:', rollbackErr.message)
       throw entradaError
     }
 
@@ -969,13 +972,15 @@ export const useEstoque = () => {
       if (item.quantidade_enviada <= 0) continue
 
       // Atualizar quantidade_enviada no item
-      await client
+      const { error: itemErr } = await client
         .from('requisicao_itens')
         .update({ quantidade_enviada: item.quantidade_enviada })
         .eq('id', item.requisicao_item_id)
 
+      if (itemErr) throw new Error(`Erro ao atualizar item da requisição: ${itemErr.message}`)
+
       // Criar saída transferência (desconta do principal, credita no apoio)
-      await client
+      const { error: saidaErr } = await client
         .from('saidas')
         .insert({
           produto_id: item.produto_id,
@@ -986,6 +991,8 @@ export const useEstoque = () => {
           observacao: `Requisição: ${nomeSetor}`,
           requisicao_id: requisicaoId
         })
+
+      if (saidaErr) throw new Error(`Erro ao criar saída para ${item.produto_id}: ${saidaErr.message}`)
     }
 
     // 3. Atualizar status da requisição
@@ -1336,7 +1343,8 @@ export const useEstoque = () => {
       responsavel_telefone?: string
       responsavel_id?: string
       responsaveis_data?: Array<{ id?: string; nome: string; telefone: string }>
-    }
+    },
+    setorIds?: string[]
   ) => {
     // Buscar status e tipo atual da contagem
     const { data: contagemAtual } = await client
@@ -1363,21 +1371,34 @@ export const useEstoque = () => {
 
     // Re-sincronizar setores apenas se a contagem não está em andamento
     if (contagemAtual?.status !== 'em_andamento') {
-      const setorQuery = client
-        .from('setores')
-        .select('id')
-        .eq('empresa_id', empresaId.value)
+      let setorIdsFinais: string[]
 
-      if (contagemAtual?.tipo !== 'inventario') {
-        setorQuery.eq('tipo', contagemAtual?.tipo)
+      if (setorIds && setorIds.length > 0) {
+        // Setores explícitos (ex: apoio com seleção parcial)
+        // Validar que os IDs existem no banco para evitar FK violation
+        const { data: setoresValidos } = await client
+          .from('setores')
+          .select('id')
+          .in('id', setorIds)
+        setorIdsFinais = (setoresValidos || []).map((s: any) => s.id)
+      } else {
+        // Auto-query por tipo (comportamento padrão para principal/inventário)
+        const setorQuery = client
+          .from('setores')
+          .select('id')
+          .eq('empresa_id', empresaId.value)
+
+        if (contagemAtual?.tipo !== 'inventario') {
+          setorQuery.eq('tipo', contagemAtual?.tipo)
+        }
+
+        const { data: setoresAuto } = await setorQuery
+        setorIdsFinais = (setoresAuto || []).map((s: any) => s.id)
       }
 
-      const { data: setoresAuto } = await setorQuery
-      const setorIds = (setoresAuto || []).map((s: any) => s.id)
-
       await client.from('contagem_setores').delete().eq('contagem_id', id)
-      if (setorIds.length > 0) {
-        const rows = setorIds.map((sid: string) => ({ contagem_id: id, setor_id: sid }))
+      if (setorIdsFinais.length > 0) {
+        const rows = setorIdsFinais.map((sid: string) => ({ contagem_id: id, setor_id: sid }))
         const { error: errSetores } = await client
           .from('contagem_setores')
           .insert(rows)

@@ -3,7 +3,7 @@
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-2xl font-semibold text-[#5a5a66] mb-2">Empresas</h1>
+        <h1 class="text-2xl font-semibold text-[#5a5a66] pb-4">Empresas</h1>
         <p class="text-sm text-operacao-400">Gerencie suas empresas e alterne entre elas</p>
       </div>
       <UButton

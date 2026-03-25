@@ -1,41 +1,47 @@
 <template>
-  <USlideover v-model="isOpen" :ui="{ width: 'max-w-2xl' }">
-    <div class="flex flex-col h-full">
-      <!-- Header -->
-      <div class="flex items-center justify-between px-6 py-4 border-b border-operacao-200">
-        <h3 class="text-lg font-semibold text-operacao-800">
-          {{ editando ? 'Editar Ficha Técnica' : 'Nova Ficha Técnica' }}
-        </h3>
-        <UButton color="gray" variant="ghost" icon="i-heroicons-x-mark" @click="fechar" />
-      </div>
+  <UModal
+    v-model="isOpen"
+    :ui="{
+      width: 'sm:max-w-2xl',
+      overlay: { background: 'bg-operacao-900/50 backdrop-blur-sm' },
+      background: 'bg-white dark:bg-operacao-800',
+      ring: 'ring-1 ring-operacao-200 dark:ring-operacao-700',
+      shadow: 'shadow-2xl'
+    }"
+  >
+    <UCard :ui="{ background: 'bg-transparent', ring: 'ring-0', shadow: '', divide: 'divide-operacao-100 dark:divide-operacao-700' }">
+      <template #header>
+        <div class="flex items-center justify-between">
+          <h3 class="text-lg font-semibold">
+            {{ editando ? 'Editar Ficha Técnica' : 'Nova Ficha Técnica' }}
+          </h3>
+          <UButton color="gray" variant="ghost" icon="i-heroicons-x-mark" @click="isOpen = false" />
+        </div>
+      </template>
 
-      <!-- Corpo -->
-      <div class="flex-1 overflow-y-auto px-6 py-4 space-y-5">
-        <!-- Nome -->
-        <UFormGroup label="Nome da Ficha">
-          <UInput v-model="form.nome" placeholder="Ex: Molho Bolonhesa 5kg" />
-        </UFormGroup>
+      <div class="space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <UFormGroup label="Nome da Ficha" required class="md:col-span-2">
+            <UInput v-model="form.nome" placeholder="Ex: Molho Bolonhesa 5kg" />
+          </UFormGroup>
 
-        <!-- Produto (resultado) -->
-        <UFormGroup label="Produto Produzido">
-          <USelectMenu
-            v-model="form.produto_id"
-            :options="produtosOptions"
-            searchable
-            searchable-placeholder="Buscar produto..."
-            placeholder="Selecione o produto"
-            value-attribute="value"
-            option-attribute="label"
-            :ui="{ input: 'block w-full' }"
-          />
-        </UFormGroup>
+          <UFormGroup label="Produto Produzido" required>
+            <USelectMenu
+              v-model="form.produto_id"
+              :options="produtosOptions"
+              searchable
+              searchable-placeholder="Buscar produto..."
+              placeholder="Selecione o produto"
+              value-attribute="value"
+              option-attribute="label"
+            />
+          </UFormGroup>
 
-        <!-- Rendimento -->
-        <UFormGroup :label="`Rendimento (${unidadeProduto})`">
-          <UInput v-model.number="form.rendimento" type="number" step="0.01" min="0.01" placeholder="1" />
-        </UFormGroup>
+          <UFormGroup :label="`Rendimento (${unidadeProduto})`" required>
+            <UInput v-model.number="form.rendimento" type="number" step="0.01" min="0.01" placeholder="1" />
+          </UFormGroup>
+        </div>
 
-        <!-- Observação -->
         <UFormGroup label="Observações">
           <UTextarea v-model="form.observacao" placeholder="Modo de preparo, dicas..." :rows="2" />
         </UFormGroup>
@@ -61,7 +67,6 @@
               class="flex items-start gap-2 p-3 rounded-lg bg-operacao-50 border border-operacao-100"
             >
               <div class="flex-1 grid grid-cols-12 gap-2">
-                <!-- Produto -->
                 <div class="col-span-6">
                   <USelectMenu
                     v-model="ing.produto_id"
@@ -74,7 +79,6 @@
                     size="sm"
                   />
                 </div>
-                <!-- Quantidade -->
                 <div class="col-span-3">
                   <UInput
                     v-model.number="ing.quantidade"
@@ -85,7 +89,6 @@
                     size="sm"
                   />
                 </div>
-                <!-- Fator Correção -->
                 <div class="col-span-3">
                   <UInput
                     v-model.number="ing.fator_correcao"
@@ -96,7 +99,7 @@
                     size="sm"
                   >
                     <template #trailing>
-                      <span class="text-xs text-operacao-400">FC</span>
+                      <span class="text-xs text-operacao-400">Perda</span>
                     </template>
                   </UInput>
                 </div>
@@ -114,21 +117,24 @@
 
           <!-- Custo estimado -->
           <div v-if="ingredientes.length > 0" class="mt-4 flex items-center justify-between p-3 bg-guardian-50 rounded-lg border border-guardian-200">
-            <span class="text-sm font-medium text-guardian-700">Custo estimado ({{ form.rendimento || 1 }}x)</span>
+            <span class="text-sm font-medium text-guardian-700">Custo estimado do batch</span>
             <span class="text-sm font-semibold text-guardian-800">{{ formatCurrency(custoEstimado) }}</span>
           </div>
         </div>
       </div>
 
-      <!-- Footer -->
-      <div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-operacao-200">
-        <UButton color="white" @click="fechar">Cancelar</UButton>
-        <UButton color="primary" :loading="salvando" :disabled="!formValido" @click="salvar">
-          {{ editando ? 'Salvar Alterações' : 'Criar Ficha' }}
-        </UButton>
-      </div>
-    </div>
-  </USlideover>
+      <template #footer>
+        <div class="flex flex-col-reverse sm:flex-row justify-end gap-3">
+          <UButton color="gray" variant="ghost" class="w-full sm:w-auto" @click="isOpen = false">
+            Cancelar
+          </UButton>
+          <UButton color="primary" class="w-full sm:w-auto" :loading="salvando" :disabled="!formValido" @click="salvar">
+            {{ editando ? 'Salvar' : 'Criar' }}
+          </UButton>
+        </div>
+      </template>
+    </UCard>
+  </UModal>
 </template>
 
 <script setup lang="ts">
@@ -138,6 +144,7 @@ const props = defineProps<{
   modelValue: boolean
   ficha?: FichaTecnica | null
   produtos: Produto[]
+  custosMap?: Map<string, number>
 }>()
 
 const emit = defineEmits<{
@@ -171,7 +178,6 @@ const ingredientes = ref<Array<{
 
 const salvando = ref(false)
 
-// Options para selects
 const produtosOptions = computed(() =>
   props.produtos.map(p => ({
     value: p.id,
@@ -193,13 +199,11 @@ const unidadeProduto = computed(() => {
   return p?.unidade?.sigla || 'un'
 })
 
-// Custo estimado
+// Custo estimado (custo total do batch = soma de cada ingrediente × custo médio)
 const custoEstimado = computed(() => {
   return ingredientes.value.reduce((acc, ing) => {
-    const produto = props.produtos.find(p => p.id === ing.produto_id)
-    // Estimativa simples: usar preco_inicial como placeholder
-    const custo = produto?.preco_inicial || 0
-    return acc + (custo * ing.quantidade * ing.fator_correcao * (form.value.rendimento || 1))
+    const custo = props.custosMap?.get(ing.produto_id) || 0
+    return acc + (custo * ing.quantidade * ing.fator_correcao)
   }, 0)
 })
 
@@ -223,10 +227,6 @@ const removerIngrediente = (idx: number) => {
   ingredientes.value.splice(idx, 1)
 }
 
-const fechar = () => {
-  isOpen.value = false
-}
-
 const salvar = async () => {
   if (!formValido.value) return
   salvando.value = true
@@ -240,7 +240,7 @@ const salvar = async () => {
       toast.add({ title: 'Ficha criada com sucesso', color: 'green' })
     }
     emit('salvo')
-    fechar()
+    isOpen.value = false
   } catch (e: any) {
     toast.add({ title: 'Erro ao salvar ficha', description: e.message, color: 'red' })
   } finally {
@@ -248,28 +248,23 @@ const salvar = async () => {
   }
 }
 
-// Preencher form ao editar
-watch(() => props.ficha, (ficha) => {
-  if (ficha) {
+// Preencher form ao abrir / limpar ao fechar
+watch(isOpen, (open) => {
+  if (open && props.ficha) {
+    // Editar: preencher com dados da ficha
     form.value = {
-      nome: ficha.nome,
-      produto_id: ficha.produto_id,
-      rendimento: ficha.rendimento,
-      observacao: ficha.observacao || ''
+      nome: props.ficha.nome,
+      produto_id: props.ficha.produto_id,
+      rendimento: props.ficha.rendimento,
+      observacao: props.ficha.observacao || ''
     }
-    ingredientes.value = (ficha.ingredientes || []).map(ing => ({
+    ingredientes.value = (props.ficha.ingredientes || []).map(ing => ({
       produto_id: ing.produto_id,
       quantidade: ing.quantidade,
       fator_correcao: ing.fator_correcao
     }))
   } else {
-    form.value = { nome: '', produto_id: '', rendimento: 1, observacao: '' }
-    ingredientes.value = []
-  }
-}, { immediate: true })
-
-watch(isOpen, (open) => {
-  if (!open) {
+    // Criar novo ou fechou: limpar
     form.value = { nome: '', produto_id: '', rendimento: 1, observacao: '' }
     ingredientes.value = []
   }

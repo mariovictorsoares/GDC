@@ -2,7 +2,7 @@
   <div class="space-y-6">
     <!-- Header -->
     <div class="flex items-center justify-between pb-2">
-      <h1 class="text-2xl font-semibold text-[#5a5a66] mb-2">CMC Semanal</h1>
+      <h1 class="text-2xl font-semibold text-[#5a5a66] pb-4">CMC Semanal</h1>
       <div class="flex gap-2">
         <UButton color="primary" variant="outline" @click="gerarCompra" v-if="activeTab === 0" :disabled="produtosEmReposicao.length === 0">
           <UIcon name="i-heroicons-shopping-cart" class="w-4 h-4 mr-2" />

@@ -261,7 +261,8 @@ onMounted(async () => {
           valor_divergencia: Math.round(diferenca * custoMedio * 100) / 100,
           acuracidade: saldoSistema === 0
             ? (qtdContada === 0 ? 100 : 0)
-            : Math.max(0, Math.round((1 - Math.abs(diferenca) / saldoSistema) * 10000) / 100)
+            : saldoSistema < 0 ? 0
+            : Math.round((qtdContada / saldoSistema) * 10000) / 100
         }
       })
       .sort((a: ItemRevisao, b: ItemRevisao) => a.nome.localeCompare(b.nome))

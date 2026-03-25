@@ -1,6 +1,6 @@
 <template>
   <div class="space-y-6">
-    <h1 class="text-2xl font-semibold text-[#5a5a66] mb-2">CMV</h1>
+    <h1 class="text-2xl font-semibold text-[#5a5a66] pb-4">CMV</h1>
 
     <!-- Toolbar: Year Picker -->
     <div class="flex items-center gap-3">
@@ -160,6 +160,17 @@
                 </template>
               </td>
             </tr>
+            <!-- Giro de Estoque (dias) -->
+            <tr class="border-b border-operacao-100 hover:bg-operacao-50">
+              <td class="px-4 py-2.5 font-medium text-operacao-500 whitespace-nowrap sticky left-0 bg-white z-10">Giro de Estoque</td>
+              <td v-for="row in cmvDataFiltrado" :key="'giro-' + row.mes" class="text-center px-4 py-2.5 whitespace-nowrap">
+                <span v-if="isMesFuturo(row.mes)" class="text-operacao-400">-</span>
+                <span v-else-if="getGiroDias(row.mes) === 0" class="text-operacao-400">-</span>
+                <span v-else :class="getGiroClass(getGiroDias(row.mes))">
+                  {{ getGiroDias(row.mes).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }} dias
+                </span>
+              </td>
+            </tr>
           </tbody>
         </table>
       </div>
@@ -168,14 +179,15 @@
 </template>
 
 <script setup lang="ts">
-import type { CMV, Faturamento } from '~/types'
+import type { CMV, Faturamento, GiroEstoque } from '~/types'
 
-const { getCMV } = useRelatorios()
+const { getCMV, getGiroEstoque } = useRelatorios()
 const { getFaturamentos, upsertFaturamento } = useEstoque()
 const { empresaId } = useEmpresa()
 const toast = useToast()
 
 const cmvData = ref<CMV[]>([])
+const giroData = ref<GiroEstoque[]>([])
 const loading = ref(false)
 const loadingFaturamento = ref(false)
 const selectedAno = ref(new Date().getFullYear())
@@ -294,12 +306,30 @@ const getCmcPercent = (row: CMV) => {
   return (row.compras / row.faturamento) * 100
 }
 
+const getGiroDias = (mes: number) => {
+  const mesesNomesGiro = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
+  const g = giroData.value.find(g => g.mes === mesesNomesGiro[mes - 1])
+  return g ? g.giro_dias_real : 0
+}
+
+const getGiroClass = (dias: number) => {
+  if (dias <= 6.99) return 'text-controle-600 font-medium'
+  if (dias <= 9.99) return 'text-alerta-600 font-medium'
+  return 'text-red-600 font-medium'
+}
+
 const { formatCurrency, formatNumber } = useFormatters()
 
 const loadCMV = async () => {
   try {
     loading.value = true
-    cmvData.value = await getCMV(selectedAno.value)
+    const [cmv, giro] = await Promise.all([
+      getCMV(selectedAno.value),
+      getGiroEstoque(selectedAno.value)
+    ])
+    cmvData.value = cmv
+    giroData.value = giro
   } catch (error: any) {
     toast.add({
       title: 'Erro',

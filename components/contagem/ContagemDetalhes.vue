@@ -252,8 +252,8 @@
                 <p class="text-[10px] text-operacao-400 font-medium mt-1.5 uppercase tracking-wider">Impacto</p>
               </div>
               <div class="rounded-lg bg-white ring-1 ring-operacao-100 py-2.5 text-center shadow-sm">
-                <p class="text-xl font-bold leading-none tracking-tight" :class="acuracidadeColor(resultadoSelecionado.resumo.acuracidade_geral ?? 100)">
-                  {{ formatPercent(resultadoSelecionado.resumo.acuracidade_geral ?? 100) }}
+                <p class="text-xl font-bold leading-none tracking-tight" :class="acuracidadeColor(acuracidadeGeral)">
+                  {{ formatPercent(acuracidadeGeral) }}
                 </p>
                 <p class="text-[10px] text-operacao-400 font-medium mt-1.5 uppercase tracking-wider">Acuracidade</p>
               </div>
@@ -415,26 +415,39 @@ const setorNomeMap = computed(() => {
   return map
 })
 
+const calcAcuracidade = (saldo: number, contado: number) => {
+  if (saldo === 0) return contado === 0 ? 100 : 0
+  if (saldo < 0) return 0
+  return Math.round((contado / saldo) * 10000) / 100
+}
+
 const itensOrdenados = computed(() => {
   if (!resultadoSelecionado.value) return []
   return [...resultadoSelecionado.value.itens].map(item => {
+    // Sempre recalcular acuracidade a partir dos dados brutos (não confiar no valor salvo)
+    const acuracidade = calcAcuracidade(item.saldo_sistema, item.quantidade_contada)
+    const enriched = { ...item, acuracidade }
     // Enriquecer setores_breakdown com nomes caso estejam vazios
-    if (item.setores_breakdown) {
-      return {
-        ...item,
-        setores_breakdown: item.setores_breakdown.map(sb => ({
-          ...sb,
-          setor_nome: sb.setor_nome || setorNomeMap.value.get(sb.setor_id) || 'Setor'
-        }))
-      }
+    if (enriched.setores_breakdown) {
+      enriched.setores_breakdown = enriched.setores_breakdown.map(sb => ({
+        ...sb,
+        setor_nome: sb.setor_nome || setorNomeMap.value.get(sb.setor_id) || 'Setor'
+      }))
     }
-    return item
+    return enriched
   }).sort((a, b) => {
     const absDiffA = Math.abs(a.diferenca)
     const absDiffB = Math.abs(b.diferenca)
     if (absDiffA !== absDiffB) return absDiffB - absDiffA
     return a.nome.localeCompare(b.nome)
   })
+})
+
+const acuracidadeGeral = computed(() => {
+  const itens = itensOrdenados.value
+  if (itens.length === 0) return 100
+  const soma = itens.reduce((acc, i) => acc + i.acuracidade, 0)
+  return Math.round((soma / itens.length) * 100) / 100
 })
 
 const esperadoLabel = computed(() => {
@@ -756,9 +769,7 @@ const impactoBg = (v: number) => v >= 0 ? 'bg-controle-50' : 'bg-red-50'
 const impactoColor = (v: number) => v >= 0 ? 'text-controle-600' : 'text-red-500'
 
 const acuracidadeColor = (v: number) => {
-  if (v >= 95) return 'text-controle-600'
-  if (v >= 80) return 'text-amber-500'
-  return 'text-red-500'
+  return v === 100 ? 'text-controle-600' : 'text-red-500'
 }
 
 const formatPercent = (v: number) => `${Math.round(v)}%`

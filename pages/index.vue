@@ -3,7 +3,7 @@
 
     <!-- ======================== ROW 0: Header ======================== -->
     <div class="flex items-center justify-between pb-2">
-      <h1 class="text-2xl font-semibold text-[#5a5a66] mb-2">{{ saudacao }}</h1>
+      <h1 class="text-2xl font-semibold text-[#5a5a66] pb-4">{{ saudacao }}</h1>
     </div>
 
     <!-- ======================== ROW 1: KPI Cards ======================== -->
