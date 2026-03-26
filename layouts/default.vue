@@ -1506,11 +1506,7 @@ const confirmarLimparDados = async () => {
       'faturamentos_semanais',
       'faturamentos',
       'produtos',
-      'subgrupos',
-      'grupos',
-      'categorias',
-      'fornecedores',
-      'unidades',
+      // Dados cadastrais preservados: unidades, grupos, subgrupos, categorias, fornecedores
     ]
 
     for (const tabela of tabelas) {
